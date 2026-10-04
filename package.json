@@ -21,9 +21,14 @@
   },
   "dependencies": {
     "@mantine/core": "9.6.3",
+    "@mantine/form": "^9.6.3",
     "@mantine/hooks": "9.6.3",
+    "@mantine/notifications": "^9.6.3",
+    "@neondatabase/serverless": "^1.2.0",
     "@next/bundle-analyzer": "^16.0.0",
     "@tabler/icons-react": "^3.35.0",
+    "better-auth": "^1.7.7",
+    "drizzle-orm": "^0.45.3",
     "next": "16.3.8",
     "react": "19.3.0",
     "react-dom": "19.3.0"
@@ -41,6 +46,8 @@
     "@types/node": "^26.0.0",
     "@types/react": "19.3.0",
     "babel-loader": "^10.0.0",
+    "dotenv": "^18.0.5",
+    "drizzle-kit": "^0.31.11",
     "jest": "^30.2.0",
     "jest-environment-jsdom": "^30.2.0",
     "oxc-config-mantine": "^1.0.0",
