@@ -1,9 +1,12 @@
-import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { auth } from '@/server/auth';
+import { getSession } from '@/server/session';
+import { ensurePersonalHousehold } from '@/server/households/ensure-personal';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth.api.getSession({ headers: await headers() });
+  const session = await getSession();
   if (!session) redirect('/login');
+
+  await ensurePersonalHousehold(session.user.id);
+
   return <>{children}</>;
 }
