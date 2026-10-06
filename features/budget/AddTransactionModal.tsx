@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import {
   Button,
+  Chip,
   Group,
   Modal,
   NumberInput,
@@ -22,9 +23,11 @@ import { IconCalendar } from '@tabler/icons-react';
 import { createTransaction } from '@/server/transactions/actions';
 import { CategoryIcon } from '@/shared/ui/CategoryIcon';
 import { formatDate, parseDate } from '@/shared/lib/period';
+import type { CategoryOption } from '@/shared/types/category';
+
+export type { CategoryOption };
 
 type Type = 'expense' | 'income';
-export type CategoryOption = { id: string; name: string; type: Type; icon: string; color: string };
 
 type Props = {
   opened: boolean;
@@ -66,7 +69,21 @@ function TransactionForm({ onClose, householdId, categories, defaultType }: Omit
   });
 
   const visibleCategories = categories.filter((c) => c.type === form.values.type);
+  const selectedCategory = categories.find((c) => c.id === form.values.categoryId);
+  const suggestions = selectedCategory?.suggestions ?? [];
   const isCustomDate = form.values.occurredOn !== today && form.values.occurredOn !== yesterday;
+
+  const selectCategory = (category: CategoryOption) => {
+    // если в поле осталась подсказка прежней категории, очищаем её; свой текст не трогаем
+    if (selectedCategory?.suggestions.includes(form.values.note)) {
+      form.setFieldValue('note', '');
+    }
+    form.setFieldValue('categoryId', category.id);
+  };
+
+  const toggleSuggestion = (text: string) => {
+    form.setFieldValue('note', form.values.note === text ? '' : text);
+  };
 
   const handleSubmit = form.onSubmit((values) => {
     startTransition(async () => {
@@ -96,6 +113,9 @@ function TransactionForm({ onClose, householdId, categories, defaultType }: Omit
           onChange={(v) => {
             form.setFieldValue('type', v as Type);
             form.setFieldValue('categoryId', ''); // категории другого типа не подходят
+            if (selectedCategory?.suggestions.includes(form.values.note)) {
+              form.setFieldValue('note', '');
+            }
           }}
           data={[
             { value: 'expense', label: 'Расход' },
@@ -127,7 +147,7 @@ function TransactionForm({ onClose, householdId, categories, defaultType }: Omit
                 <UnstyledButton
                   key={c.id}
                   type="button"
-                  onClick={() => form.setFieldValue('categoryId', c.id)}
+                  onClick={() => selectCategory(c)}
                   aria-pressed={selected}
                 >
                   <Stack gap={4} align="center">
@@ -152,6 +172,34 @@ function TransactionForm({ onClose, householdId, categories, defaultType }: Omit
               {form.errors.categoryId}
             </Text>
           )}
+        </div>
+
+        <div>
+          <Text size="sm" fw={500} mb={8}>
+            Что конкретно
+          </Text>
+          {suggestions.length > 0 && (
+            <Group gap="xs" mb="xs">
+              {suggestions.map((s) => (
+                <Chip
+                  key={s}
+                  size="xs"
+                  variant="light"
+                  color={selectedCategory?.color}
+                  checked={form.values.note === s}
+                  onChange={() => toggleSuggestion(s)}
+                >
+                  {s}
+                </Chip>
+              ))}
+            </Group>
+          )}
+          <TextInput
+            aria-label="Что конкретно"
+            placeholder={suggestions.length > 0 ? 'Выберите выше или напишите своё' : 'Необязательно'}
+            maxLength={200}
+            {...form.getInputProps('note')}
+          />
         </div>
 
         <div>
@@ -205,13 +253,6 @@ function TransactionForm({ onClose, householdId, categories, defaultType }: Omit
             </Popover>
           </Group>
         </div>
-
-        <TextInput
-          label="Комментарий"
-          placeholder="Необязательно"
-          maxLength={200}
-          {...form.getInputProps('note')}
-        />
 
         <Button type="submit" loading={pending}>
           Добавить

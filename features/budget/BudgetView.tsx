@@ -1,14 +1,21 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Group, Paper, SimpleGrid, Stack, Text, ThemeIcon, Title } from '@mantine/core';
+import { Button, Group, SimpleGrid, Stack, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { CategoryIcon } from '@/shared/ui/CategoryIcon';
-import { formatMoney } from '@/shared/lib/money';
-import { filterTransactions, groupByCategory, type TransactionItem, type TxType } from '@/shared/lib/budget';
+import { IconSettings } from '@tabler/icons-react';
+import { CategoriesModal } from '@/features/categories';
+import {
+  filterTransactions,
+  groupByCategory,
+  groupTransactions,
+  type TransactionItem,
+  type TxType,
+} from '@/shared/lib/budget';
 import { getPeriodRange, type Period } from '@/shared/lib/period';
 import { AddTransactionModal, type CategoryOption } from './AddTransactionModal';
 import { CategoryBreakdownCard } from './CategoryBreakdownCard';
+import { TransactionGroups } from './TransactionGroups';
 
 type Props = {
   householdId: string;
@@ -21,16 +28,24 @@ export function BudgetView({ householdId, initialDate, transactions, categories 
   const [type, setType] = useState<TxType>('expense');
   const [period, setPeriod] = useState<Period>('month');
   const [date, setDate] = useState(initialDate);
-  const [modalOpened, modal] = useDisclosure(false);
+  const [addOpened, addModal] = useDisclosure(false);
+  const [catsOpened, catsModal] = useDisclosure(false);
 
   const items = useMemo(
     () => filterTransactions(transactions, type, getPeriodRange(period, date)),
     [transactions, type, period, date],
   );
   const totals = useMemo(() => groupByCategory(items), [items]);
+  const groups = useMemo(() => groupTransactions(items), [items]);
 
   return (
     <Stack gap="lg">
+      <Group justify="space-between">
+        <Title order={2}>Бюджет</Title>
+        <Button variant="default" leftSection={<IconSettings size={16} />} onClick={catsModal.open}>
+          Категории
+        </Button>
+      </Group>
 
       <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="lg">
         {/* левая колонка; правая пока пустая, туда пойдут сводка баланса и лимиты */}
@@ -43,50 +58,26 @@ export function BudgetView({ householdId, initialDate, transactions, categories 
             onTypeChange={setType}
             onPeriodChange={setPeriod}
             onDateChange={setDate}
-            onAdd={modal.open}
+            onAdd={addModal.open}
           />
 
-          <Paper withBorder radius="lg" p="lg">
-            <Stack gap="md">
-              {items.length === 0 && (
-                <Text c="dimmed" ta="center" size="sm">
-                  Пока нет операций за этот период
-                </Text>
-              )}
-
-              {items.map((t) => (
-                <Group key={t.id} justify="space-between" wrap="nowrap">
-                  <Group gap="sm" wrap="nowrap">
-                    <ThemeIcon variant="light" color={t.categoryColor} size="lg" radius="xl">
-                      <CategoryIcon name={t.categoryIcon} />
-                    </ThemeIcon>
-                    <div>
-                      <Text size="sm" fw={500}>
-                        {t.categoryName}
-                      </Text>
-                      <Text size="xs" c="dimmed">
-                        {new Date(`${t.occurredOn}T00:00:00`).toLocaleDateString('ru-RU', {
-                          day: 'numeric',
-                          month: 'long',
-                        })}
-                        {t.note ? ` · ${t.note}` : ''}
-                      </Text>
-                    </div>
-                  </Group>
-                  <Text fw={600}>{formatMoney(t.amount)}</Text>
-                </Group>
-              ))}
-            </Stack>
-          </Paper>
+          <TransactionGroups groups={groups} />
         </Stack>
       </SimpleGrid>
 
       <AddTransactionModal
-        opened={modalOpened}
-        onClose={modal.close}
+        opened={addOpened}
+        onClose={addModal.close}
         householdId={householdId}
         categories={categories}
         defaultType={type}
+      />
+
+      <CategoriesModal
+        opened={catsOpened}
+        onClose={catsModal.close}
+        householdId={householdId}
+        categories={categories}
       />
     </Stack>
   );

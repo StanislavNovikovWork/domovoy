@@ -11,6 +11,7 @@ export const category = pgTable('category', {
   type: categoryType('type').notNull(),
   icon: text('icon').notNull().default('tag'),
   color: text('color').notNull().default('gray'),
+suggestions: text('suggestions').array().notNull().default(sql`'{}'::text[]`),
   sortOrder: integer('sort_order').notNull().default(0),
   archivedAt: timestamp('archived_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

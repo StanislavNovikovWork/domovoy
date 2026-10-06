@@ -3,7 +3,7 @@
 import {
   IconTag, IconShoppingCart, IconHome, IconCar, IconHeartbeat, IconDeviceGamepad2,
   IconShirt, IconCoffee, IconBus, IconPlane, IconGift, IconWallet,
-  IconBriefcase, IconCash, IconSchool, IconPaw,
+  IconBriefcase, IconCash, IconSchool, IconPaw, IconWifi,
 } from '@tabler/icons-react';
 import type { CategoryIcon as CategoryIconKey } from '@/shared/config/category-options';
 
@@ -24,6 +24,7 @@ const ICONS: Record<CategoryIconKey, typeof IconTag> = {
   cash: IconCash,
   school: IconSchool,
   paw: IconPaw,
+  wifi: IconWifi,
 };
 
 export function CategoryIcon({ name, size = 18 }: { name: string; size?: number }) {

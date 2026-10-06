@@ -48,3 +48,34 @@ export function groupByCategory(items: TransactionItem[]): CategoryTotal[] {
   }
   return [...map.values()].sort((a, b) => b.total - a.total);
 }
+
+export type CategoryGroup = {
+  categoryId: string;
+  name: string;
+  icon: string;
+  color: string;
+  total: number;
+  items: TransactionItem[];
+};
+
+// Группы по категориям: от большей суммы к меньшей, операции внутри сохраняют порядок (новые сверху)
+export function groupTransactions(items: TransactionItem[]): CategoryGroup[] {
+  const map = new Map<string, CategoryGroup>();
+  for (const t of items) {
+    const group = map.get(t.categoryId);
+    if (group) {
+      group.total += t.amount;
+      group.items.push(t);
+    } else {
+      map.set(t.categoryId, {
+        categoryId: t.categoryId,
+        name: t.categoryName,
+        icon: t.categoryIcon,
+        color: t.categoryColor,
+        total: t.amount,
+        items: [t],
+      });
+    }
+  }
+  return [...map.values()].sort((a, b) => b.total - a.total);
+}

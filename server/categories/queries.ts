@@ -11,6 +11,7 @@ export async function listActiveCategories(householdId: string) {
       type: category.type,
       icon: category.icon,
       color: category.color,
+      suggestions: category.suggestions,
     })
     .from(category)
     .where(and(eq(category.householdId, householdId), isNull(category.archivedAt)))

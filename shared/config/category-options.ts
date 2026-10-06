@@ -6,7 +6,7 @@ export const CATEGORY_COLORS = [
 export const CATEGORY_ICONS = [
   'tag', 'shopping-cart', 'home', 'car', 'heart-pulse', 'device-gamepad-2',
   'shirt', 'coffee', 'bus', 'plane', 'gift', 'wallet',
-  'briefcase', 'cash', 'school', 'paw',
+  'briefcase', 'cash', 'school', 'paw', 'wifi',
 ] as const;
 
 export type CategoryColor = (typeof CATEGORY_COLORS)[number];

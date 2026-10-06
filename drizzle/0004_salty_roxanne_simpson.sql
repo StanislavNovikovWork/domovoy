@@ -1,0 +1,1 @@
+ALTER TABLE "category" ADD COLUMN "suggestions" text[] DEFAULT '{}'::text[] NOT NULL;
