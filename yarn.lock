@@ -3995,6 +3995,21 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@mantine/dates@npm:^9.7.0":
+  version: 9.7.0
+  resolution: "@mantine/dates@npm:9.7.0"
+  dependencies:
+    clsx: "npm:^2.1.1"
+  peerDependencies:
+    "@mantine/core": 9.7.0
+    "@mantine/hooks": 9.7.0
+    dayjs: ">=1.0.0"
+    react: ^19.2.0
+    react-dom: ^19.2.0
+  checksum: 10c0/6323e2bbc2711d794c36df574a28c7619480e96dc60f4b0d342f4aa2d6558810d2d096a346112a9b66275c0477f13a2e0f72f1f83a2f073ba678472238124e61
+  languageName: node
+  linkType: hard
+
 "@mantine/form@npm:^9.6.3":
   version: 9.6.3
   resolution: "@mantine/form@npm:9.6.3"
@@ -7808,6 +7823,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"dayjs@npm:^1.11.23":
+  version: 1.11.23
+  resolution: "dayjs@npm:1.11.23"
+  checksum: 10c0/69ab04bf19c676e44ab50cc2fca223d265f3dafd107151ef3b0f3ad74d360c37caa602abe62f87cb25d90bd9f6bee003698af47df5b0dbf10a998b7b5f3bb3f1
+  languageName: node
+  linkType: hard
+
 "debounce@npm:^1.2.1":
   version: 1.2.1
   resolution: "debounce@npm:1.2.1"
@@ -11151,6 +11173,7 @@ __metadata:
     "@babel/core": "npm:^8.0.0"
     "@mantine/charts": "npm:^9.6.3"
     "@mantine/core": "npm:9.6.3"
+    "@mantine/dates": "npm:^9.7.0"
     "@mantine/form": "npm:^9.6.3"
     "@mantine/hooks": "npm:9.6.3"
     "@mantine/notifications": "npm:^9.6.3"
@@ -11169,6 +11192,7 @@ __metadata:
     "@types/react": "npm:19.3.0"
     babel-loader: "npm:^10.0.0"
     better-auth: "npm:^1.7.7"
+    dayjs: "npm:^1.11.23"
     dotenv: "npm:^18.0.5"
     drizzle-kit: "npm:^0.31.11"
     drizzle-orm: "npm:^0.45.3"

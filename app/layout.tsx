@@ -1,5 +1,8 @@
 import '@mantine/core/styles.css';
 import '@mantine/charts/styles.css';
+import '@mantine/dates/styles.css';
+import 'dayjs/locale/ru';
+import { DatesProvider } from '@mantine/dates';
 
 import { ColorSchemeScript, mantineHtmlProps, MantineProvider } from '@mantine/core';
 import { theme } from '../theme';
@@ -24,8 +27,10 @@ export default function RootLayout({ children }: { children: any }) {
       </head>
       <body>
         <MantineProvider theme={theme}>
-          <Notifications />
-          {children}
+          <DatesProvider settings={{ locale: 'ru', firstDayOfWeek: 1 }}>
+            <Notifications />
+            {children}
+          </DatesProvider>
         </MantineProvider>
       </body>
     </html>

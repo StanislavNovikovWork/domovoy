@@ -1,9 +1,9 @@
 import { notFound } from 'next/navigation';
 import { requirePageSession } from '@/server/session';
 import { getPersonalHousehold } from '@/server/households/queries';
-import { listMonthTransactions, getMonthTotalsByCategory } from '@/server/transactions/queries';
+import { listAllTransactions } from '@/server/transactions/queries';
 import { listActiveCategories } from '@/server/categories/queries';
-import { currentMonth } from '@/shared/lib/month';
+import { formatDate } from '@/shared/lib/period';
 import { BudgetView } from '@/features/budget';
 
 export default async function BudgetPage() {
@@ -11,21 +11,16 @@ export default async function BudgetPage() {
   const personal = await getPersonalHousehold(user.id);
   if (!personal) notFound();
 
-  const month = currentMonth();
-  const [transactions, totals, categories] = await Promise.all([
-    listMonthTransactions(personal.id, month),
-    getMonthTotalsByCategory(personal.id, month),
+  const [transactions, categories] = await Promise.all([
+    listAllTransactions(personal.id),
     listActiveCategories(personal.id),
   ]);
-
-  const monthLabel = new Date().toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
 
   return (
     <BudgetView
       householdId={personal.id}
-      monthLabel={monthLabel}
+      initialDate={formatDate(new Date())}
       transactions={transactions}
-      totals={totals}
       categories={categories}
     />
   );

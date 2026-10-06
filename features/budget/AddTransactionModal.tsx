@@ -1,13 +1,30 @@
 'use client';
 
-import { useTransition } from 'react';
-import { Button, Modal, NumberInput, SegmentedControl, Select, Stack, TextInput } from '@mantine/core';
+import { useState, useTransition } from 'react';
+import {
+  Button,
+  Group,
+  Modal,
+  NumberInput,
+  Popover,
+  SegmentedControl,
+  SimpleGrid,
+  Stack,
+  Text,
+  TextInput,
+  ThemeIcon,
+  UnstyledButton,
+} from '@mantine/core';
+import { DatePicker } from '@mantine/dates';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
+import { IconCalendar } from '@tabler/icons-react';
 import { createTransaction } from '@/server/transactions/actions';
+import { CategoryIcon } from '@/shared/ui/CategoryIcon';
+import { formatDate, parseDate } from '@/shared/lib/period';
 
 type Type = 'expense' | 'income';
-export type CategoryOption = { id: string; name: string; type: Type };
+export type CategoryOption = { id: string; name: string; type: Type; icon: string; color: string };
 
 type Props = {
   opened: boolean;
@@ -26,32 +43,30 @@ export function AddTransactionModal({ opened, onClose, ...rest }: Props) {
   );
 }
 
-function TransactionForm({
-  onClose,
-  householdId,
-  categories,
-  defaultType,
-}: Omit<Props, 'opened'>) {
+function TransactionForm({ onClose, householdId, categories, defaultType }: Omit<Props, 'opened'>) {
   const [pending, startTransition] = useTransition();
+  const [calendarOpened, setCalendarOpened] = useState(false);
+
+  const now = new Date();
+  const today = formatDate(now);
+  const yesterday = formatDate(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1));
 
   const form = useForm({
     initialValues: {
       type: defaultType as Type,
       categoryId: '',
       amount: '' as number | string,
-      occurredOn: new Date().toLocaleDateString('sv-SE'), // локальная дата YYYY-MM-DD
+      occurredOn: today,
       note: '',
     },
     validate: {
       categoryId: (v) => (v ? null : 'Выберите категорию'),
       amount: (v) => (typeof v === 'number' && v > 0 ? null : 'Введите сумму'),
-      occurredOn: (v) => (v ? null : 'Укажите дату'),
     },
   });
 
-  const options = categories
-    .filter((c) => c.type === form.values.type)
-    .map((c) => ({ value: c.id, label: c.name }));
+  const visibleCategories = categories.filter((c) => c.type === form.values.type);
+  const isCustomDate = form.values.occurredOn !== today && form.values.occurredOn !== yesterday;
 
   const handleSubmit = form.onSubmit((values) => {
     startTransition(async () => {
@@ -101,14 +116,95 @@ function TransactionForm({
           {...form.getInputProps('amount')}
         />
 
-        <Select
-          label="Категория"
-          placeholder="Выберите категорию"
-          data={options}
-          {...form.getInputProps('categoryId')}
-        />
+        <div>
+          <Text size="sm" fw={500} mb={8}>
+            Категория
+          </Text>
+          <SimpleGrid cols={4} spacing="xs" verticalSpacing="sm">
+            {visibleCategories.map((c) => {
+              const selected = form.values.categoryId === c.id;
+              return (
+                <UnstyledButton
+                  key={c.id}
+                  type="button"
+                  onClick={() => form.setFieldValue('categoryId', c.id)}
+                  aria-pressed={selected}
+                >
+                  <Stack gap={4} align="center">
+                    <ThemeIcon
+                      size={48}
+                      radius="xl"
+                      color={c.color}
+                      variant={selected ? 'filled' : 'light'}
+                    >
+                      <CategoryIcon name={c.icon} size={22} />
+                    </ThemeIcon>
+                    <Text size="xs" ta="center" fw={selected ? 600 : 400} lineClamp={2}>
+                      {c.name}
+                    </Text>
+                  </Stack>
+                </UnstyledButton>
+              );
+            })}
+          </SimpleGrid>
+          {form.errors.categoryId && (
+            <Text size="xs" c="red" mt={6}>
+              {form.errors.categoryId}
+            </Text>
+          )}
+        </div>
 
-        <TextInput label="Дата" type="date" {...form.getInputProps('occurredOn')} />
+        <div>
+          <Text size="sm" fw={500} mb={8}>
+            Дата
+          </Text>
+          <Group gap="xs" grow>
+            <Button
+              type="button"
+              variant={form.values.occurredOn === today ? 'filled' : 'light'}
+              onClick={() => form.setFieldValue('occurredOn', today)}
+            >
+              Сегодня
+            </Button>
+            <Button
+              type="button"
+              variant={form.values.occurredOn === yesterday ? 'filled' : 'light'}
+              onClick={() => form.setFieldValue('occurredOn', yesterday)}
+            >
+              Вчера
+            </Button>
+
+            <Popover opened={calendarOpened} onChange={setCalendarOpened} position="bottom-end" withArrow>
+              <Popover.Target>
+                <Button
+                  type="button"
+                  variant={isCustomDate ? 'filled' : 'light'}
+                  leftSection={<IconCalendar size={16} />}
+                  onClick={() => setCalendarOpened((o) => !o)}
+                >
+                  {isCustomDate
+                    ? parseDate(form.values.occurredOn).toLocaleDateString('ru-RU', {
+                        day: 'numeric',
+                        month: 'short',
+                      })
+                    : 'Календарь'}
+                </Button>
+              </Popover.Target>
+              <Popover.Dropdown>
+                <DatePicker
+                  value={form.values.occurredOn}
+                  maxDate={today}
+                  onChange={(value) => {
+                    if (value) {
+                      form.setFieldValue('occurredOn', value);
+                      setCalendarOpened(false);
+                    }
+                  }}
+                />
+              </Popover.Dropdown>
+            </Popover>
+          </Group>
+        </div>
 
         <TextInput
           label="Комментарий"
