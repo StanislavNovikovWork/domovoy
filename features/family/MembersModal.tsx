@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ActionIcon,
@@ -32,14 +32,14 @@ type Props = {
 
 const ROLE_LABEL = { owner: 'Владелец', member: 'Участник' } as const;
 
-function inviteUrl(token: string) {
-  return `${window.location.origin}/invite/${token}`;
-}
-
 export function MembersModal({ opened, onClose, householdId, currentUserId, role, members, invites }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [newLink, setNewLink] = useState<string | null>(null);
+  // origin доступен только в браузере: при SSR window нет
+  const [origin, setOrigin] = useState('');
+  useEffect(() => setOrigin(window.location.origin), []);
+  const inviteUrl = (token: string) => `${origin}/invite/${token}`;
   const isOwner = role === 'owner';
 
   const run = (action: () => Promise<{ ok: boolean; error?: string }>, success?: string) => {

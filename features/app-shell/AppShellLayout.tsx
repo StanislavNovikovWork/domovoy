@@ -3,6 +3,7 @@
 import { AppShell, Burger, Box, Group, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { AppNavbar } from './AppNavbar';
+import { ColorSchemeToggle } from './ColorSchemeToggle';
 import { UserMenu } from './UserMenu';
 
 type Props = {
@@ -25,7 +26,10 @@ export function AppShellLayout({ user, children }: Props) {
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
             <Text fw={700} size="lg">Семейный бюджет</Text>
           </Group>
-          <UserMenu user={user} />
+          <Group gap="sm">
+            <ColorSchemeToggle />
+            <UserMenu user={user} />
+          </Group>
         </Group>
       </AppShell.Header>
 

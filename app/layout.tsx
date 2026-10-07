@@ -4,9 +4,10 @@ import '@mantine/dates/styles.css';
 import 'dayjs/locale/ru';
 import { DatesProvider } from '@mantine/dates';
 
-import { ColorSchemeScript, mantineHtmlProps, MantineProvider } from '@mantine/core';
+import { mantineHtmlProps, MantineProvider } from '@mantine/core';
 import { theme } from '../theme';
 import { Notifications } from '@mantine/notifications';
+import { ColorSchemeScriptOnce } from '@/shared/ui/ColorSchemeScriptOnce';
 
 
 export const metadata = {
@@ -18,7 +19,7 @@ export default function RootLayout({ children }: { children: any }) {
   return (
     <html lang="ru" {...mantineHtmlProps}>
       <head>
-        <ColorSchemeScript />
+        <ColorSchemeScriptOnce />
         <link rel="shortcut icon" href="/favicon.svg" />
         <meta
           name="viewport"
