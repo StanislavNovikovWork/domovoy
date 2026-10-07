@@ -1,8 +1,8 @@
 'use client';
 
-import { Accordion, Group, Paper, Stack, Text, ThemeIcon } from '@mantine/core';
-import { CategoryIcon } from '@/shared/ui/CategoryIcon';
+import { Accordion, Group, Paper, Stack, Text } from '@mantine/core';
 import { formatMoney } from '@/shared/lib/money';
+import { CategoryBadge } from '@/shared/ui/CategoryBadge';
 import type { CategoryGroup } from '@/shared/lib/budget';
 
 function pluralOperations(n: number): string {
@@ -27,9 +27,7 @@ export function TransactionGroups({ groups }: { groups: CategoryGroup[] }) {
               <Accordion.Control>
                 <Group justify="space-between" wrap="nowrap" pr="sm">
                   <Group gap="sm" wrap="nowrap">
-                    <ThemeIcon variant="light" color={g.color} size="lg" radius="xl">
-                      <CategoryIcon name={g.icon} />
-                    </ThemeIcon>
+                     <CategoryBadge icon={g.icon} color={g.color} />
                     <div>
                       <Text size="sm" fw={500}>
                         {g.name}
@@ -44,7 +42,7 @@ export function TransactionGroups({ groups }: { groups: CategoryGroup[] }) {
               </Accordion.Control>
 
               <Accordion.Panel>
-                <Stack gap="sm" pl={52}>
+                <Stack gap="sm" pl={56}>
                   {g.items.map((t) => (
                     <Group key={t.id} justify="space-between" wrap="nowrap" align="flex-start">
                       <div style={{ minWidth: 0 }}>

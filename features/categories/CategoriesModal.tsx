@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from 'react';
 import {
-  ActionIcon,
   Button,
   CheckIcon,
   ColorSwatch,
@@ -14,15 +13,16 @@ import {
   TagsInput,
   Text,
   TextInput,
-  ThemeIcon,
+  UnstyledButton
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import { IconArrowLeft, IconChevronRight, IconPlus } from '@tabler/icons-react';
 import { archiveCategory, createCategory, updateCategory } from '@/server/categories/actions';
 import { CATEGORY_COLORS, CATEGORY_ICONS } from '@/shared/config/category-options';
+import { AnimatedHeight } from '@/shared/ui/AnimatedHeight';
+import { CategoryBadge } from '@/shared/ui/CategoryBadge';
 import type { CategoryOption } from '@/shared/types/category';
-import { CategoryIcon } from '@/shared/ui/CategoryIcon';
 
 type Type = 'expense' | 'income';
 
@@ -34,8 +34,9 @@ type Props = {
 };
 
 export function CategoriesModal({ opened, onClose, ...rest }: Props) {
+  // без centered: верх модалки зафиксирован отступом, при смене контента меняется только низ
   return (
-    <Modal opened={opened} onClose={onClose} title="Категории" centered size="lg">
+    <Modal opened={opened} onClose={onClose} title="Категории" size="lg" yOffset="10dvh">
       {/* содержимое пересоздаётся при каждом открытии, поэтому всегда начинается со списка */}
       <Content {...rest} />
     </Modal>
@@ -48,57 +49,60 @@ function Content({ householdId, categories }: Omit<Props, 'opened' | 'onClose'>)
 
   if (editing) {
     return (
-      <CategoryForm
-        key={editing === 'new' ? 'new' : editing.id}
-        householdId={householdId}
-        type={editing === 'new' ? type : editing.type}
-        category={editing === 'new' ? null : editing}
-        onDone={() => setEditing(null)}
-      />
+      <AnimatedHeight>
+        <CategoryForm
+          key={editing === 'new' ? 'new' : editing.id}
+          householdId={householdId}
+          type={editing === 'new' ? type : editing.type}
+          category={editing === 'new' ? null : editing}
+          onDone={() => setEditing(null)}
+        />
+      </AnimatedHeight>
     );
   }
 
   const list = categories.filter((c) => c.type === type);
 
   return (
-    <Stack>
-      <SegmentedControl
-        fullWidth
-        value={type}
-        onChange={(v) => setType(v as Type)}
-        data={[
-          { value: 'expense', label: 'Расходы' },
-          { value: 'income', label: 'Доходы' },
-        ]}
-      />
+    // кнопка вынесена в footer: она прижата к анимируемому нижнему краю и едет вместе с ним
+    <AnimatedHeight
+      footer={
+        <Button fullWidth variant="light" leftSection={<IconPlus size={16} />} onClick={() => setEditing('new')}>
+          Добавить категорию
+        </Button>
+      }
+    >
+      <Stack>
+        <SegmentedControl
+          fullWidth
+          value={type}
+          onChange={(v) => setType(v as Type)}
+          data={[
+            { value: 'expense', label: 'Расходы' },
+            { value: 'income', label: 'Доходы' },
+          ]}
+        />
 
-      <Stack gap={2}>
-        {list.length === 0 && (
-          <Text c="dimmed" size="sm" ta="center" py="md">
-            Категорий пока нет
-          </Text>
-        )}
-        {list.map((c) => (
-          <NavLink
-            key={c.id}
-            label={c.name}
-            description={c.suggestions.length > 0 ? c.suggestions.join(', ') : undefined}
-            leftSection={
-              <ThemeIcon variant="light" color={c.color} size="lg" radius="xl">
-                <CategoryIcon name={c.icon} />
-              </ThemeIcon>
-            }
-            rightSection={<IconChevronRight size={16} />}
-            onClick={() => setEditing(c)}
-            style={{ borderRadius: 'var(--mantine-radius-md)' }}
-          />
-        ))}
+        <Stack gap={2}>
+          {list.length === 0 && (
+            <Text c="dimmed" size="sm" ta="center" py="md">
+              Категорий пока нет
+            </Text>
+          )}
+          {list.map((c) => (
+            <NavLink
+              key={c.id}
+              label={c.name}
+              description={c.suggestions.length > 0 ? c.suggestions.join(', ') : undefined}
+              leftSection={<CategoryBadge icon={c.icon} color={c.color} size={40} />}
+              rightSection={<IconChevronRight size={16} />}
+              onClick={() => setEditing(c)}
+              style={{ borderRadius: 'var(--mantine-radius-md)' }}
+            />
+          ))}
+        </Stack>
       </Stack>
-
-      <Button variant="light" leftSection={<IconPlus size={16} />} onClick={() => setEditing('new')}>
-        Добавить категорию
-      </Button>
-    </Stack>
+    </AnimatedHeight>
   );
 }
 
@@ -178,18 +182,18 @@ function CategoryForm({ householdId, type, category, onDone }: FormProps) {
           </Text>
           <Group gap="xs">
             {CATEGORY_ICONS.map((icon) => (
-              <ActionIcon
+                <UnstyledButton
                 key={icon}
                 type="button"
-                size="lg"
-                radius="xl"
-                color={form.values.color}
-                variant={form.values.icon === icon ? 'filled' : 'light'}
                 aria-label={icon}
                 onClick={() => form.setFieldValue('icon', icon)}
-              >
-                <CategoryIcon name={icon} />
-              </ActionIcon>
+                >
+                <CategoryBadge
+                    icon={icon}
+                    color={form.values.color}
+                    state={form.values.icon === icon ? 'selected' : 'muted'}
+                />
+                </UnstyledButton>
             ))}
           </Group>
         </div>

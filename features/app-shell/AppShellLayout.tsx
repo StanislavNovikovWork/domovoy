@@ -29,7 +29,7 @@ export function AppShellLayout({ user, children }: Props) {
         </Group>
       </AppShell.Header>
 
-      <AppShell.Navbar>
+      <AppShell.Navbar p="md">
         <AppNavbar onNavigate={close} />
       </AppShell.Navbar>
 

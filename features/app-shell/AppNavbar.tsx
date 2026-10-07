@@ -24,6 +24,7 @@ export function AppNavbar({ onNavigate }: { onNavigate: () => void }) {
           leftSection={<Icon size={18} />}
           active={href === '/' ? pathname === '/' : pathname.startsWith(href)}
           onClick={onNavigate}
+          style={{ borderRadius: 'var(--mantine-radius-md)' }}
         />
       ))}
     </>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Button, Group, SimpleGrid, Stack, Title } from '@mantine/core';
+import { Box, Button, SimpleGrid, Stack } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { IconSettings } from '@tabler/icons-react';
 import { CategoriesModal } from '@/features/categories';
@@ -39,13 +39,18 @@ export function BudgetView({ householdId, initialDate, transactions, categories 
   const groups = useMemo(() => groupTransactions(items), [items]);
 
   return (
-    <Stack gap="lg">
-      <Group justify="space-between">
-        <Title order={2}>Бюджет</Title>
-        <Button variant="default" leftSection={<IconSettings size={16} />} onClick={catsModal.open}>
-          Категории
-        </Button>
-      </Group>
+    <Box pos="relative">
+      <Button
+        variant="default"
+        leftSection={<IconSettings size={16} />}
+        onClick={catsModal.open}
+        pos="absolute"
+        top={0}
+        right={0}
+        style={{ zIndex: 1 }}
+      >
+        Категории
+      </Button>
 
       <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="lg">
         {/* левая колонка; правая пока пустая, туда пойдут сводка баланса и лимиты */}
@@ -79,6 +84,6 @@ export function BudgetView({ householdId, initialDate, transactions, categories 
         householdId={householdId}
         categories={categories}
       />
-    </Stack>
+    </Box>
   );
 }

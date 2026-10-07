@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import {
+  Box,
   Button,
   Chip,
   Group,
@@ -13,21 +14,22 @@ import {
   Stack,
   Text,
   TextInput,
-  ThemeIcon,
   UnstyledButton,
 } from '@mantine/core';
 import { DatePicker } from '@mantine/dates';
+import { CategoryBadge } from '@/shared/ui/CategoryBadge';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import { IconCalendar } from '@tabler/icons-react';
 import { createTransaction } from '@/server/transactions/actions';
-import { CategoryIcon } from '@/shared/ui/CategoryIcon';
 import { formatDate, parseDate } from '@/shared/lib/period';
 import type { CategoryOption } from '@/shared/types/category';
 
 export type { CategoryOption };
 
 type Type = 'expense' | 'income';
+
+const TYPES: Type[] = ['expense', 'income'];
 
 type Props = {
   opened: boolean;
@@ -68,7 +70,6 @@ function TransactionForm({ onClose, householdId, categories, defaultType }: Omit
     },
   });
 
-  const visibleCategories = categories.filter((c) => c.type === form.values.type);
   const selectedCategory = categories.find((c) => c.id === form.values.categoryId);
   const suggestions = selectedCategory?.suggestions ?? [];
   const isCustomDate = form.values.occurredOn !== today && form.values.occurredOn !== yesterday;
@@ -140,33 +141,48 @@ function TransactionForm({ onClose, householdId, categories, defaultType }: Omit
           <Text size="sm" fw={500} mb={8}>
             Категория
           </Text>
-          <SimpleGrid cols={4} spacing="xs" verticalSpacing="sm">
-            {visibleCategories.map((c) => {
-              const selected = form.values.categoryId === c.id;
+          {/* сетки обоих типов лежат в одной grid-ячейке: высота блока не меняется при переключении */}
+          <Box style={{ display: 'grid' }}>
+            {TYPES.map((type) => {
+              const active = type === form.values.type;
               return (
-                <UnstyledButton
-                  key={c.id}
-                  type="button"
-                  onClick={() => selectCategory(c)}
-                  aria-pressed={selected}
+                <SimpleGrid
+                  key={type}
+                  cols={5}
+                  spacing="xs"
+                  verticalSpacing="sm"
+                  aria-hidden={!active}
+                  style={{ gridArea: '1 / 1', visibility: active ? 'visible' : 'hidden' }}
                 >
-                  <Stack gap={4} align="center">
-                    <ThemeIcon
-                      size={48}
-                      radius="xl"
-                      color={c.color}
-                      variant={selected ? 'filled' : 'light'}
-                    >
-                      <CategoryIcon name={c.icon} size={22} />
-                    </ThemeIcon>
-                    <Text size="xs" ta="center" fw={selected ? 600 : 400} lineClamp={2}>
-                      {c.name}
-                    </Text>
-                  </Stack>
-                </UnstyledButton>
+                  {categories
+                    .filter((c) => c.type === type)
+                    .map((c) => {
+                      const selected = form.values.categoryId === c.id;
+                      return (
+                        <UnstyledButton
+                          key={c.id}
+                          type="button"
+                          onClick={() => selectCategory(c)}
+                          aria-pressed={selected}
+                        >
+                          <Stack gap={4} align="center">
+                            <CategoryBadge
+                              icon={c.icon}
+                              color={c.color}
+                              size={56}
+                              state={selected ? 'selected' : form.values.categoryId ? 'muted' : 'default'}
+                            />
+                            <Text size="xs" ta="center" fw={selected ? 600 : 400} lineClamp={2}>
+                              {c.name}
+                            </Text>
+                          </Stack>
+                        </UnstyledButton>
+                      );
+                    })}
+                </SimpleGrid>
               );
             })}
-          </SimpleGrid>
+          </Box>
           {form.errors.categoryId && (
             <Text size="xs" c="red" mt={6}>
               {form.errors.categoryId}
