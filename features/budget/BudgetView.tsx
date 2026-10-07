@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { Box, Button, SimpleGrid, Stack } from '@mantine/core';
+import { useMemo, useState, type ReactNode } from 'react';
+import { Box, Button, Group, SimpleGrid, Stack } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { IconSettings } from '@tabler/icons-react';
 import { CategoriesModal } from '@/features/categories';
@@ -22,9 +22,11 @@ type Props = {
   initialDate: string;
   transactions: TransactionItem[];
   categories: CategoryOption[];
+  /** дополнительные кнопки рядом с «Категории» (например, «Участники» в семейном бюджете) */
+  actions?: ReactNode;
 };
 
-export function BudgetView({ householdId, initialDate, transactions, categories }: Props) {
+export function BudgetView({ householdId, initialDate, transactions, categories, actions }: Props) {
   const [type, setType] = useState<TxType>('expense');
   const [period, setPeriod] = useState<Period>('month');
   const [date, setDate] = useState(initialDate);
@@ -40,17 +42,12 @@ export function BudgetView({ householdId, initialDate, transactions, categories 
 
   return (
     <Box pos="relative">
-      <Button
-        variant="default"
-        leftSection={<IconSettings size={16} />}
-        onClick={catsModal.open}
-        pos="absolute"
-        top={0}
-        right={0}
-        style={{ zIndex: 1 }}
-      >
-        Категории
-      </Button>
+      <Group gap="xs" pos="absolute" top={0} right={0} style={{ zIndex: 1 }}>
+        {actions}
+        <Button variant="default" leftSection={<IconSettings size={16} />} onClick={catsModal.open}>
+          Категории
+        </Button>
+      </Group>
 
       <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="lg">
         {/* левая колонка; правая пока пустая, туда пойдут сводка баланса и лимиты */}

@@ -3,14 +3,20 @@ import { redirect } from 'next/navigation';
 import { Container, Paper, Text, Title } from '@mantine/core';
 import { auth } from '@/server/auth';
 import { LoginForm } from '@/features/auth';
+import { safeNext } from '@/shared/lib/safe-next';
+
 export const metadata = {
   title: 'Вход',
 };
 
-export default async function LoginPage() {
+type Props = { searchParams: Promise<{ next?: string | string[] }> };
+
+export default async function LoginPage({ searchParams }: Props) {
+  const next = safeNext((await searchParams).next);
+
   // Если пользователь уже вошёл, на странице входа ему делать нечего
   const session = await auth.api.getSession({ headers: await headers() });
-  if (session) redirect('/');
+  if (session) redirect(next);
 
   return (
     <Container size={420} my={80}>
@@ -22,7 +28,7 @@ export default async function LoginPage() {
       </Text>
 
       <Paper withBorder shadow="sm" p="xl" radius="md">
-        <LoginForm />
+        <LoginForm next={next} />
       </Paper>
     </Container>
   );

@@ -3,11 +3,11 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { NavLink } from '@mantine/core';
-import { IconWallet } from '@tabler/icons-react';
+import { IconUsers, IconWallet } from '@tabler/icons-react';
 
 const LINKS = [
-  { href: '/', label: 'Бюджет', icon: IconWallet },
-  // позже: Семья, Категории
+  { href: '/', label: 'Личный бюджет', icon: IconWallet },
+  { href: '/family', label: 'Семейный бюджет', icon: IconUsers },
 ];
 
 export function AppNavbar({ onNavigate }: { onNavigate: () => void }) {

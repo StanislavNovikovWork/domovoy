@@ -2,10 +2,9 @@
 
 import 'server-only';
 import { and, eq, isNull, sql } from 'drizzle-orm';
-import { revalidatePath } from 'next/cache';
 import { db } from '@/server/db';
 import { category } from '@/server/db/schema';
-import { requireHouseholdAccess } from '@/server/households/access';
+import { requireHouseholdAccess, revalidateBudgetPages } from '@/server/households/access';
 import {
   archiveCategorySchema,
   createCategorySchema,
@@ -54,7 +53,7 @@ export async function createCategory(input: unknown): Promise<Result> {
       sortOrder: Number(max) + 1,
     });
 
-    revalidatePath('/');
+    revalidateBudgetPages();
     return { ok: true };
   } catch (error) {
     if (isUniqueViolation(error)) return { ok: false, error: 'Такая категория уже есть' };
@@ -90,7 +89,7 @@ export async function updateCategory(input: unknown): Promise<Result> {
 
     if (updated.length === 0) return { ok: false, error: 'Категория не найдена' };
 
-    revalidatePath('/');
+    revalidateBudgetPages();
     return { ok: true };
   } catch (error) {
     if (isUniqueViolation(error)) return { ok: false, error: 'Такая категория уже есть' };
@@ -121,7 +120,7 @@ export async function archiveCategory(input: unknown): Promise<Result> {
 
     if (archived.length === 0) return { ok: false, error: 'Категория не найдена' };
 
-    revalidatePath('/');
+    revalidateBudgetPages();
     return { ok: true };
   } catch (error) {
     console.error('archiveCategory failed', error);

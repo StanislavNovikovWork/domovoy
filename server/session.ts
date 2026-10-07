@@ -3,15 +3,16 @@ import { cache } from 'react';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { auth } from '@/server/auth';
+import { withNext } from '@/shared/lib/safe-next';
 
 export const getSession = cache(async () => {
   return auth.api.getSession({ headers: await headers() });
 });
 
-// Для страниц: нет сессии → редирект на /login
-export async function requirePageSession() {
+// Для страниц: нет сессии → редирект на /login (с возвратом на next после входа)
+export async function requirePageSession(next?: string) {
   const session = await getSession();
-  if (!session) redirect('/login');
+  if (!session) redirect(withNext('/login', next ?? '/'));
   return session;
 }
 

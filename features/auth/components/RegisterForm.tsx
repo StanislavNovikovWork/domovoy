@@ -7,8 +7,9 @@ import { Anchor, Button, PasswordInput, Stack, Text, TextInput } from '@mantine/
 import { hasLength, isEmail, matchesField, useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import { authClient } from '@/shared/lib/auth-client';
+import { withNext } from '@/shared/lib/safe-next';
 
-export function RegisterForm() {
+export function RegisterForm({ next = '/' }: { next?: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -44,7 +45,7 @@ export function RegisterForm() {
       return;
     }
 
-    router.push('/');
+    router.push(next);
     router.refresh();
   });
 
@@ -88,7 +89,7 @@ export function RegisterForm() {
         </Button>
         <Text size="sm" c="dimmed" ta="center">
           Уже есть аккаунт?{' '}
-          <Anchor component={Link} href="/login" size="sm">
+          <Anchor component={Link} href={withNext('/login', next)} size="sm">
             Войти
           </Anchor>
         </Text>

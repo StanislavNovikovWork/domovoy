@@ -1,5 +1,6 @@
 import 'server-only';
 import { and, eq } from 'drizzle-orm';
+import { revalidatePath } from 'next/cache';
 import { db } from '@/server/db';
 import { householdMember } from '@/server/db/schema';
 import { requireSession } from '@/server/session';
@@ -19,4 +20,10 @@ export async function requireHouseholdAccess(householdId: string) {
     .limit(1);
   if (!member) throw new Error('FORBIDDEN');
   return { session, member };
+}
+
+// Операции и категории показываются и в личном, и в семейном бюджете
+export function revalidateBudgetPages() {
+  revalidatePath('/');
+  revalidatePath('/family');
 }

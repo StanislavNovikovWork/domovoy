@@ -2,10 +2,9 @@
 
 import 'server-only';
 import { and, eq, isNull } from 'drizzle-orm';
-import { revalidatePath } from 'next/cache';
 import { db } from '@/server/db';
 import { category, transaction } from '@/server/db/schema';
-import { requireHouseholdAccess } from '@/server/households/access';
+import { requireHouseholdAccess, revalidateBudgetPages } from '@/server/households/access';
 import { createTransactionSchema } from '@/shared/schemas/transaction';
 
 type Result = { ok: true } | { ok: false; error: string };
@@ -44,7 +43,7 @@ export async function createTransaction(input: unknown): Promise<Result> {
       createdBy: session.user.id,
     });
 
-    revalidatePath('/');
+    revalidateBudgetPages();
     return { ok: true };
   } catch (error) {
     console.error('createTransaction failed', error);

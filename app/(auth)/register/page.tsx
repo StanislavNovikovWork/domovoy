@@ -3,14 +3,19 @@ import { redirect } from 'next/navigation';
 import { Container, Paper, Text, Title } from '@mantine/core';
 import { RegisterForm } from '@/features/auth';
 import { auth } from '@/server/auth';
+import { safeNext } from '@/shared/lib/safe-next';
 
 export const metadata = {
   title: 'Регистрация',
 };
 
-export default async function RegisterPage() {
+type Props = { searchParams: Promise<{ next?: string | string[] }> };
+
+export default async function RegisterPage({ searchParams }: Props) {
+  const next = safeNext((await searchParams).next);
+
   const session = await auth.api.getSession({ headers: await headers() });
-  if (session) redirect('/');
+  if (session) redirect(next);
 
   return (
     <Container size={420} my={80}>
@@ -22,7 +27,7 @@ export default async function RegisterPage() {
       </Text>
 
       <Paper withBorder shadow="sm" p="xl" radius="md">
-        <RegisterForm />
+        <RegisterForm next={next} />
       </Paper>
     </Container>
   );
