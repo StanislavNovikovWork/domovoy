@@ -6,6 +6,7 @@ import {
   Button,
   Chip,
   Group,
+  Input,
   Modal,
   NumberInput,
   Popover,
@@ -37,6 +38,8 @@ type Props = {
   householdId: string;
   categories: CategoryOption[];
   defaultType: Type;
+  /** предзаполнение формы, например при оплате статьи плана; amount в рублях */
+  prefill?: { categoryId: string; note: string; amount: number } | null;
 };
 
 export function AddTransactionModal({ opened, onClose, ...rest }: Props) {
@@ -48,7 +51,7 @@ export function AddTransactionModal({ opened, onClose, ...rest }: Props) {
   );
 }
 
-function TransactionForm({ onClose, householdId, categories, defaultType }: Omit<Props, 'opened'>) {
+function TransactionForm({ onClose, householdId, categories, defaultType, prefill }: Omit<Props, 'opened'>) {
   const [pending, startTransition] = useTransition();
   const [calendarOpened, setCalendarOpened] = useState(false);
 
@@ -58,15 +61,16 @@ function TransactionForm({ onClose, householdId, categories, defaultType }: Omit
 
   const form = useForm({
     initialValues: {
-      type: defaultType as Type,
-      categoryId: '',
-      amount: '' as number | string,
+      type: (prefill ? 'expense' : defaultType) as Type,
+      categoryId: prefill?.categoryId ?? '',
+      amount: (prefill?.amount ?? '') as number | string,
       occurredOn: today,
-      note: '',
+      note: prefill?.note ?? '',
     },
     validate: {
       categoryId: (v) => (v ? null : 'Выберите категорию'),
       amount: (v) => (typeof v === 'number' && v > 0 ? null : 'Введите сумму'),
+      note: (v) => (v.trim() ? null : 'Укажите, что конкретно'),
     },
   });
 
@@ -93,7 +97,7 @@ function TransactionForm({ onClose, householdId, categories, defaultType }: Omit
         categoryId: values.categoryId,
         amount: Math.round(Number(values.amount) * 100), // рубли → копейки
         occurredOn: values.occurredOn,
-        note: values.note || undefined,
+        note: values.note.trim(),
       });
 
       if (result.ok) {
@@ -191,9 +195,9 @@ function TransactionForm({ onClose, householdId, categories, defaultType }: Omit
         </div>
 
         <div>
-          <Text size="sm" fw={500} mb={8}>
+          <Input.Label required mb={8}>
             Что конкретно
-          </Text>
+          </Input.Label>
           {suggestions.length > 0 && (
             <Group gap="xs" mb="xs">
               {suggestions.map((s) => (
@@ -212,7 +216,7 @@ function TransactionForm({ onClose, householdId, categories, defaultType }: Omit
           )}
           <TextInput
             aria-label="Что конкретно"
-            placeholder={suggestions.length > 0 ? 'Выберите выше или напишите своё' : 'Необязательно'}
+            placeholder={suggestions.length > 0 ? 'Выберите выше или напишите своё' : 'Например, Продукты в Пятёрочке'}
             maxLength={200}
             {...form.getInputProps('note')}
           />

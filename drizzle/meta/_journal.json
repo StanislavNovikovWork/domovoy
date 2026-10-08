@@ -43,6 +43,27 @@
       "when": 1791354765233,
       "tag": "0005_futuristic_veda",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791400071503,
+      "tag": "0006_sparkling_phantom_reporter",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791439670995,
+      "tag": "0007_lowly_edwin_jarvis",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791440599315,
+      "tag": "0008_workable_warlock",
+      "breakpoints": true
     }
   ]
 }

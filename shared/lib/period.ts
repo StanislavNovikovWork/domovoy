@@ -36,6 +36,17 @@ function weekStart(d: Date) {
   return addDays(d, -((d.getDay() + 6) % 7));
 }
 
+// первое число месяца, в который попадает дата: '2026-10-17' → '2026-10-01'
+export function monthStart(date: string): string {
+  return `${date.slice(0, 7)}-01`;
+}
+
+// '2026-10-01' → '2026-09-01'
+export function prevMonth(month: string): string {
+  const d = parseDate(month);
+  return formatDate(new Date(d.getFullYear(), d.getMonth() - 1, 1));
+}
+
 // [from, to): from включительно, to не включая
 export function getPeriodRange(period: Period, date: string): { from: string; to: string } {
   const d = parseDate(date);

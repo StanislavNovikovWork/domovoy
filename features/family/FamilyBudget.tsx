@@ -5,7 +5,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { IconUsers } from '@tabler/icons-react';
 import { BudgetView, type CategoryOption } from '@/features/budget';
 import type { HouseholdMemberItem, InviteItem } from '@/server/households/queries';
-import type { TransactionItem } from '@/shared/lib/budget';
+import type { PlanItem, TransactionItem } from '@/shared/lib/budget';
 import { MembersModal } from './MembersModal';
 
 type Props = {
@@ -15,6 +15,7 @@ type Props = {
   initialDate: string;
   transactions: TransactionItem[];
   categories: CategoryOption[];
+  plans: PlanItem[];
   members: HouseholdMemberItem[];
   invites: InviteItem[];
 };

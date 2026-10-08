@@ -2,6 +2,7 @@ import { requirePageSession } from '@/server/session';
 import { getFamilyHousehold, listActiveInvites, listMembers } from '@/server/households/queries';
 import { listAllTransactions } from '@/server/transactions/queries';
 import { listActiveCategories } from '@/server/categories/queries';
+import { listPlans } from '@/server/plans/queries';
 import { formatDate } from '@/shared/lib/period';
 import { CreateFamilyCard, FamilyBudget } from '@/features/family';
 
@@ -14,9 +15,10 @@ export default async function FamilyPage() {
   const family = await getFamilyHousehold(user.id);
   if (!family) return <CreateFamilyCard />;
 
-  const [transactions, categories, members, invites] = await Promise.all([
+  const [transactions, categories, plans, members, invites] = await Promise.all([
     listAllTransactions(family.id),
     listActiveCategories(family.id),
+    listPlans(family.id),
     listMembers(family.id),
     // приглашения видит только владелец
     family.role === 'owner' ? listActiveInvites(family.id) : Promise.resolve([]),
@@ -30,6 +32,7 @@ export default async function FamilyPage() {
       initialDate={formatDate(new Date())}
       transactions={transactions}
       categories={categories}
+      plans={plans}
       members={members}
       invites={invites}
     />

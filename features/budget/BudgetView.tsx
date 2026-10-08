@@ -6,15 +6,19 @@ import { useDisclosure } from '@mantine/hooks';
 import { IconSettings } from '@tabler/icons-react';
 import { CategoriesModal } from '@/features/categories';
 import {
+  buildPlanRows,
   filterTransactions,
   groupByCategory,
   groupTransactions,
+  type PlanItem,
   type TransactionItem,
   type TxType,
 } from '@/shared/lib/budget';
-import { getPeriodRange, type Period } from '@/shared/lib/period';
+import { getPeriodRange, monthStart, prevMonth, type Period } from '@/shared/lib/period';
 import { AddTransactionModal, type CategoryOption } from './AddTransactionModal';
 import { CategoryBreakdownCard } from './CategoryBreakdownCard';
+import { PlanCard } from './PlanCard';
+import { PlanModal } from './PlanModal';
 import { TransactionGroups } from './TransactionGroups';
 
 type Props = {
@@ -22,16 +26,20 @@ type Props = {
   initialDate: string;
   transactions: TransactionItem[];
   categories: CategoryOption[];
+  plans: PlanItem[];
   /** дополнительные кнопки рядом с «Категории» (например, «Участники» в семейном бюджете) */
   actions?: ReactNode;
 };
 
-export function BudgetView({ householdId, initialDate, transactions, categories, actions }: Props) {
+export function BudgetView({ householdId, initialDate, transactions, categories, plans, actions }: Props) {
   const [type, setType] = useState<TxType>('expense');
   const [period, setPeriod] = useState<Period>('month');
   const [date, setDate] = useState(initialDate);
   const [addOpened, addModal] = useDisclosure(false);
   const [catsOpened, catsModal] = useDisclosure(false);
+  const [planOpened, planModal] = useDisclosure(false);
+  // предзаполнение новой операции при оплате статьи плана
+  const [prefill, setPrefill] = useState<{ categoryId: string; note: string; amount: number } | null>(null);
 
   const items = useMemo(
     () => filterTransactions(transactions, type, getPeriodRange(period, date)),
@@ -40,9 +48,20 @@ export function BudgetView({ householdId, initialDate, transactions, categories,
   const totals = useMemo(() => groupByCategory(items), [items]);
   const groups = useMemo(() => groupTransactions(items), [items]);
 
+  // план всегда за месяц выбранной даты, независимо от периода сверху
+  const planMonth = monthStart(date);
+  const planRows = useMemo(
+    () => buildPlanRows(plans, categories, transactions, planMonth, getPeriodRange('month', planMonth)),
+    [plans, categories, transactions, planMonth],
+  );
+  const hasPrevPlan = useMemo(() => {
+    const prev = prevMonth(planMonth);
+    return buildPlanRows(plans, categories, [], prev, getPeriodRange('month', prev)).length > 0;
+  }, [plans, categories, planMonth]);
+
   return (
     <Box pos="relative">
-      <Group gap="xs" pos="absolute" top={0} right={0} style={{ zIndex: 1 }}>
+      <Group gap="xs" justify="flex-end" mb="md">
         {actions}
         <Button variant="default" leftSection={<IconSettings size={16} />} onClick={catsModal.open}>
           Категории
@@ -50,7 +69,6 @@ export function BudgetView({ householdId, initialDate, transactions, categories,
       </Group>
 
       <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="lg">
-        {/* левая колонка; правая пока пустая, туда пойдут сводка баланса и лимиты */}
         <Stack gap="lg">
           <CategoryBreakdownCard
             type={type}
@@ -65,14 +83,41 @@ export function BudgetView({ householdId, initialDate, transactions, categories,
 
           <TransactionGroups groups={groups} />
         </Stack>
+
+        <Box>
+          <PlanCard
+            householdId={householdId}
+            month={planMonth}
+            rows={planRows}
+            canCopy={hasPrevPlan}
+            onEdit={planModal.open}
+            onPay={(categoryId, name, remaining) => {
+              setPrefill({ categoryId, note: name, amount: remaining / 100 });
+              addModal.open();
+            }}
+          />
+        </Box>
       </SimpleGrid>
 
       <AddTransactionModal
         opened={addOpened}
-        onClose={addModal.close}
+        onClose={() => {
+          addModal.close();
+          setPrefill(null);
+        }}
         householdId={householdId}
         categories={categories}
         defaultType={type}
+        prefill={prefill}
+      />
+
+      <PlanModal
+        opened={planOpened}
+        onClose={planModal.close}
+        householdId={householdId}
+        month={planMonth}
+        rows={planRows}
+        categories={categories}
       />
 
       <CategoriesModal

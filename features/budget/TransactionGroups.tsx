@@ -42,22 +42,19 @@ export function TransactionGroups({ groups }: { groups: CategoryGroup[] }) {
               </Accordion.Control>
 
               <Accordion.Panel>
-                <Stack gap="sm" pl={56}>
+                {/* правый отступ = шеврон (0.9375rem) + pr заголовка, чтобы суммы встали ровно под общей суммой */}
+                <Stack gap="sm" pr="calc(0.9375rem + var(--mantine-spacing-sm))">
                   {g.items.map((t) => (
-                    <Group key={t.id} justify="space-between" wrap="nowrap" align="flex-start">
-                      <div style={{ minWidth: 0 }}>
-                        <Text size="sm">
-                          {new Date(`${t.occurredOn}T00:00:00`).toLocaleDateString('ru-RU', {
-                            day: 'numeric',
-                            month: 'long',
-                          })}
-                        </Text>
-                        {t.note && (
-                          <Text size="xs" c="dimmed" truncate>
-                            {t.note}
-                          </Text>
-                        )}
-                      </div>
+                    <Group key={t.id} gap="sm" wrap="nowrap" align="center">
+                      {/* ширина колонки даты = размер иконки категории (44), чтобы дата стояла под иконкой */}
+                      <Text size="xs" c="dimmed" ta="center" w={44} style={{ flexShrink: 0 }}>
+                        {new Date(`${t.occurredOn}T00:00:00`)
+                          .toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
+                          .replace('.', '')}
+                      </Text>
+                      <Text size="sm" c={t.note ? undefined : 'dimmed'} truncate style={{ flex: 1, minWidth: 0 }}>
+                        {t.note || 'Без описания'}
+                      </Text>
                       <Text size="sm" fw={500}>
                         {formatMoney(t.amount)}
                       </Text>
