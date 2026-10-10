@@ -26,6 +26,7 @@ type Props = {
   opened: boolean;
   onClose: () => void;
   householdId: string;
+  periodic: boolean;
   month: string; // YYYY-MM-01
   rows: PlanRow[];
   categories: CategoryOption[];
@@ -66,6 +67,7 @@ export function PlanModal({
   opened,
   onClose,
   householdId,
+  periodic,
   month,
   rows,
   categories,
@@ -75,7 +77,7 @@ export function PlanModal({
     <Modal
       opened={opened}
       onClose={onClose}
-      title={`План затрат, ${formatPeriodLabel('month', month)}`}
+      title={periodic ? `План затрат, ${formatPeriodLabel('month', month)}` : 'План затрат'}
       size="lg"
     >
       {/* содержимое пересоздаётся при каждом открытии */}
@@ -100,7 +102,7 @@ function Content({
   categories,
   initialCategoryId,
   onClose,
-}: Omit<Props, 'opened'>) {
+}: Omit<Props, 'opened' | 'periodic'>) {
   const { pending, run } = useAction();
   const [categoryId, setCategoryId] = useState<string | null>(initialCategoryId ?? null);
   const [amount, setAmount] = useState<number | string>('');

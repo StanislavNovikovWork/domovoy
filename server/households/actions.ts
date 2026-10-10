@@ -41,9 +41,13 @@ export async function createFamilyHousehold(input: unknown): Promise<Result<{ id
     const session = await requireSession();
     const id = crypto.randomUUID();
     await db.batch([
-      db
-        .insert(household)
-        .values({ id, name: parsed.data.name, type: 'family', createdBy: session.user.id }),
+      db.insert(household).values({
+        id,
+        name: parsed.data.name,
+        type: 'family',
+        kind: parsed.data.oneTime ? 'one_time' : 'periodic',
+        createdBy: session.user.id,
+      }),
       db
         .insert(householdMember)
         .values({ householdId: id, userId: session.user.id, role: 'owner' }),

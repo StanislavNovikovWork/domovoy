@@ -18,6 +18,8 @@ import {
   type TxType,
 } from '@/shared/lib/budget';
 import {
+  ALL_TIME_RANGE,
+  ONE_TIME_MONTH,
   formatPeriodLabel,
   getPeriodRange,
   monthStart,
@@ -39,6 +41,8 @@ type Props = {
   transactions: TransactionItem[];
   categories: CategoryOption[];
   plans: PlanItem[];
+  /** false: разовый бюджет без периодов, всё считается за всё время */
+  periodic?: boolean;
   /** дополнительные кнопки в шапке рядом с «Категории» (например, «Участники» в семейном бюджете) */
   actions?: ReactNode;
 };
@@ -49,6 +53,7 @@ export function BudgetView({
   transactions,
   categories,
   plans,
+  periodic = true,
   actions,
 }: Props) {
   const [type, setType] = useState<TxType>('expense');
@@ -72,25 +77,31 @@ export function BudgetView({
   } | null>(null);
 
   const items = useMemo(
-    () => filterTransactions(transactions, type, getPeriodRange(period, date)),
-    [transactions, type, period, date]
+    () =>
+      filterTransactions(
+        transactions,
+        type,
+        periodic ? getPeriodRange(period, date) : ALL_TIME_RANGE
+      ),
+    [transactions, type, period, date, periodic]
   );
   const totals = useMemo(() => groupByCategory(items), [items]);
 
   // план всегда за месяц выбранной даты, независимо от периода сверху
-  const planMonth = monthStart(date);
+  const planMonth = periodic ? monthStart(date) : ONE_TIME_MONTH;
+  const planRange = periodic ? getPeriodRange('month', planMonth) : ALL_TIME_RANGE;
   const planRows = useMemo(
-    () =>
-      buildPlanRows(plans, categories, transactions, planMonth, getPeriodRange('month', planMonth)),
-    [plans, categories, transactions, planMonth]
+    () => buildPlanRows(plans, categories, transactions, planMonth, planRange),
+    [plans, categories, transactions, planMonth, planRange]
   );
   const hasPrevPlan = useMemo(() => {
+    if (!periodic) return false;
     const prev = prevMonth(planMonth);
     return buildPlanRows(plans, categories, [], prev, getPeriodRange('month', prev)).length > 0;
-  }, [plans, categories, planMonth]);
+  }, [plans, categories, planMonth, periodic]);
 
   // лимиты и статьи показываем только в расходах за месяц; иначе обычный список по категориям
-  const planMode = type === 'expense' && period === 'month';
+  const planMode = type === 'expense' && (!periodic || period === 'month');
   const categoryRows = useMemo(
     () =>
       planMode
@@ -137,6 +148,7 @@ export function BudgetView({
       <Stack gap="lg">
         <BudgetToolbar
           type={type}
+          periodic={periodic}
           period={period}
           date={date}
           onTypeChange={setType}
@@ -150,6 +162,7 @@ export function BudgetView({
             <Stack gap="lg">
               <SummaryCard
                 type={type}
+                periodic={periodic}
                 period={period}
                 date={date}
                 total={total}
@@ -161,6 +174,7 @@ export function BudgetView({
 
               <CategoriesList
                 householdId={householdId}
+                periodic={periodic}
                 month={planMonth}
                 rows={categoryRows}
                 planMode={planMode}
@@ -201,7 +215,7 @@ export function BudgetView({
         opened={allOpened}
         onClose={allModal.close}
         type={type}
-        periodLabel={formatPeriodLabel(period, date)}
+        periodLabel={periodic ? formatPeriodLabel(period, date) : 'за всё время'}
         items={items}
       />
 
@@ -209,6 +223,7 @@ export function BudgetView({
         opened={planOpened}
         onClose={planModal.close}
         householdId={householdId}
+        periodic={periodic}
         month={planMonth}
         rows={planRows}
         categories={categories}

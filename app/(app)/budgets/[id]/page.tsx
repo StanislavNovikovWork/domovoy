@@ -32,6 +32,7 @@ export default async function SharedBudgetPage({ params }: Props) {
     <FamilyBudget
       householdId={budget.id}
       name={budget.name}
+      periodic={budget.kind === 'periodic'}
       currentUserId={user.id}
       role={budget.role}
       initialDate={formatDate(new Date())}

@@ -3,14 +3,16 @@
 import { useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { IconUsers } from '@tabler/icons-react';
+import { IconPlus, IconUsers } from '@tabler/icons-react';
 import {
+  ActionIcon,
   Badge,
   Button,
   Card,
+  Checkbox,
   Container,
   Group,
-  Paper,
+  Modal,
   SimpleGrid,
   Stack,
   Text,
@@ -18,6 +20,7 @@ import {
   Title,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
+import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { createFamilyHousehold } from '@/server/households/actions';
 import type { HouseholdListItem } from '@/server/households/queries';
@@ -33,11 +36,17 @@ const pluralMembers = (n: number) => {
 export function BudgetsList({ budgets }: { budgets: HouseholdListItem[] }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [opened, modal] = useDisclosure(false);
 
   const form = useForm({
-    initialValues: { name: '' },
+    initialValues: { name: '', oneTime: false },
     validate: { name: (v) => (v.trim() ? null : 'Введите название') },
   });
+
+  const close = () => {
+    modal.close();
+    form.reset();
+  };
 
   const handleSubmit = form.onSubmit((values) => {
     startTransition(async () => {
@@ -54,24 +63,34 @@ export function BudgetsList({ budgets }: { budgets: HouseholdListItem[] }) {
   return (
     <Container size="md" p={0}>
       <Stack gap="lg">
-        <Title order={2}>Мои бюджеты</Title>
+        <Group justify="space-between">
+          <Title order={2}>Мои бюджеты</Title>
+          <ActionIcon size="lg" aria-label="Создать бюджет" onClick={modal.open}>
+            <IconPlus size={20} />
+          </ActionIcon>
+        </Group>
 
-        <Paper withBorder p="md" radius="md">
+        <Modal opened={opened} onClose={close} title="Новый бюджет">
           <form onSubmit={handleSubmit}>
-            <Group align="flex-end" wrap="nowrap">
+            <Stack>
               <TextInput
-                label="Новый бюджет"
+                label="Название"
                 placeholder="Например, Отпуск или Ремонт"
                 maxLength={40}
-                style={{ flex: 1 }}
+                data-autofocus
                 {...form.getInputProps('name')}
+              />
+              <Checkbox
+                label="Разовый бюджет"
+                description="Без разбивки по дням, неделям и месяцам: только план и фактические траты"
+                {...form.getInputProps('oneTime', { type: 'checkbox' })}
               />
               <Button type="submit" loading={pending}>
                 Создать
               </Button>
-            </Group>
+            </Stack>
           </form>
-        </Paper>
+        </Modal>
 
         {budgets.length === 0 ? (
           <Text c="dimmed">
@@ -86,9 +105,16 @@ export function BudgetsList({ budgets }: { budgets: HouseholdListItem[] }) {
                   <Text fw={600} truncate>
                     {b.name}
                   </Text>
-                  <Badge variant="light" color={b.role === 'owner' ? 'teal' : 'gray'}>
-                    {b.role === 'owner' ? 'Владелец' : 'Участник'}
-                  </Badge>
+                  <Group gap={6} wrap="nowrap">
+                    {b.kind === 'one_time' && (
+                      <Badge variant="light" color="grape">
+                        Разовый
+                      </Badge>
+                    )}
+                    <Badge variant="light" color={b.role === 'owner' ? 'teal' : 'gray'}>
+                      {b.role === 'owner' ? 'Владелец' : 'Участник'}
+                    </Badge>
+                  </Group>
                 </Group>
                 <Group gap={6} mt="xs" c="dimmed">
                   <IconUsers size={16} />

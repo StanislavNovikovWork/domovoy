@@ -17,6 +17,7 @@ import { formatPeriodCaption, getMonthProgress, type Period } from '@/shared/lib
 import { pluralRu } from '@/shared/lib/plural';
 
 type Props = {
+  periodic: boolean;
   type: TxType;
   period: Period;
   date: string;
@@ -105,8 +106,18 @@ function StructureBar({ type, totals }: { type: TxType; totals: CategoryTotal[] 
   );
 }
 
-export function SummaryCard({ type, period, date, total, totals, plan, planMonth, today }: Props) {
-  const progress = plan ? getMonthProgress(planMonth, today) : null;
+export function SummaryCard({
+  periodic,
+  type,
+  period,
+  date,
+  total,
+  totals,
+  plan,
+  planMonth,
+  today,
+}: Props) {
+  const progress = plan && periodic ? getMonthProgress(planMonth, today) : null;
   const planPercent =
     plan && plan.planned > 0 ? Math.round((plan.spentInPlan / plan.planned) * 100) : 0;
   const overPlan = plan ? plan.remaining < 0 : false;
@@ -117,7 +128,8 @@ export function SummaryCard({ type, period, date, total, totals, plan, planMonth
         <SimpleGrid cols={{ base: 1, sm: plan ? 3 : 1 }} spacing="lg">
           <Stack gap={2}>
             <Text size="sm" c="dimmed">
-              {type === 'expense' ? 'Потрачено' : 'Получено'} {formatPeriodCaption(period, date)}
+              {type === 'expense' ? 'Потрачено' : 'Получено'}{' '}
+              {periodic ? formatPeriodCaption(period, date) : 'за всё время'}
             </Text>
             <Text fz={32} fw={700} lh={1.1}>
               {formatMoney(total)}

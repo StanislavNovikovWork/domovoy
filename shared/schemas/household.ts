@@ -5,6 +5,7 @@ export const inviteTokenSchema = z.string().regex(/^[A-Za-z0-9_-]{43}$/);
 
 export const createFamilySchema = z.object({
   name: z.string().trim().min(1).max(40),
+  oneTime: z.boolean().optional(),
 });
 
 export const renameHouseholdSchema = z.object({

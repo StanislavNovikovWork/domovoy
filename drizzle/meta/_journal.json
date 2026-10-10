@@ -64,6 +64,13 @@
       "when": 1791440599315,
       "tag": "0008_workable_warlock",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791637362141,
+      "tag": "0009_household_kind",
+      "breakpoints": true
     }
   ]
 }

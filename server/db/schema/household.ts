@@ -13,6 +13,8 @@ import {
 import { user } from './auth';
 
 export const householdType = pgEnum('household_type', ['personal', 'family']);
+// periodic: учёт по дням, неделям, месяцам; one_time: разовый (поездка, ремонт) без периодов
+export const householdKind = pgEnum('household_kind', ['periodic', 'one_time']);
 export const householdRole = pgEnum('household_role', ['owner', 'member']);
 
 export const household = pgTable(
@@ -21,6 +23,7 @@ export const household = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     name: text('name').notNull(),
     type: householdType('type').notNull(),
+    kind: householdKind('kind').notNull().default('periodic'),
     createdBy: text('created_by')
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),

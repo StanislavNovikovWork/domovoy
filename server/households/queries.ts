@@ -8,6 +8,7 @@ const householdColumns = {
   id: household.id,
   name: household.name,
   type: household.type,
+  kind: household.kind,
   role: householdMember.role,
 };
 

@@ -7,6 +7,10 @@ export const PERIOD_OPTIONS: { value: Period; label: string }[] = [
   { value: 'year', label: 'Год' },
 ];
 
+// разовые бюджеты не делятся на месяцы: их план хранится под одним фиксированным месяцем
+export const ONE_TIME_MONTH = '2000-01-01';
+export const ALL_TIME_RANGE = { from: '0000-01-01', to: '9999-12-31' };
+
 const LOCALE = 'ru-RU';
 const pad = (n: number) => String(n).padStart(2, '0');
 

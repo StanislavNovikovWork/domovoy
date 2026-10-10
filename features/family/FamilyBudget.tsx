@@ -11,6 +11,7 @@ import { MembersModal } from './MembersModal';
 type Props = {
   householdId: string;
   name: string;
+  periodic: boolean;
   currentUserId: string;
   role: 'owner' | 'member';
   initialDate: string;

@@ -28,6 +28,7 @@ import { PlanProgress } from './PlanProgress';
 
 type Props = {
   householdId: string;
+  periodic: boolean;
   month: string; // YYYY-MM-01
   rows: CategoryRow[];
   planMode: boolean; // расходы за месяц: показываем лимиты, статьи и «Без лимита»
@@ -260,6 +261,7 @@ function CategoryRowView({
 
 export function CategoriesList({
   householdId,
+  periodic,
   month,
   rows,
   planMode,
@@ -333,7 +335,9 @@ export function CategoriesList({
           <Text c="dimmed" ta="center" size="sm" py="md">
             {filter === 'attention'
               ? 'Нет категорий, требующих внимания'
-              : 'Пока нет операций за этот период'}
+              : periodic
+                ? 'Пока нет операций за этот период'
+                : 'Пока нет операций'}
           </Text>
         ) : (
           <Stack gap={0}>
