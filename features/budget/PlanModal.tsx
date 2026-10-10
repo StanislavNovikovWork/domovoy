@@ -29,6 +29,8 @@ type Props = {
   month: string; // YYYY-MM-01
   rows: PlanRow[];
   categories: CategoryOption[];
+  /** категория, выбранная в форме «Добавить категорию» при открытии (например, для «Задать лимит») */
+  initialCategoryId?: string | null;
 };
 
 const numberProps = {
@@ -60,7 +62,7 @@ function useAction() {
   return { pending, run };
 }
 
-export function PlanModal({ opened, onClose, householdId, month, rows, categories }: Props) {
+export function PlanModal({ opened, onClose, householdId, month, rows, categories, initialCategoryId }: Props) {
   return (
     <Modal
       opened={opened}
@@ -75,6 +77,7 @@ export function PlanModal({ opened, onClose, householdId, month, rows, categorie
           month={month}
           rows={rows}
           categories={categories}
+          initialCategoryId={initialCategoryId}
           onClose={onClose}
         />
       </AnimatedHeight>
@@ -82,9 +85,9 @@ export function PlanModal({ opened, onClose, householdId, month, rows, categorie
   );
 }
 
-function Content({ householdId, month, rows, categories, onClose }: Omit<Props, 'opened'>) {
+function Content({ householdId, month, rows, categories, initialCategoryId, onClose }: Omit<Props, 'opened'>) {
   const { pending, run } = useAction();
-  const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [categoryId, setCategoryId] = useState<string | null>(initialCategoryId ?? null);
   const [amount, setAmount] = useState<number | string>('');
 
   const planned = new Set(rows.map((r) => r.categoryId));

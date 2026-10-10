@@ -2,6 +2,7 @@
 
 import { AppShell, Burger, Box, Group, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
+import { HEADER_ACTIONS_ID } from '@/shared/ui/HeaderActions';
 import { AppNavbar } from './AppNavbar';
 import { ColorSchemeToggle } from './ColorSchemeToggle';
 import { UserMenu } from './UserMenu';
@@ -27,6 +28,7 @@ export function AppShellLayout({ user, children }: Props) {
             <Text fw={700} size="lg">Семейный бюджет</Text>
           </Group>
           <Group gap="sm">
+            <Group gap="xs" id={HEADER_ACTIONS_ID} />
             <ColorSchemeToggle />
             <UserMenu user={user} />
           </Group>

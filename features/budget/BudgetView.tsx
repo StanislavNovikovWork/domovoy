@@ -1,25 +1,31 @@
 'use client';
 
 import { useMemo, useState, type ReactNode } from 'react';
-import { Box, Button, Group, SimpleGrid, Stack } from '@mantine/core';
+import { Box, Button, Grid, Stack } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { IconSettings } from '@tabler/icons-react';
 import { CategoriesModal } from '@/features/categories';
 import {
+  buildCategoryRows,
+  buildPlainRows,
   buildPlanRows,
   filterTransactions,
   groupByCategory,
-  groupTransactions,
+  listPendingPayments,
+  summarizePlan,
   type PlanItem,
   type TransactionItem,
   type TxType,
 } from '@/shared/lib/budget';
-import { getPeriodRange, monthStart, prevMonth, type Period } from '@/shared/lib/period';
+import { formatPeriodLabel, getPeriodRange, monthStart, prevMonth, type Period } from '@/shared/lib/period';
+import { HeaderActions } from '@/shared/ui/HeaderActions';
 import { AddTransactionModal, type CategoryOption } from './AddTransactionModal';
-import { CategoryBreakdownCard } from './CategoryBreakdownCard';
-import { PlanCard } from './PlanCard';
+import { AllTransactionsModal } from './AllTransactionsModal';
+import { BudgetToolbar } from './BudgetToolbar';
+import { CategoriesList } from './CategoriesList';
 import { PlanModal } from './PlanModal';
-import { TransactionGroups } from './TransactionGroups';
+import { PendingPaymentsCard, RecentCard } from './SidePanel';
+import { SummaryCard } from './SummaryCard';
 
 type Props = {
   householdId: string;
@@ -27,7 +33,7 @@ type Props = {
   transactions: TransactionItem[];
   categories: CategoryOption[];
   plans: PlanItem[];
-  /** дополнительные кнопки рядом с «Категории» (например, «Участники» в семейном бюджете) */
+  /** дополнительные кнопки в шапке рядом с «Категории» (например, «Участники» в семейном бюджете) */
   actions?: ReactNode;
 };
 
@@ -38,6 +44,13 @@ export function BudgetView({ householdId, initialDate, transactions, categories,
   const [addOpened, addModal] = useDisclosure(false);
   const [catsOpened, catsModal] = useDisclosure(false);
   const [planOpened, planModal] = useDisclosure(false);
+  const [allOpened, allModal] = useDisclosure(false);
+  // категория, выбранная в форме плана при открытии («Задать лимит»)
+  const [planFocus, setPlanFocus] = useState<string | null>(null);
+  const openPlan = (categoryId: string | null) => {
+    setPlanFocus(categoryId);
+    planModal.open();
+  };
   // предзаполнение новой операции при оплате статьи плана
   const [prefill, setPrefill] = useState<{ categoryId: string; note: string; amount: number } | null>(null);
 
@@ -46,7 +59,6 @@ export function BudgetView({ householdId, initialDate, transactions, categories,
     [transactions, type, period, date],
   );
   const totals = useMemo(() => groupByCategory(items), [items]);
-  const groups = useMemo(() => groupTransactions(items), [items]);
 
   // план всегда за месяц выбранной даты, независимо от периода сверху
   const planMonth = monthStart(date);
@@ -59,45 +71,92 @@ export function BudgetView({ householdId, initialDate, transactions, categories,
     return buildPlanRows(plans, categories, [], prev, getPeriodRange('month', prev)).length > 0;
   }, [plans, categories, planMonth]);
 
+  // лимиты и статьи показываем только в расходах за месяц; иначе обычный список по категориям
+  const planMode = type === 'expense' && period === 'month';
+  const categoryRows = useMemo(
+    () =>
+      planMode
+        ? buildCategoryRows(planRows, items, categories.map((c) => c.id))
+        : buildPlainRows(items),
+    [planMode, planRows, items, categories],
+  );
+
+  const total = useMemo(() => items.reduce((acc, t) => acc + t.amount, 0), [items]);
+  // блоки плана есть только у расходов
+  const planSummary = useMemo(
+    () => (type === 'expense' && planRows.length > 0 ? summarizePlan(planRows) : null),
+    [type, planRows],
+  );
+
+  // правая колонка: ожидаемые платежи (всегда за месяц плана) и последние операции
+  const pendingPayments = useMemo(
+    () => (type === 'expense' ? listPendingPayments(planRows) : []),
+    [type, planRows],
+  );
+  const recent = useMemo(() => transactions.filter((t) => t.categoryType === type).slice(0, 5), [transactions, type]);
+
+  const pay = (categoryId: string, name: string, remaining: number) => {
+    setPrefill({ categoryId, note: name, amount: remaining / 100 });
+    addModal.open();
+  };
+
   return (
-    <Box pos="relative">
-      <Group gap="xs" justify="flex-end" mb="md">
+    <Box>
+      <HeaderActions>
         {actions}
         <Button variant="default" leftSection={<IconSettings size={16} />} onClick={catsModal.open}>
           Категории
         </Button>
-      </Group>
+      </HeaderActions>
 
-      <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="lg">
-        <Stack gap="lg">
-          <CategoryBreakdownCard
-            type={type}
-            period={period}
-            date={date}
-            totals={totals}
-            onTypeChange={setType}
-            onPeriodChange={setPeriod}
-            onDateChange={setDate}
-            onAdd={addModal.open}
-          />
+      <Stack gap="lg">
+        <BudgetToolbar
+          type={type}
+          period={period}
+          date={date}
+          onTypeChange={setType}
+          onPeriodChange={setPeriod}
+          onDateChange={setDate}
+          onAdd={addModal.open}
+        />
 
-          <TransactionGroups groups={groups} />
-        </Stack>
+        <Grid gutter="lg">
+          <Grid.Col span={{ base: 12, lg: 8 }}>
+            <Stack gap="lg">
+              <SummaryCard
+                type={type}
+                period={period}
+                date={date}
+                total={total}
+                totals={totals}
+                plan={planSummary}
+                planMonth={planMonth}
+                today={initialDate}
+              />
 
-        <Box>
-          <PlanCard
-            householdId={householdId}
-            month={planMonth}
-            rows={planRows}
-            canCopy={hasPrevPlan}
-            onEdit={planModal.open}
-            onPay={(categoryId, name, remaining) => {
-              setPrefill({ categoryId, note: name, amount: remaining / 100 });
-              addModal.open();
-            }}
-          />
-        </Box>
-      </SimpleGrid>
+              <CategoriesList
+                householdId={householdId}
+                month={planMonth}
+                rows={categoryRows}
+                planMode={planMode}
+                canEditPlan={type === 'expense'}
+                hasPlan={planRows.length > 0}
+                canCopy={hasPrevPlan}
+                onEdit={() => openPlan(null)}
+                onSetLimit={openPlan}
+                onPay={pay}
+              />
+            </Stack>
+          </Grid.Col>
+
+          <Grid.Col span={{ base: 12, lg: 4 }}>
+            <Stack gap="lg">
+              {pendingPayments.length > 0 && <PendingPaymentsCard payments={pendingPayments} onPay={pay} />}
+              <RecentCard items={recent} onShowAll={allModal.open} />
+            </Stack>
+          </Grid.Col>
+        </Grid>
+      </Stack>
 
       <AddTransactionModal
         opened={addOpened}
@@ -111,6 +170,14 @@ export function BudgetView({ householdId, initialDate, transactions, categories,
         prefill={prefill}
       />
 
+      <AllTransactionsModal
+        opened={allOpened}
+        onClose={allModal.close}
+        type={type}
+        periodLabel={formatPeriodLabel(period, date)}
+        items={items}
+      />
+
       <PlanModal
         opened={planOpened}
         onClose={planModal.close}
@@ -118,6 +185,7 @@ export function BudgetView({ householdId, initialDate, transactions, categories,
         month={planMonth}
         rows={planRows}
         categories={categories}
+        initialCategoryId={planFocus}
       />
 
       <CategoriesModal

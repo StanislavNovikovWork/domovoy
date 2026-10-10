@@ -47,6 +47,28 @@ export function prevMonth(month: string): string {
   return formatDate(new Date(d.getFullYear(), d.getMonth() - 1, 1));
 }
 
+// '2026-10-05' → '5 окт'
+export function formatShortDate(date: string): string {
+  return parseDate(date).toLocaleDateString(LOCALE, { day: 'numeric', month: 'short' }).replace('.', '');
+}
+
+// Прогресс месяца относительно сегодняшней даты; null, если сегодня не в этом месяце
+export function getMonthProgress(
+  month: string,
+  today: string,
+): { percent: number; daysLeft: number; dayLabel: string } | null {
+  if (monthStart(today) !== month) {
+    return null;
+  }
+  const d = parseDate(today);
+  const days = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  return {
+    percent: Math.round((d.getDate() / days) * 100),
+    daysLeft: days - d.getDate(),
+    dayLabel: d.toLocaleDateString(LOCALE, { day: 'numeric', month: 'long' }),
+  };
+}
+
 // [from, to): from включительно, to не включая
 export function getPeriodRange(period: Period, date: string): { from: string; to: string } {
   const d = parseDate(date);
