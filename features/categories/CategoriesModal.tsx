@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { IconArrowLeft, IconChevronRight, IconPlus } from '@tabler/icons-react';
 import {
   Button,
   CheckIcon,
@@ -13,16 +14,15 @@ import {
   TagsInput,
   Text,
   TextInput,
-  UnstyledButton
+  UnstyledButton,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
-import { IconArrowLeft, IconChevronRight, IconPlus } from '@tabler/icons-react';
 import { archiveCategory, createCategory, updateCategory } from '@/server/categories/actions';
 import { CATEGORY_COLORS, CATEGORY_ICONS } from '@/shared/config/category-options';
+import type { CategoryOption } from '@/shared/types/category';
 import { AnimatedHeight } from '@/shared/ui/AnimatedHeight';
 import { CategoryBadge } from '@/shared/ui/CategoryBadge';
-import type { CategoryOption } from '@/shared/types/category';
 
 type Type = 'expense' | 'income';
 
@@ -67,7 +67,12 @@ function Content({ householdId, categories }: Omit<Props, 'opened' | 'onClose'>)
     // кнопка вынесена в footer: она прижата к анимируемому нижнему краю и едет вместе с ним
     <AnimatedHeight
       footer={
-        <Button fullWidth variant="light" leftSection={<IconPlus size={16} />} onClick={() => setEditing('new')}>
+        <Button
+          fullWidth
+          variant="light"
+          leftSection={<IconPlus size={16} />}
+          onClick={() => setEditing('new')}
+        >
           Добавить категорию
         </Button>
       }
@@ -129,7 +134,10 @@ function CategoryForm({ householdId, type, category, onDone }: FormProps) {
     },
   });
 
-  const run = (action: () => Promise<{ ok: true } | { ok: false; error: string }>, success: string) => {
+  const run = (
+    action: () => Promise<{ ok: true } | { ok: false; error: string }>,
+    success: string
+  ) => {
     startTransition(async () => {
       const result = await action();
       if (result.ok) {
@@ -147,7 +155,7 @@ function CategoryForm({ householdId, type, category, onDone }: FormProps) {
         category
           ? updateCategory({ ...values, householdId, id: category.id })
           : createCategory({ ...values, householdId, type }),
-      'Сохранено',
+      'Сохранено'
     );
   });
 
@@ -182,18 +190,18 @@ function CategoryForm({ householdId, type, category, onDone }: FormProps) {
           </Text>
           <Group gap="xs">
             {CATEGORY_ICONS.map((icon) => (
-                <UnstyledButton
+              <UnstyledButton
                 key={icon}
                 type="button"
                 aria-label={icon}
                 onClick={() => form.setFieldValue('icon', icon)}
-                >
+              >
                 <CategoryBadge
-                    icon={icon}
-                    color={form.values.color}
-                    state={form.values.icon === icon ? 'selected' : 'muted'}
+                  icon={icon}
+                  color={form.values.color}
+                  state={form.values.icon === icon ? 'selected' : 'muted'}
                 />
-                </UnstyledButton>
+              </UnstyledButton>
             ))}
           </Group>
         </div>
@@ -246,14 +254,24 @@ function CategoryForm({ householdId, type, category, onDone }: FormProps) {
                   type="button"
                   color="red"
                   loading={pending}
-                  onClick={() => run(() => archiveCategory({ householdId, id: category.id }), 'Категория удалена')}
+                  onClick={() =>
+                    run(
+                      () => archiveCategory({ householdId, id: category.id }),
+                      'Категория удалена'
+                    )
+                  }
                 >
                   Удалить
                 </Button>
               </Group>
             </Stack>
           ) : (
-            <Button type="button" variant="subtle" color="red" onClick={() => setConfirmDelete(true)}>
+            <Button
+              type="button"
+              variant="subtle"
+              color="red"
+              onClick={() => setConfirmDelete(true)}
+            >
               Удалить категорию
             </Button>
           ))}

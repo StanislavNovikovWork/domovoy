@@ -25,7 +25,9 @@ export function AppShellLayout({ user, children }: Props) {
         <Group h="100%" px="md" justify="space-between">
           <Group>
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
-            <Text fw={700} size="lg">Семейный бюджет</Text>
+            <Text fw={700} size="lg">
+              Бюджет
+            </Text>
           </Group>
           <Group gap="sm">
             <Group gap="xs" id={HEADER_ACTIONS_ID} />

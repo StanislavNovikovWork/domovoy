@@ -7,6 +7,11 @@ export const createFamilySchema = z.object({
   name: z.string().trim().min(1).max(40),
 });
 
+export const renameHouseholdSchema = z.object({
+  householdId: z.uuid(),
+  name: z.string().trim().min(1).max(40),
+});
+
 export const householdIdSchema = z.object({
   householdId: z.uuid(),
 });

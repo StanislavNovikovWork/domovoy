@@ -1,6 +1,6 @@
-import { getSession } from '@/server/session';
-import { ensurePersonalHousehold } from '@/server/households/ensure-personal';
 import { AppShellLayout } from '@/features/app-shell';
+import { ensurePersonalHousehold } from '@/server/households/ensure-personal';
+import { getSession } from '@/server/session';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();

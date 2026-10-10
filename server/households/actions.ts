@@ -1,19 +1,20 @@
 'use server';
 
-import 'server-only';
-import { and, eq, gt, isNull } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
+import { and, eq, gt, isNull } from 'drizzle-orm';
+import 'server-only';
 import { db } from '@/server/db';
 import { category, household, householdInvite, householdMember } from '@/server/db/schema';
 import { requireHouseholdAccess } from '@/server/households/access';
 import { DEFAULT_CATEGORIES } from '@/server/households/default-categories';
-import { getFamilyHousehold, getInviteByToken, isInviteActive } from '@/server/households/queries';
+import { getInviteByToken, isInviteActive } from '@/server/households/queries';
 import { requireSession } from '@/server/session';
 import {
   acceptInviteSchema,
   createFamilySchema,
   householdIdSchema,
   removeMemberSchema,
+  renameHouseholdSchema,
   revokeInviteSchema,
 } from '@/shared/schemas/household';
 
@@ -25,37 +26,39 @@ function generateToken() {
   return Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString('base64url');
 }
 
-// действия с участниками и приглашениями доступны только владельцу семьи
+// действия с участниками, приглашениями и настройками доступны только владельцу бюджета
 async function requireOwner(householdId: string) {
   const access = await requireHouseholdAccess(householdId);
   if (access.member.role !== 'owner') throw new Error('FORBIDDEN');
   return access;
 }
 
-export async function createFamilyHousehold(input: unknown): Promise<Result> {
+export async function createFamilyHousehold(input: unknown): Promise<Result<{ id: string }>> {
   const parsed = createFamilySchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: 'Введите название' };
 
   try {
     const session = await requireSession();
-    if (await getFamilyHousehold(session.user.id)) {
-      return { ok: false, error: 'Вы уже состоите в семье' };
-    }
-
     const id = crypto.randomUUID();
     await db.batch([
-      db.insert(household).values({ id, name: parsed.data.name, type: 'family', createdBy: session.user.id }),
-      db.insert(householdMember).values({ householdId: id, userId: session.user.id, role: 'owner' }),
-      db.insert(category).values(
-        DEFAULT_CATEGORIES.map((c, index) => ({ ...c, householdId: id, sortOrder: index })),
-      ),
+      db
+        .insert(household)
+        .values({ id, name: parsed.data.name, type: 'family', createdBy: session.user.id }),
+      db
+        .insert(householdMember)
+        .values({ householdId: id, userId: session.user.id, role: 'owner' }),
+      db
+        .insert(category)
+        .values(
+          DEFAULT_CATEGORIES.map((c, index) => ({ ...c, householdId: id, sortOrder: index }))
+        ),
     ]);
 
-    revalidatePath('/family');
-    return { ok: true };
+    revalidatePath('/budgets', 'layout');
+    return { ok: true, id };
   } catch (error) {
     console.error('createFamilyHousehold failed', error);
-    return { ok: false, error: 'Не удалось создать семью' };
+    return { ok: false, error: 'Не удалось создать бюджет' };
   }
 }
 
@@ -74,7 +77,7 @@ export async function createInvite(input: unknown): Promise<Result<{ token: stri
       expiresAt: new Date(Date.now() + INVITE_TTL_MS),
     });
 
-    revalidatePath('/family');
+    revalidatePath('/budgets', 'layout');
     return { ok: true, token };
   } catch (error) {
     console.error('createInvite failed', error);
@@ -96,11 +99,11 @@ export async function revokeInvite(input: unknown): Promise<Result> {
         and(
           eq(householdInvite.id, parsed.data.inviteId),
           eq(householdInvite.householdId, parsed.data.householdId),
-          isNull(householdInvite.revokedAt),
-        ),
+          isNull(householdInvite.revokedAt)
+        )
       );
 
-    revalidatePath('/family');
+    revalidatePath('/budgets', 'layout');
     return { ok: true };
   } catch (error) {
     console.error('revokeInvite failed', error);
@@ -108,7 +111,7 @@ export async function revokeInvite(input: unknown): Promise<Result> {
   }
 }
 
-export async function acceptInvite(input: unknown): Promise<Result> {
+export async function acceptInvite(input: unknown): Promise<Result<{ id: string }>> {
   const parsed = acceptInviteSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: 'Ссылка недействительна, попросите новую' };
 
@@ -121,9 +124,14 @@ export async function acceptInvite(input: unknown): Promise<Result> {
       return { ok: false, error: 'Ссылка недействительна, попросите новую' };
     }
 
-    const family = await getFamilyHousehold(userId);
-    if (family?.id === invite.householdId) return { ok: false, error: 'Вы уже в этой семье' };
-    if (family) return { ok: false, error: 'Вы уже состоите в семье' };
+    const [existing] = await db
+      .select({ userId: householdMember.userId })
+      .from(householdMember)
+      .where(
+        and(eq(householdMember.householdId, invite.householdId), eq(householdMember.userId, userId))
+      )
+      .limit(1);
+    if (existing) return { ok: false, error: 'Вы уже в этом бюджете' };
 
     // помечаем использованным условно: если успел кто-то другой, строк не вернётся
     const claimed = await db
@@ -134,14 +142,17 @@ export async function acceptInvite(input: unknown): Promise<Result> {
           eq(householdInvite.id, invite.id),
           isNull(householdInvite.usedAt),
           isNull(householdInvite.revokedAt),
-          gt(householdInvite.expiresAt, new Date()),
-        ),
+          gt(householdInvite.expiresAt, new Date())
+        )
       )
       .returning({ id: householdInvite.id });
-    if (claimed.length === 0) return { ok: false, error: 'Ссылка недействительна, попросите новую' };
+    if (claimed.length === 0)
+      return { ok: false, error: 'Ссылка недействительна, попросите новую' };
 
     try {
-      await db.insert(householdMember).values({ householdId: invite.householdId, userId, role: 'member' });
+      await db
+        .insert(householdMember)
+        .values({ householdId: invite.householdId, userId, role: 'member' });
     } catch (error) {
       // откатываем пометку, чтобы ссылка осталась рабочей
       await db
@@ -151,11 +162,11 @@ export async function acceptInvite(input: unknown): Promise<Result> {
       throw error;
     }
 
-    revalidatePath('/family');
-    return { ok: true };
+    revalidatePath('/budgets', 'layout');
+    return { ok: true, id: invite.householdId };
   } catch (error) {
     console.error('acceptInvite failed', error);
-    return { ok: false, error: 'Не удалось вступить в семью' };
+    return { ok: false, error: 'Не удалось вступить в бюджет' };
   }
 }
 
@@ -174,11 +185,11 @@ export async function removeMember(input: unknown): Promise<Result> {
       .where(
         and(
           eq(householdMember.householdId, parsed.data.householdId),
-          eq(householdMember.userId, parsed.data.userId),
-        ),
+          eq(householdMember.userId, parsed.data.userId)
+        )
       );
 
-    revalidatePath('/family');
+    revalidatePath('/budgets', 'layout');
     return { ok: true };
   } catch (error) {
     console.error('removeMember failed', error);
@@ -193,7 +204,7 @@ export async function leaveHousehold(input: unknown): Promise<Result> {
   try {
     const { session, member } = await requireHouseholdAccess(parsed.data.householdId);
     if (member.role === 'owner') {
-      return { ok: false, error: 'Владелец не может выйти из семьи' };
+      return { ok: false, error: 'Владелец не может выйти из бюджета' };
     }
 
     await db
@@ -201,14 +212,60 @@ export async function leaveHousehold(input: unknown): Promise<Result> {
       .where(
         and(
           eq(householdMember.householdId, parsed.data.householdId),
-          eq(householdMember.userId, session.user.id),
-        ),
+          eq(householdMember.userId, session.user.id)
+        )
       );
 
-    revalidatePath('/family');
+    revalidatePath('/budgets', 'layout');
     return { ok: true };
   } catch (error) {
     console.error('leaveHousehold failed', error);
-    return { ok: false, error: 'Не удалось выйти из семьи' };
+    return { ok: false, error: 'Не удалось выйти из бюджета' };
+  }
+}
+
+async function requireOwnedFamily(householdId: string) {
+  const access = await requireOwner(householdId);
+  const [row] = await db
+    .select({ type: household.type })
+    .from(household)
+    .where(eq(household.id, householdId))
+    .limit(1);
+  if (row?.type !== 'family') throw new Error('FORBIDDEN');
+  return access;
+}
+
+export async function renameHousehold(input: unknown): Promise<Result> {
+  const parsed = renameHouseholdSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: 'Введите название' };
+
+  try {
+    await requireOwnedFamily(parsed.data.householdId);
+    await db
+      .update(household)
+      .set({ name: parsed.data.name })
+      .where(eq(household.id, parsed.data.householdId));
+
+    revalidatePath('/budgets', 'layout');
+    return { ok: true };
+  } catch (error) {
+    console.error('renameHousehold failed', error);
+    return { ok: false, error: 'Не удалось переименовать бюджет' };
+  }
+}
+
+export async function deleteHousehold(input: unknown): Promise<Result> {
+  const parsed = householdIdSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: 'Некорректный запрос' };
+
+  try {
+    await requireOwnedFamily(parsed.data.householdId);
+    await db.delete(household).where(eq(household.id, parsed.data.householdId));
+
+    revalidatePath('/budgets', 'layout');
+    return { ok: true };
+  } catch (error) {
+    console.error('deleteHousehold failed', error);
+    return { ok: false, error: 'Не удалось удалить бюджет' };
   }
 }

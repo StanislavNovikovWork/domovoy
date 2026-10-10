@@ -1,7 +1,7 @@
 'use client';
 
-import { ActionIcon, Button, Group, SegmentedControl, Text } from '@mantine/core';
 import { IconChevronLeft, IconChevronRight, IconPlus } from '@tabler/icons-react';
+import { ActionIcon, Button, Group, SegmentedControl, Text } from '@mantine/core';
 import type { TxType } from '@/shared/lib/budget';
 import { PERIOD_OPTIONS, formatPeriodLabel, shiftDate, type Period } from '@/shared/lib/period';
 
@@ -15,7 +15,15 @@ type Props = {
   onAdd: () => void;
 };
 
-export function BudgetToolbar({ type, period, date, onTypeChange, onPeriodChange, onDateChange, onAdd }: Props) {
+export function BudgetToolbar({
+  type,
+  period,
+  date,
+  onTypeChange,
+  onPeriodChange,
+  onDateChange,
+  onAdd,
+}: Props) {
   return (
     <Group justify="space-between" gap="md">
       <Group gap="md">

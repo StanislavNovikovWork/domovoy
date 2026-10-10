@@ -49,13 +49,15 @@ export function prevMonth(month: string): string {
 
 // '2026-10-05' → '5 окт'
 export function formatShortDate(date: string): string {
-  return parseDate(date).toLocaleDateString(LOCALE, { day: 'numeric', month: 'short' }).replace('.', '');
+  return parseDate(date)
+    .toLocaleDateString(LOCALE, { day: 'numeric', month: 'short' })
+    .replace('.', '');
 }
 
 // Прогресс месяца относительно сегодняшней даты; null, если сегодня не в этом месяце
 export function getMonthProgress(
   month: string,
-  today: string,
+  today: string
 ): { percent: number; daysLeft: number; dayLabel: string } | null {
   if (monthStart(today) !== month) {
     return null;

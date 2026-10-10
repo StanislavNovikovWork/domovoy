@@ -1,7 +1,7 @@
 'use server';
 
-import 'server-only';
 import { and, eq, isNull, sql } from 'drizzle-orm';
+import 'server-only';
 import { db } from '@/server/db';
 import { category } from '@/server/db/schema';
 import { requireHouseholdAccess, revalidateBudgetPages } from '@/server/households/access';
@@ -82,8 +82,8 @@ export async function updateCategory(input: unknown): Promise<Result> {
         and(
           eq(category.id, data.id),
           eq(category.householdId, data.householdId),
-          isNull(category.archivedAt),
-        ),
+          isNull(category.archivedAt)
+        )
       )
       .returning({ id: category.id });
 
@@ -113,8 +113,8 @@ export async function archiveCategory(input: unknown): Promise<Result> {
         and(
           eq(category.id, data.id),
           eq(category.householdId, data.householdId),
-          isNull(category.archivedAt),
-        ),
+          isNull(category.archivedAt)
+        )
       )
       .returning({ id: category.id });
 

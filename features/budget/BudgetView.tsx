@@ -1,9 +1,9 @@
 'use client';
 
 import { useMemo, useState, type ReactNode } from 'react';
+import { IconSettings } from '@tabler/icons-react';
 import { Box, Button, Grid, Stack } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconSettings } from '@tabler/icons-react';
 import { CategoriesModal } from '@/features/categories';
 import {
   buildCategoryRows,
@@ -17,7 +17,13 @@ import {
   type TransactionItem,
   type TxType,
 } from '@/shared/lib/budget';
-import { formatPeriodLabel, getPeriodRange, monthStart, prevMonth, type Period } from '@/shared/lib/period';
+import {
+  formatPeriodLabel,
+  getPeriodRange,
+  monthStart,
+  prevMonth,
+  type Period,
+} from '@/shared/lib/period';
 import { HeaderActions } from '@/shared/ui/HeaderActions';
 import { AddTransactionModal, type CategoryOption } from './AddTransactionModal';
 import { AllTransactionsModal } from './AllTransactionsModal';
@@ -37,7 +43,14 @@ type Props = {
   actions?: ReactNode;
 };
 
-export function BudgetView({ householdId, initialDate, transactions, categories, plans, actions }: Props) {
+export function BudgetView({
+  householdId,
+  initialDate,
+  transactions,
+  categories,
+  plans,
+  actions,
+}: Props) {
   const [type, setType] = useState<TxType>('expense');
   const [period, setPeriod] = useState<Period>('month');
   const [date, setDate] = useState(initialDate);
@@ -52,19 +65,24 @@ export function BudgetView({ householdId, initialDate, transactions, categories,
     planModal.open();
   };
   // предзаполнение новой операции при оплате статьи плана
-  const [prefill, setPrefill] = useState<{ categoryId: string; note: string; amount: number } | null>(null);
+  const [prefill, setPrefill] = useState<{
+    categoryId: string;
+    note: string;
+    amount: number;
+  } | null>(null);
 
   const items = useMemo(
     () => filterTransactions(transactions, type, getPeriodRange(period, date)),
-    [transactions, type, period, date],
+    [transactions, type, period, date]
   );
   const totals = useMemo(() => groupByCategory(items), [items]);
 
   // план всегда за месяц выбранной даты, независимо от периода сверху
   const planMonth = monthStart(date);
   const planRows = useMemo(
-    () => buildPlanRows(plans, categories, transactions, planMonth, getPeriodRange('month', planMonth)),
-    [plans, categories, transactions, planMonth],
+    () =>
+      buildPlanRows(plans, categories, transactions, planMonth, getPeriodRange('month', planMonth)),
+    [plans, categories, transactions, planMonth]
   );
   const hasPrevPlan = useMemo(() => {
     const prev = prevMonth(planMonth);
@@ -76,24 +94,31 @@ export function BudgetView({ householdId, initialDate, transactions, categories,
   const categoryRows = useMemo(
     () =>
       planMode
-        ? buildCategoryRows(planRows, items, categories.map((c) => c.id))
+        ? buildCategoryRows(
+            planRows,
+            items,
+            categories.map((c) => c.id)
+          )
         : buildPlainRows(items),
-    [planMode, planRows, items, categories],
+    [planMode, planRows, items, categories]
   );
 
   const total = useMemo(() => items.reduce((acc, t) => acc + t.amount, 0), [items]);
   // блоки плана есть только у расходов
   const planSummary = useMemo(
     () => (type === 'expense' && planRows.length > 0 ? summarizePlan(planRows) : null),
-    [type, planRows],
+    [type, planRows]
   );
 
   // правая колонка: ожидаемые платежи (всегда за месяц плана) и последние операции
   const pendingPayments = useMemo(
     () => (type === 'expense' ? listPendingPayments(planRows) : []),
-    [type, planRows],
+    [type, planRows]
   );
-  const recent = useMemo(() => transactions.filter((t) => t.categoryType === type).slice(0, 5), [transactions, type]);
+  const recent = useMemo(
+    () => transactions.filter((t) => t.categoryType === type).slice(0, 5),
+    [transactions, type]
+  );
 
   const pay = (categoryId: string, name: string, remaining: number) => {
     setPrefill({ categoryId, note: name, amount: remaining / 100 });
@@ -151,7 +176,9 @@ export function BudgetView({ householdId, initialDate, transactions, categories,
 
           <Grid.Col span={{ base: 12, lg: 4 }}>
             <Stack gap="lg">
-              {pendingPayments.length > 0 && <PendingPaymentsCard payments={pendingPayments} onPay={pay} />}
+              {pendingPayments.length > 0 && (
+                <PendingPaymentsCard payments={pendingPayments} onPay={pay} />
+              )}
               <RecentCard items={recent} onShowAll={allModal.open} />
             </Stack>
           </Grid.Col>

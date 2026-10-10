@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { IconCalendar } from '@tabler/icons-react';
 import {
   Box,
   Button,
@@ -18,13 +19,12 @@ import {
   UnstyledButton,
 } from '@mantine/core';
 import { DatePicker } from '@mantine/dates';
-import { CategoryBadge } from '@/shared/ui/CategoryBadge';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
-import { IconCalendar } from '@tabler/icons-react';
 import { createTransaction } from '@/server/transactions/actions';
 import { formatDate, parseDate } from '@/shared/lib/period';
 import type { CategoryOption } from '@/shared/types/category';
+import { CategoryBadge } from '@/shared/ui/CategoryBadge';
 
 export type { CategoryOption };
 
@@ -51,7 +51,13 @@ export function AddTransactionModal({ opened, onClose, ...rest }: Props) {
   );
 }
 
-function TransactionForm({ onClose, householdId, categories, defaultType, prefill }: Omit<Props, 'opened'>) {
+function TransactionForm({
+  onClose,
+  householdId,
+  categories,
+  defaultType,
+  prefill,
+}: Omit<Props, 'opened'>) {
   const [pending, startTransition] = useTransition();
   const [calendarOpened, setCalendarOpened] = useState(false);
 
@@ -174,7 +180,9 @@ function TransactionForm({ onClose, householdId, categories, defaultType, prefil
                               icon={c.icon}
                               color={c.color}
                               size={56}
-                              state={selected ? 'selected' : form.values.categoryId ? 'muted' : 'default'}
+                              state={
+                                selected ? 'selected' : form.values.categoryId ? 'muted' : 'default'
+                              }
                             />
                             <Text size="xs" ta="center" fw={selected ? 600 : 400} lineClamp={2}>
                               {c.name}
@@ -216,7 +224,11 @@ function TransactionForm({ onClose, householdId, categories, defaultType, prefil
           )}
           <TextInput
             aria-label="Что конкретно"
-            placeholder={suggestions.length > 0 ? 'Выберите выше или напишите своё' : 'Например, Продукты в Пятёрочке'}
+            placeholder={
+              suggestions.length > 0
+                ? 'Выберите выше или напишите своё'
+                : 'Например, Продукты в Пятёрочке'
+            }
             maxLength={200}
             {...form.getInputProps('note')}
           />
@@ -242,7 +254,12 @@ function TransactionForm({ onClose, householdId, categories, defaultType, prefil
               Вчера
             </Button>
 
-            <Popover opened={calendarOpened} onChange={setCalendarOpened} position="bottom-end" withArrow>
+            <Popover
+              opened={calendarOpened}
+              onChange={setCalendarOpened}
+              position="bottom-end"
+              withArrow
+            >
               <Popover.Target>
                 <Button
                   type="button"

@@ -1,6 +1,6 @@
-import 'server-only';
-import { and, eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
+import { and, eq } from 'drizzle-orm';
+import 'server-only';
 import { db } from '@/server/db';
 import { householdMember } from '@/server/db/schema';
 import { requireSession } from '@/server/session';
@@ -12,10 +12,7 @@ export async function requireHouseholdAccess(householdId: string) {
     .select()
     .from(householdMember)
     .where(
-      and(
-        eq(householdMember.householdId, householdId),
-        eq(householdMember.userId, session.user.id),
-      ),
+      and(eq(householdMember.householdId, householdId), eq(householdMember.userId, session.user.id))
     )
     .limit(1);
   if (!member) throw new Error('FORBIDDEN');
@@ -25,5 +22,5 @@ export async function requireHouseholdAccess(householdId: string) {
 // Операции и категории показываются и в личном, и в семейном бюджете
 export function revalidateBudgetPages() {
   revalidatePath('/');
-  revalidatePath('/family');
+  revalidatePath('/budgets', 'layout');
 }

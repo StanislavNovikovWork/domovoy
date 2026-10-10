@@ -1,7 +1,15 @@
 import { Tooltip, UnstyledButton } from '@mantine/core';
 
 // Кружок слева от неоплаченной статьи: клик открывает оплату. Синий при частичной оплате, пунктирный иначе
-export function PayCircle({ partial, label, onClick }: { partial: boolean; label: string; onClick: () => void }) {
+export function PayCircle({
+  partial,
+  label,
+  onClick,
+}: {
+  partial: boolean;
+  label: string;
+  onClick: () => void;
+}) {
   return (
     <Tooltip label="Оплатить">
       <UnstyledButton

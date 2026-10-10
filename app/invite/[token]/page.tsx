@@ -1,11 +1,11 @@
-import { getFamilyHousehold, getInviteByToken, isInviteActive } from '@/server/households/queries';
+import { InviteCard, type InviteState } from '@/features/invite';
+import { getInviteByToken, getUserHousehold, isInviteActive } from '@/server/households/queries';
 import { getSession } from '@/server/session';
 import { inviteTokenSchema } from '@/shared/schemas/household';
-import { InviteCard, type InviteState } from '@/features/invite';
 
 // нейтральный заголовок: превью в мессенджерах не раскроет имена
 export const metadata = {
-  title: 'Приглашение в семейный бюджет',
+  title: 'Приглашение в бюджет',
   robots: { index: false, follow: false },
 };
 
@@ -29,9 +29,8 @@ async function resolveState(token: string): Promise<InviteState> {
   const details = { inviterName: invite.inviterName, householdName: invite.householdName };
   if (!session) return { kind: 'guest', ...details };
 
-  const family = await getFamilyHousehold(session.user.id);
-  if (family?.id === invite.householdId) return { kind: 'already-in-this' };
-  if (family) return { kind: 'already-in-other' };
+  const membership = await getUserHousehold(session.user.id, invite.householdId);
+  if (membership) return { kind: 'already-in-this', householdId: invite.householdId };
 
   return { kind: 'can-join', ...details };
 }

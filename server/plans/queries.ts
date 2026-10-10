@@ -1,5 +1,5 @@
-import 'server-only';
 import { asc, eq } from 'drizzle-orm';
+import 'server-only';
 import { db } from '@/server/db';
 import { budgetPlan, budgetPlanItem } from '@/server/db/schema';
 import type { PlanItem } from '@/shared/lib/budget';
@@ -17,7 +17,11 @@ export async function listPlans(householdId: string): Promise<PlanItem[]> {
       .from(budgetPlan)
       .where(eq(budgetPlan.householdId, householdId)),
     db
-      .select({ planId: budgetPlanItem.planId, name: budgetPlanItem.name, amount: budgetPlanItem.amount })
+      .select({
+        planId: budgetPlanItem.planId,
+        name: budgetPlanItem.name,
+        amount: budgetPlanItem.amount,
+      })
       .from(budgetPlanItem)
       .innerJoin(budgetPlan, eq(budgetPlan.id, budgetPlanItem.planId))
       .where(eq(budgetPlan.householdId, householdId))

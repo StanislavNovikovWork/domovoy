@@ -23,10 +23,10 @@ export type CategoryTotal = {
 export function filterTransactions(
   transactions: TransactionItem[],
   type: TxType,
-  range: { from: string; to: string },
+  range: { from: string; to: string }
 ): TransactionItem[] {
   return transactions.filter(
-    (t) => t.categoryType === type && t.occurredOn >= range.from && t.occurredOn < range.to,
+    (t) => t.categoryType === type && t.occurredOn >= range.from && t.occurredOn < range.to
   );
 }
 
@@ -90,12 +90,13 @@ export function buildPlanRows(
   categories: { id: string; name: string; type: TxType; icon: string; color: string }[],
   transactions: TransactionItem[],
   month: string,
-  range: { from: string; to: string },
+  range: { from: string; to: string }
 ): PlanRow[] {
   const spent = new Map<string, number>();
   const byCategory = new Map<string, TransactionItem[]>();
   for (const t of transactions) {
-    if (t.categoryType !== 'expense' || t.occurredOn < range.from || t.occurredOn >= range.to) continue;
+    if (t.categoryType !== 'expense' || t.occurredOn < range.from || t.occurredOn >= range.to)
+      continue;
     spent.set(t.categoryId, (spent.get(t.categoryId) ?? 0) + t.amount);
     byCategory.set(t.categoryId, [...(byCategory.get(t.categoryId) ?? []), t]);
   }
@@ -109,7 +110,9 @@ export function buildPlanRows(
     const total = spent.get(c.id) ?? 0;
     const categoryTransactions = byCategory.get(c.id) ?? [];
     const items = p.items.map((i) => {
-      const matched = categoryTransactions.filter((t) => normalizeNote(t.note) === normalizeNote(i.name));
+      const matched = categoryTransactions.filter(
+        (t) => normalizeNote(t.note) === normalizeNote(i.name)
+      );
       return {
         name: i.name,
         planned: i.amount,
@@ -177,7 +180,7 @@ export function listPendingPayments(rows: PlanRow[]): PendingPayment[] {
           name: i.name,
           remaining: i.planned - i.spent,
           partial: i.spent > 0,
-        })),
+        }))
     )
     .sort((a, b) => b.remaining - a.remaining);
 }
@@ -198,7 +201,7 @@ export type CategoryRow = {
 export function buildCategoryRows(
   planRows: PlanRow[],
   monthItems: TransactionItem[],
-  categoryOrder: string[],
+  categoryOrder: string[]
 ): CategoryRow[] {
   const order = new Map(categoryOrder.map((id, index) => [id, index]));
   const planned: CategoryRow[] = planRows

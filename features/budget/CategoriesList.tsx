@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { IconAdjustments, IconCheck, IconChevronDown } from '@tabler/icons-react';
 import {
   Badge,
   Box,
@@ -16,7 +17,6 @@ import {
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { IconAdjustments, IconCheck, IconChevronDown } from '@tabler/icons-react';
 import { copyPlan } from '@/server/plans/actions';
 import type { CategoryRow, PlanRowItem } from '@/shared/lib/budget';
 import { formatMoney } from '@/shared/lib/money';
@@ -43,10 +43,14 @@ const isOver = (r: CategoryRow) => r.planned !== null && r.spent > r.planned;
 
 function subtitle(r: CategoryRow): string {
   const pending = r.items.filter((i) => i.spent < i.planned).length;
-  const opsCount = r.transactions.length + r.items.reduce((acc, i) => acc + i.transactions.length, 0);
+  const opsCount =
+    r.transactions.length + r.items.reduce((acc, i) => acc + i.transactions.length, 0);
 
   if (r.spent === 0) {
-    const waiting = pending > 0 ? ` · ${pending} ${pluralRu(pending, ['ожидается', 'ожидаются', 'ожидаются'])}` : '';
+    const waiting =
+      pending > 0
+        ? ` · ${pending} ${pluralRu(pending, ['ожидается', 'ожидаются', 'ожидаются'])}`
+        : '';
     return `пока без операций${waiting}`;
   }
   if (r.items.length > 0) {
@@ -90,7 +94,12 @@ function ItemRow({ item, color, onPay }: { item: PlanRowItem; color: string; onP
             {partial ? 'Частично' : 'Ожидается'}
           </Badge>
         )}
-        <Text size="sm" fw={done ? 500 : undefined} c={done ? undefined : 'dimmed'} style={{ whiteSpace: 'nowrap' }}>
+        <Text
+          size="sm"
+          fw={done ? 500 : undefined}
+          c={done ? undefined : 'dimmed'}
+          style={{ whiteSpace: 'nowrap' }}
+        >
           {partial
             ? `${formatMoney(item.spent)} из ${formatMoney(item.planned)}`
             : formatMoney(done ? item.spent : item.planned)}
@@ -174,7 +183,9 @@ function CategoryRowView({
                 </Group>
               </Group>
 
-              {r.planned !== null && <PlanProgress spent={r.spent} planned={r.planned} color={r.color} />}
+              {r.planned !== null && (
+                <PlanProgress spent={r.spent} planned={r.planned} color={r.color} />
+              )}
               {unlimited && (
                 <Box
                   h={6}
@@ -225,7 +236,12 @@ function CategoryRowView({
                     <Text size="xs" c="dimmed" w={44} style={{ flexShrink: 0 }}>
                       {formatShortDate(t.occurredOn)}
                     </Text>
-                    <Text size="xs" c={t.note ? undefined : 'dimmed'} truncate style={{ flex: 1, minWidth: 0 }}>
+                    <Text
+                      size="xs"
+                      c={t.note ? undefined : 'dimmed'}
+                      truncate
+                      style={{ flex: 1, minWidth: 0 }}
+                    >
                       {t.note || 'Без описания'}
                     </Text>
                     <Text size="xs" style={{ whiteSpace: 'nowrap' }}>
@@ -291,7 +307,12 @@ export function CategoriesList({
             )}
           </Group>
           {canEditPlan && (
-            <Button variant="default" size="xs" leftSection={<IconAdjustments size={14} />} onClick={onEdit}>
+            <Button
+              variant="default"
+              size="xs"
+              leftSection={<IconAdjustments size={14} />}
+              onClick={onEdit}
+            >
               Настроить план
             </Button>
           )}
@@ -310,16 +331,27 @@ export function CategoriesList({
 
         {visible.length === 0 ? (
           <Text c="dimmed" ta="center" size="sm" py="md">
-            {filter === 'attention' ? 'Нет категорий, требующих внимания' : 'Пока нет операций за этот период'}
+            {filter === 'attention'
+              ? 'Нет категорий, требующих внимания'
+              : 'Пока нет операций за этот период'}
           </Text>
         ) : (
           <Stack gap={0}>
             {visible.map((r, index) => (
               <Box
                 key={r.categoryId}
-                style={index > 0 ? { borderTop: '1px solid var(--mantine-color-default-border)' } : undefined}
+                style={
+                  index > 0
+                    ? { borderTop: '1px solid var(--mantine-color-default-border)' }
+                    : undefined
+                }
               >
-                <CategoryRowView row={r} planMode={planMode} onSetLimit={onSetLimit} onPay={onPay} />
+                <CategoryRowView
+                  row={r}
+                  planMode={planMode}
+                  onSetLimit={onSetLimit}
+                  onPay={onPay}
+                />
               </Box>
             ))}
           </Stack>

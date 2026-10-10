@@ -1,13 +1,12 @@
 import '@mantine/core/styles.css';
 import '@mantine/dates/styles.css';
-import 'dayjs/locale/ru';
-import { DatesProvider } from '@mantine/dates';
 
+import 'dayjs/locale/ru';
 import { mantineHtmlProps, MantineProvider } from '@mantine/core';
-import { theme } from '../theme';
+import { DatesProvider } from '@mantine/dates';
 import { Notifications } from '@mantine/notifications';
 import { ColorSchemeScriptOnce } from '@/shared/ui/ColorSchemeScriptOnce';
-
+import { theme } from '../theme';
 
 export const metadata = {
   title: 'Mantine Next.js template',

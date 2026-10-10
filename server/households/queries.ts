@@ -1,28 +1,53 @@
-import 'server-only';
 import { cache } from 'react';
-import { and, asc, eq, gt, isNull } from 'drizzle-orm';
+import { and, asc, eq, gt, isNull, sql } from 'drizzle-orm';
+import 'server-only';
 import { db } from '@/server/db';
 import { household, householdInvite, householdMember, user } from '@/server/db/schema';
 
-async function findUserHousehold(userId: string, type: 'personal' | 'family') {
+const householdColumns = {
+  id: household.id,
+  name: household.name,
+  type: household.type,
+  role: householdMember.role,
+};
+
+// cache() выполняет запрос один раз за HTTP-запрос
+export const getPersonalHousehold = cache(async (userId: string) => {
   const [row] = await db
-    .select({
-      id: household.id,
-      name: household.name,
-      type: household.type,
-      role: householdMember.role,
-    })
+    .select(householdColumns)
     .from(householdMember)
     .innerJoin(household, eq(household.id, householdMember.householdId))
-    .where(and(eq(householdMember.userId, userId), eq(household.type, type)))
+    .where(and(eq(householdMember.userId, userId), eq(household.type, 'personal')))
     .orderBy(asc(householdMember.joinedAt))
     .limit(1);
   return row ?? null;
-}
+});
 
-// cache() выполняет запрос один раз за HTTP-запрос
-export const getPersonalHousehold = cache((userId: string) => findUserHousehold(userId, 'personal'));
-export const getFamilyHousehold = cache((userId: string) => findUserHousehold(userId, 'family'));
+// бюджет, если пользователь в нём состоит
+export const getUserHousehold = cache(async (userId: string, householdId: string) => {
+  const [row] = await db
+    .select(householdColumns)
+    .from(householdMember)
+    .innerJoin(household, eq(household.id, householdMember.householdId))
+    .where(and(eq(householdMember.userId, userId), eq(household.id, householdId)))
+    .limit(1);
+  return row ?? null;
+});
+
+export type HouseholdListItem = Awaited<ReturnType<typeof listUserHouseholds>>[number];
+
+// все общие (не личные) бюджеты пользователя
+export async function listUserHouseholds(userId: string) {
+  return db
+    .select({
+      ...householdColumns,
+      membersCount: sql<number>`(select count(*)::int from ${householdMember} hm where hm.household_id = ${household.id})`,
+    })
+    .from(householdMember)
+    .innerJoin(household, eq(household.id, householdMember.householdId))
+    .where(and(eq(householdMember.userId, userId), eq(household.type, 'family')))
+    .orderBy(asc(household.createdAt));
+}
 
 export type HouseholdMemberItem = Awaited<ReturnType<typeof listMembers>>[number];
 
@@ -58,8 +83,8 @@ export async function listActiveInvites(householdId: string) {
         eq(householdInvite.householdId, householdId),
         isNull(householdInvite.usedAt),
         isNull(householdInvite.revokedAt),
-        gt(householdInvite.expiresAt, new Date()),
-      ),
+        gt(householdInvite.expiresAt, new Date())
+      )
     )
     .orderBy(asc(householdInvite.createdAt));
 }
@@ -84,6 +109,10 @@ export async function getInviteByToken(token: string) {
   return row ?? null;
 }
 
-export function isInviteActive(invite: { expiresAt: Date; usedAt: Date | null; revokedAt: Date | null }) {
+export function isInviteActive(invite: {
+  expiresAt: Date;
+  usedAt: Date | null;
+  revokedAt: Date | null;
+}) {
   return !invite.usedAt && !invite.revokedAt && invite.expiresAt > new Date();
 }

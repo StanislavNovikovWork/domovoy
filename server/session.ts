@@ -1,7 +1,7 @@
-import 'server-only';
 import { cache } from 'react';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import 'server-only';
 import { auth } from '@/server/auth';
 import { withNext } from '@/shared/lib/safe-next';
 

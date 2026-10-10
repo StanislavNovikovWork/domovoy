@@ -1,5 +1,5 @@
-import 'server-only';
 import { and, eq } from 'drizzle-orm';
+import 'server-only';
 import { db } from '@/server/db';
 import { household, householdMember, category } from '@/server/db/schema';
 import { DEFAULT_CATEGORIES } from '@/server/households/default-categories';
@@ -38,7 +38,7 @@ export async function ensurePersonalHousehold(userId: string): Promise<string> {
           ...c,
           householdId: id,
           sortOrder: index,
-        })),
+        }))
       ),
     ]);
     return id;

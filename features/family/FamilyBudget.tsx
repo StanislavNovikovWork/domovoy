@@ -1,8 +1,8 @@
 'use client';
 
+import { IconUsers } from '@tabler/icons-react';
 import { Button } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconUsers } from '@tabler/icons-react';
 import { BudgetView, type CategoryOption } from '@/features/budget';
 import type { HouseholdMemberItem, InviteItem } from '@/server/households/queries';
 import type { PlanItem, TransactionItem } from '@/shared/lib/budget';
@@ -10,6 +10,7 @@ import { MembersModal } from './MembersModal';
 
 type Props = {
   householdId: string;
+  name: string;
   currentUserId: string;
   role: 'owner' | 'member';
   initialDate: string;
@@ -20,8 +21,8 @@ type Props = {
   invites: InviteItem[];
 };
 
-// семейный бюджет = обычный BudgetView плюс кнопка и модалка участников
-export function FamilyBudget({ members, invites, currentUserId, role, ...budget }: Props) {
+// общий бюджет = обычный BudgetView плюс кнопка и модалка участников
+export function FamilyBudget({ members, invites, currentUserId, role, name, ...budget }: Props) {
   const [opened, modal] = useDisclosure(false);
 
   return (
@@ -38,6 +39,7 @@ export function FamilyBudget({ members, invites, currentUserId, role, ...budget 
         opened={opened}
         onClose={modal.close}
         householdId={budget.householdId}
+        name={name}
         currentUserId={currentUserId}
         role={role}
         members={members}

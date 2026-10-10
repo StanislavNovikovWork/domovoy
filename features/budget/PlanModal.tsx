@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { IconPlus, IconTrash } from '@tabler/icons-react';
 import {
   ActionIcon,
   Button,
@@ -13,14 +14,13 @@ import {
   TextInput,
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { IconPlus, IconTrash } from '@tabler/icons-react';
 import { removePlan, removePlanItem, setPlan, setPlanItem } from '@/server/plans/actions';
 import type { PlanRow } from '@/shared/lib/budget';
 import { formatMoney } from '@/shared/lib/money';
 import { formatPeriodLabel } from '@/shared/lib/period';
+import type { CategoryOption } from '@/shared/types/category';
 import { AnimatedHeight } from '@/shared/ui/AnimatedHeight';
 import { CategoryBadge } from '@/shared/ui/CategoryBadge';
-import type { CategoryOption } from '@/shared/types/category';
 
 type Props = {
   opened: boolean;
@@ -62,7 +62,15 @@ function useAction() {
   return { pending, run };
 }
 
-export function PlanModal({ opened, onClose, householdId, month, rows, categories, initialCategoryId }: Props) {
+export function PlanModal({
+  opened,
+  onClose,
+  householdId,
+  month,
+  rows,
+  categories,
+  initialCategoryId,
+}: Props) {
   return (
     <Modal
       opened={opened}
@@ -85,7 +93,14 @@ export function PlanModal({ opened, onClose, householdId, month, rows, categorie
   );
 }
 
-function Content({ householdId, month, rows, categories, initialCategoryId, onClose }: Omit<Props, 'opened'>) {
+function Content({
+  householdId,
+  month,
+  rows,
+  categories,
+  initialCategoryId,
+  onClose,
+}: Omit<Props, 'opened'>) {
   const { pending, run } = useAction();
   const [categoryId, setCategoryId] = useState<string | null>(initialCategoryId ?? null);
   const [amount, setAmount] = useState<number | string>('');
@@ -106,7 +121,7 @@ function Content({ householdId, month, rows, categories, initialCategoryId, onCl
         setCategoryId(null);
         setAmount('');
         if (kopecks > 0) onClose();
-      },
+      }
     );
   };
 
@@ -161,7 +176,15 @@ function Content({ householdId, month, rows, categories, initialCategoryId, onCl
 }
 
 // категория плана: сумма (или итог по статьям) и редактор статей
-function RowEditor({ row, householdId, month }: { row: PlanRow; householdId: string; month: string }) {
+function RowEditor({
+  row,
+  householdId,
+  month,
+}: {
+  row: PlanRow;
+  householdId: string;
+  month: string;
+}) {
   const { pending, run } = useAction();
   const hasItems = row.items.length > 0;
   // только что добавленная категория без суммы: сразу предлагаем расписать статьи
@@ -171,14 +194,23 @@ function RowEditor({ row, householdId, month }: { row: PlanRow; householdId: str
 
   const saveCategory = (value: number) => {
     if (value > 0 && Math.round(value * 100) !== row.planned) {
-      run(() => setPlan({ householdId, categoryId: row.categoryId, month, amount: Math.round(value * 100) }));
+      run(() =>
+        setPlan({ householdId, categoryId: row.categoryId, month, amount: Math.round(value * 100) })
+      );
     }
   };
 
   const saveItem = (name: string, value: number, onSuccess?: () => void) =>
     run(
-      () => setPlanItem({ householdId, categoryId: row.categoryId, month, name, amount: Math.round(value * 100) }),
-      onSuccess,
+      () =>
+        setPlanItem({
+          householdId,
+          categoryId: row.categoryId,
+          month,
+          name,
+          amount: Math.round(value * 100),
+        }),
+      onSuccess
     );
 
   const addItem = () => {
@@ -252,7 +284,11 @@ function RowEditor({ row, householdId, month }: { row: PlanRow; householdId: str
               size="sm"
               aria-label={`Удалить статью ${i.name}`}
               disabled={pending}
-              onClick={() => run(() => removePlanItem({ householdId, categoryId: row.categoryId, month, name: i.name }))}
+              onClick={() =>
+                run(() =>
+                  removePlanItem({ householdId, categoryId: row.categoryId, month, name: i.name })
+                )
+              }
             >
               <IconTrash size={14} />
             </ActionIcon>

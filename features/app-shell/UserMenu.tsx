@@ -1,8 +1,8 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Avatar, Menu, Text } from '@mantine/core';
 import { IconLogout } from '@tabler/icons-react';
+import { Avatar, Menu, Text } from '@mantine/core';
 import { authClient } from '@/shared/lib/auth-client';
 
 type Props = { user: { name: string; email: string } };
@@ -32,8 +32,12 @@ export function UserMenu({ user }: Props) {
       </Menu.Target>
       <Menu.Dropdown>
         <Menu.Label>
-          <Text size="sm" fw={500} truncate>{user.name}</Text>
-          <Text size="xs" c="dimmed" truncate>{user.email}</Text>
+          <Text size="sm" fw={500} truncate>
+            {user.name}
+          </Text>
+          <Text size="xs" c="dimmed" truncate>
+            {user.email}
+          </Text>
         </Menu.Label>
         <Menu.Divider />
         <Menu.Item leftSection={<IconLogout size={16} />} onClick={handleSignOut}>

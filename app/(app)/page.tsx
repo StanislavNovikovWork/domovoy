@@ -1,11 +1,11 @@
 import { notFound } from 'next/navigation';
-import { requirePageSession } from '@/server/session';
-import { getPersonalHousehold } from '@/server/households/queries';
-import { listAllTransactions } from '@/server/transactions/queries';
-import { listActiveCategories } from '@/server/categories/queries';
-import { listPlans } from '@/server/plans/queries';
-import { formatDate } from '@/shared/lib/period';
 import { BudgetView } from '@/features/budget';
+import { listActiveCategories } from '@/server/categories/queries';
+import { getPersonalHousehold } from '@/server/households/queries';
+import { listPlans } from '@/server/plans/queries';
+import { requirePageSession } from '@/server/session';
+import { listAllTransactions } from '@/server/transactions/queries';
+import { formatDate } from '@/shared/lib/period';
 
 export default async function BudgetPage() {
   const { user } = await requirePageSession();

@@ -64,7 +64,13 @@ export function PendingPaymentsCard({
   );
 }
 
-export function RecentCard({ items, onShowAll }: { items: TransactionItem[]; onShowAll: () => void }) {
+export function RecentCard({
+  items,
+  onShowAll,
+}: {
+  items: TransactionItem[];
+  onShowAll: () => void;
+}) {
   return (
     <Paper withBorder radius="lg" p="lg">
       <Stack gap="xs">
@@ -82,7 +88,13 @@ export function RecentCard({ items, onShowAll }: { items: TransactionItem[]; onS
         ) : (
           <Stack gap={0}>
             {items.map((t, index) => (
-              <Group key={t.id} gap="sm" wrap="nowrap" py="xs" style={index > 0 ? divider : undefined}>
+              <Group
+                key={t.id}
+                gap="sm"
+                wrap="nowrap"
+                py="xs"
+                style={index > 0 ? divider : undefined}
+              >
                 <Text size="xs" c="dimmed" w={44} style={{ flexShrink: 0 }}>
                   {formatShortDate(t.occurredOn)}
                 </Text>
@@ -94,7 +106,12 @@ export function RecentCard({ items, onShowAll }: { items: TransactionItem[]; onS
                     {t.categoryName}
                   </Text>
                 </Box>
-                <Text size="sm" fw={500} c={t.categoryType === 'income' ? 'teal' : undefined} style={{ whiteSpace: 'nowrap' }}>
+                <Text
+                  size="sm"
+                  fw={500}
+                  c={t.categoryType === 'income' ? 'teal' : undefined}
+                  style={{ whiteSpace: 'nowrap' }}
+                >
                   {signedMoney(t)}
                 </Text>
               </Group>

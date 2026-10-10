@@ -1,6 +1,16 @@
 'use client';
 
-import { Box, ColorSwatch, Group, Paper, Progress, SimpleGrid, Stack, Text, Tooltip } from '@mantine/core';
+import {
+  Box,
+  ColorSwatch,
+  Group,
+  Paper,
+  Progress,
+  SimpleGrid,
+  Stack,
+  Text,
+  Tooltip,
+} from '@mantine/core';
 import type { CategoryTotal, PlanSummary, TxType } from '@/shared/lib/budget';
 import { formatMoney } from '@/shared/lib/money';
 import { formatPeriodCaption, getMonthProgress, type Period } from '@/shared/lib/period';
@@ -19,7 +29,17 @@ type Props = {
 
 const LEGEND_LIMIT = 6;
 
-function Metric({ label, value, hint, red }: { label: string; value: string; hint?: string; red?: boolean }) {
+function Metric({
+  label,
+  value,
+  hint,
+  red,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  red?: boolean;
+}) {
   return (
     <Stack gap={2}>
       <Text size="sm" c="dimmed">
@@ -61,7 +81,10 @@ function StructureBar({ type, totals }: { type: TxType; totals: CategoryTotal[] 
 
       <Group gap={2} wrap="nowrap">
         {sum === 0 ? (
-          <Box h={10} style={{ flex: 1, borderRadius: 999, background: 'var(--mantine-color-gray-light)' }} />
+          <Box
+            h={10}
+            style={{ flex: 1, borderRadius: 999, background: 'var(--mantine-color-gray-light)' }}
+          />
         ) : (
           totals.map((t) => (
             <Tooltip key={t.categoryId} label={`${t.name}: ${formatMoney(t.total)}`}>
@@ -84,7 +107,8 @@ function StructureBar({ type, totals }: { type: TxType; totals: CategoryTotal[] 
 
 export function SummaryCard({ type, period, date, total, totals, plan, planMonth, today }: Props) {
   const progress = plan ? getMonthProgress(planMonth, today) : null;
-  const planPercent = plan && plan.planned > 0 ? Math.round((plan.spentInPlan / plan.planned) * 100) : 0;
+  const planPercent =
+    plan && plan.planned > 0 ? Math.round((plan.spentInPlan / plan.planned) * 100) : 0;
   const overPlan = plan ? plan.remaining < 0 : false;
 
   return (
@@ -100,7 +124,8 @@ export function SummaryCard({ type, period, date, total, totals, plan, planMonth
             </Text>
             {plan && (
               <Text size="xs" c="dimmed">
-                По плану: {formatMoney(plan.spentInPlan)} из {formatMoney(plan.planned)} · {planPercent}%
+                По плану: {formatMoney(plan.spentInPlan)} из {formatMoney(plan.planned)} ·{' '}
+                {planPercent}%
               </Text>
             )}
           </Stack>

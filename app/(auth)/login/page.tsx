@@ -1,8 +1,8 @@
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { Container, Paper, Text, Title } from '@mantine/core';
-import { auth } from '@/server/auth';
 import { LoginForm } from '@/features/auth';
+import { auth } from '@/server/auth';
 import { safeNext } from '@/shared/lib/safe-next';
 
 export const metadata = {

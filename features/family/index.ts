@@ -1,2 +1,2 @@
-export { CreateFamilyCard } from './CreateFamilyCard';
+export { BudgetsList } from './BudgetsList';
 export { FamilyBudget } from './FamilyBudget';

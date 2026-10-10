@@ -1,7 +1,7 @@
 'use server';
 
-import 'server-only';
 import { and, eq, isNull } from 'drizzle-orm';
+import 'server-only';
 import { db } from '@/server/db';
 import { category, transaction } from '@/server/db/schema';
 import { requireHouseholdAccess, revalidateBudgetPages } from '@/server/households/access';
@@ -27,8 +27,8 @@ export async function createTransaction(input: unknown): Promise<Result> {
         and(
           eq(category.id, data.categoryId),
           eq(category.householdId, data.householdId),
-          isNull(category.archivedAt),
-        ),
+          isNull(category.archivedAt)
+        )
       )
       .limit(1);
     if (!cat) return { ok: false, error: 'Категория не найдена' };

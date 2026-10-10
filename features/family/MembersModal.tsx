@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { IconCheck, IconCopy, IconLink, IconTrash, IconUserMinus } from '@tabler/icons-react';
 import {
   ActionIcon,
   Avatar,
@@ -16,14 +17,21 @@ import {
   Tooltip,
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { IconCheck, IconCopy, IconLink, IconTrash, IconUserMinus } from '@tabler/icons-react';
-import { createInvite, leaveHousehold, removeMember, revokeInvite } from '@/server/households/actions';
+import {
+  createInvite,
+  deleteHousehold,
+  leaveHousehold,
+  removeMember,
+  renameHousehold,
+  revokeInvite,
+} from '@/server/households/actions';
 import type { HouseholdMemberItem, InviteItem } from '@/server/households/queries';
 
 type Props = {
   opened: boolean;
   onClose: () => void;
   householdId: string;
+  name: string;
   currentUserId: string;
   role: 'owner' | 'member';
   members: HouseholdMemberItem[];
@@ -32,7 +40,16 @@ type Props = {
 
 const ROLE_LABEL = { owner: 'Владелец', member: 'Участник' } as const;
 
-export function MembersModal({ opened, onClose, householdId, currentUserId, role, members, invites }: Props) {
+export function MembersModal({
+  opened,
+  onClose,
+  householdId,
+  name,
+  currentUserId,
+  role,
+  members,
+  invites,
+}: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [newLink, setNewLink] = useState<string | null>(null);
@@ -41,6 +58,37 @@ export function MembersModal({ opened, onClose, householdId, currentUserId, role
   useEffect(() => setOrigin(window.location.origin), []);
   const inviteUrl = (token: string) => `${origin}/invite/${token}`;
   const isOwner = role === 'owner';
+  const [newName, setNewName] = useState(name);
+  useEffect(() => setNewName(name), [name]);
+
+  const rename = () => {
+    startTransition(async () => {
+      const result = await renameHousehold({ householdId, name: newName });
+      if (result.ok) {
+        notifications.show({ message: 'Название изменено', color: 'teal' });
+        router.refresh();
+      } else {
+        notifications.show({ message: result.error, color: 'red' });
+      }
+    });
+  };
+
+  const remove = () => {
+    if (
+      !window.confirm(`Удалить бюджет «${name}» вместе со всеми операциями? Это нельзя отменить.`)
+    )
+      return;
+    startTransition(async () => {
+      const result = await deleteHousehold({ householdId });
+      if (result.ok) {
+        notifications.show({ message: 'Бюджет удалён', color: 'teal' });
+        router.push('/budgets');
+        router.refresh();
+      } else {
+        notifications.show({ message: result.error, color: 'red' });
+      }
+    });
+  };
 
   const run = (action: () => Promise<{ ok: boolean; error?: string }>, success?: string) => {
     startTransition(async () => {
@@ -70,7 +118,7 @@ export function MembersModal({ opened, onClose, householdId, currentUserId, role
     startTransition(async () => {
       const result = await leaveHousehold({ householdId });
       if (result.ok) {
-        notifications.show({ message: 'Вы вышли из семьи', color: 'teal' });
+        notifications.show({ message: 'Вы вышли из бюджета', color: 'teal' });
         onClose();
         router.refresh();
       } else {
@@ -107,13 +155,16 @@ export function MembersModal({ opened, onClose, householdId, currentUserId, role
                   {ROLE_LABEL[m.role]}
                 </Badge>
                 {isOwner && m.role !== 'owner' && (
-                  <Tooltip label="Удалить из семьи">
+                  <Tooltip label="Удалить из бюджета">
                     <ActionIcon
                       variant="subtle"
                       color="red"
                       disabled={pending}
                       onClick={() =>
-                        run(() => removeMember({ householdId, userId: m.userId }), 'Участник удалён')
+                        run(
+                          () => removeMember({ householdId, userId: m.userId }),
+                          'Участник удалён'
+                        )
                       }
                     >
                       <IconUserMinus size={16} />
@@ -127,7 +178,12 @@ export function MembersModal({ opened, onClose, householdId, currentUserId, role
 
         {isOwner && (
           <>
-            <Button variant="light" leftSection={<IconLink size={16} />} onClick={invite} loading={pending}>
+            <Button
+              variant="light"
+              leftSection={<IconLink size={16} />}
+              onClick={invite}
+              loading={pending}
+            >
               Создать ссылку-приглашение
             </Button>
 
@@ -142,7 +198,11 @@ export function MembersModal({ opened, onClose, householdId, currentUserId, role
                   <CopyButton value={newLink}>
                     {({ copied, copy }) => (
                       <Tooltip label={copied ? 'Скопировано' : 'Скопировать'}>
-                        <ActionIcon variant="subtle" color={copied ? 'teal' : 'gray'} onClick={copy}>
+                        <ActionIcon
+                          variant="subtle"
+                          color={copied ? 'teal' : 'gray'}
+                          onClick={copy}
+                        >
                           {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
                         </ActionIcon>
                       </Tooltip>
@@ -161,13 +221,21 @@ export function MembersModal({ opened, onClose, householdId, currentUserId, role
                   {invites.map((i) => (
                     <Group key={i.id} justify="space-between" wrap="nowrap">
                       <Text size="xs" c="dimmed">
-                        до {i.expiresAt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+                        до{' '}
+                        {i.expiresAt.toLocaleDateString('ru-RU', {
+                          day: 'numeric',
+                          month: 'short',
+                        })}
                       </Text>
                       <Group gap={4} wrap="nowrap">
                         <CopyButton value={inviteUrl(i.token)}>
                           {({ copied, copy }) => (
                             <Tooltip label={copied ? 'Скопировано' : 'Скопировать ссылку'}>
-                              <ActionIcon variant="subtle" color={copied ? 'teal' : 'gray'} onClick={copy}>
+                              <ActionIcon
+                                variant="subtle"
+                                color={copied ? 'teal' : 'gray'}
+                                onClick={copy}
+                              >
                                 {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
                               </ActionIcon>
                             </Tooltip>
@@ -179,7 +247,10 @@ export function MembersModal({ opened, onClose, householdId, currentUserId, role
                             color="red"
                             disabled={pending}
                             onClick={() =>
-                              run(() => revokeInvite({ householdId, inviteId: i.id }), 'Приглашение отозвано')
+                              run(
+                                () => revokeInvite({ householdId, inviteId: i.id }),
+                                'Приглашение отозвано'
+                              )
                             }
                           >
                             <IconTrash size={16} />
@@ -194,9 +265,34 @@ export function MembersModal({ opened, onClose, householdId, currentUserId, role
           </>
         )}
 
+        {isOwner && (
+          <>
+            <Group align="flex-end" wrap="nowrap">
+              <TextInput
+                label="Название бюджета"
+                maxLength={40}
+                value={newName}
+                onChange={(e) => setNewName(e.currentTarget.value)}
+                style={{ flex: 1 }}
+              />
+              <Button
+                variant="default"
+                onClick={rename}
+                loading={pending}
+                disabled={!newName.trim() || newName.trim() === name}
+              >
+                Сохранить
+              </Button>
+            </Group>
+            <Button variant="subtle" color="red" onClick={remove} loading={pending}>
+              Удалить бюджет
+            </Button>
+          </>
+        )}
+
         {!isOwner && (
           <Button variant="subtle" color="red" onClick={leave} loading={pending}>
-            Выйти из семьи
+            Выйти из бюджета
           </Button>
         )}
       </Stack>

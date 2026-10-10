@@ -1,7 +1,7 @@
 'use server';
 
-import 'server-only';
 import { and, eq, isNull, sql } from 'drizzle-orm';
+import 'server-only';
 import { db } from '@/server/db';
 import { budgetPlan, budgetPlanItem, category } from '@/server/db/schema';
 import { requireHouseholdAccess, revalidateBudgetPages } from '@/server/households/access';
@@ -25,8 +25,8 @@ async function isPlannableCategory(householdId: string, categoryId: string) {
         eq(category.id, categoryId),
         eq(category.householdId, householdId),
         eq(category.type, 'expense'),
-        isNull(category.archivedAt),
-      ),
+        isNull(category.archivedAt)
+      )
     )
     .limit(1);
   return Boolean(cat);
@@ -40,8 +40,8 @@ async function findPlanId(householdId: string, categoryId: string, month: string
       and(
         eq(budgetPlan.householdId, householdId),
         eq(budgetPlan.categoryId, categoryId),
-        eq(budgetPlan.month, month),
-      ),
+        eq(budgetPlan.month, month)
+      )
     )
     .limit(1);
   return plan?.id ?? null;
@@ -67,8 +67,8 @@ function addSuggestion(categoryId: string, name: string) {
       and(
         eq(category.id, categoryId),
         sql`not exists (select 1 from unnest(${category.suggestions}) s where lower(s) = lower(${name}))`,
-        sql`coalesce(array_length(${category.suggestions}, 1), 0) < 20`,
-      ),
+        sql`coalesce(array_length(${category.suggestions}, 1), 0) < 20`
+      )
     );
 }
 
@@ -128,8 +128,8 @@ export async function removePlan(input: unknown): Promise<Result> {
         and(
           eq(budgetPlan.householdId, data.householdId),
           eq(budgetPlan.categoryId, data.categoryId),
-          eq(budgetPlan.month, data.month),
-        ),
+          eq(budgetPlan.month, data.month)
+        )
       );
 
     revalidateBudgetPages();
@@ -169,11 +169,19 @@ export async function setPlanItem(input: unknown): Promise<Result> {
     const [existing] = await db
       .select({ id: budgetPlanItem.id })
       .from(budgetPlanItem)
-      .where(and(eq(budgetPlanItem.planId, planId), sql`lower(${budgetPlanItem.name}) = lower(${data.name})`))
+      .where(
+        and(
+          eq(budgetPlanItem.planId, planId),
+          sql`lower(${budgetPlanItem.name}) = lower(${data.name})`
+        )
+      )
       .limit(1);
 
     const write = existing
-      ? db.update(budgetPlanItem).set({ amount: data.amount }).where(eq(budgetPlanItem.id, existing.id))
+      ? db
+          .update(budgetPlanItem)
+          .set({ amount: data.amount })
+          .where(eq(budgetPlanItem.id, existing.id))
       : db.insert(budgetPlanItem).values({ planId, name: data.name, amount: data.amount });
     await db.batch([write, recomputeAmount(planId), addSuggestion(data.categoryId, data.name)]);
 
@@ -199,7 +207,12 @@ export async function removePlanItem(input: unknown): Promise<Result> {
     await db.batch([
       db
         .delete(budgetPlanItem)
-        .where(and(eq(budgetPlanItem.planId, planId), sql`lower(${budgetPlanItem.name}) = lower(${data.name})`)),
+        .where(
+          and(
+            eq(budgetPlanItem.planId, planId),
+            sql`lower(${budgetPlanItem.name}) = lower(${data.name})`
+          )
+        ),
       recomputeAmount(planId),
     ]);
 
@@ -243,7 +256,8 @@ export async function copyPlan(input: unknown): Promise<Result> {
       )
       select id from new_plans
     `);
-    if (copied.rows.length === 0) return { ok: false, error: 'В прошлом месяце нет плана для копирования' };
+    if (copied.rows.length === 0)
+      return { ok: false, error: 'В прошлом месяце нет плана для копирования' };
 
     revalidateBudgetPages();
     return { ok: true };

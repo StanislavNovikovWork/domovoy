@@ -33,7 +33,11 @@ export function AllTransactionsModal({ opened, onClose, type, periodLabel, items
               gap="sm"
               wrap="nowrap"
               py="xs"
-              style={index > 0 ? { borderTop: '1px solid var(--mantine-color-default-border)' } : undefined}
+              style={
+                index > 0
+                  ? { borderTop: '1px solid var(--mantine-color-default-border)' }
+                  : undefined
+              }
             >
               <Text size="xs" c="dimmed" w={44} style={{ flexShrink: 0 }}>
                 {formatShortDate(t.occurredOn)}
@@ -46,7 +50,12 @@ export function AllTransactionsModal({ opened, onClose, type, periodLabel, items
                   {t.categoryName}
                 </Text>
               </Box>
-              <Text size="sm" fw={500} c={t.categoryType === 'income' ? 'teal' : undefined} style={{ whiteSpace: 'nowrap' }}>
+              <Text
+                size="sm"
+                fw={500}
+                c={t.categoryType === 'income' ? 'teal' : undefined}
+                style={{ whiteSpace: 'nowrap' }}
+              >
                 {signedMoney(t)}
               </Text>
             </Group>
