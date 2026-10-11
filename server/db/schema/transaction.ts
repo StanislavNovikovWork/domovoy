@@ -28,3 +28,22 @@ export const transaction = pgTable(
     check('transaction_amount_positive', sql`${t.amount} > 0`),
   ]
 );
+
+// участник расхода: член бюджета (userId) или просто вписанное имя
+export const transactionShare = pgTable(
+  'transaction_share',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    transactionId: uuid('transaction_id')
+      .notNull()
+      .references(() => transaction.id, { onDelete: 'cascade' }),
+    userId: text('user_id').references(() => user.id, { onDelete: 'set null' }),
+    name: text('name').notNull(),
+    // копейки, всегда положительная
+    amount: bigint('amount', { mode: 'number' }).notNull(),
+  },
+  (t) => [
+    index('transaction_share_tx_idx').on(t.transactionId),
+    check('transaction_share_amount_positive', sql`${t.amount} > 0`),
+  ]
+);

@@ -71,6 +71,27 @@
       "when": 1791637362141,
       "tag": "0009_household_kind",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791656253277,
+      "tag": "0010_category_selectable",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791656701255,
+      "tag": "0011_drop_category_selectable",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791664913431,
+      "tag": "0012_transaction_share",
+      "breakpoints": true
     }
   ]
 }

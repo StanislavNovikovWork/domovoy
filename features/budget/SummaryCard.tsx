@@ -1,17 +1,16 @@
 'use client';
 
+import { IconPlus } from '@tabler/icons-react';
 import {
+  ActionIcon,
   Box,
-  ColorSwatch,
-  Group,
   Paper,
   Progress,
   SimpleGrid,
   Stack,
   Text,
-  Tooltip,
 } from '@mantine/core';
-import type { CategoryTotal, PlanSummary, TxType } from '@/shared/lib/budget';
+import type { PlanSummary, TxType } from '@/shared/lib/budget';
 import { formatMoney } from '@/shared/lib/money';
 import { formatPeriodCaption, getMonthProgress, type Period } from '@/shared/lib/period';
 import { pluralRu } from '@/shared/lib/plural';
@@ -22,13 +21,13 @@ type Props = {
   period: Period;
   date: string;
   total: number; // за выбранный период и тип
-  totals: CategoryTotal[];
   plan: PlanSummary | null; // null: нет плана или вкладка «Доходы»
   planMonth: string;
   today: string;
+  // суммы расходов по участникам (разовый бюджет), список под общей суммой
+  shareTotals?: { name: string; total: number }[];
+  onAdd: () => void; // «+» в углу карточки, только на мобильных
 };
-
-const LEGEND_LIMIT = 6;
 
 function Metric({
   label,
@@ -58,64 +57,17 @@ function Metric({
   );
 }
 
-function StructureBar({ type, totals }: { type: TxType; totals: CategoryTotal[] }) {
-  const sum = totals.reduce((acc, t) => acc + t.total, 0);
-  const legend = totals.slice(0, LEGEND_LIMIT);
-
-  return (
-    <Stack gap="xs">
-      <Group justify="space-between" align="flex-start" wrap="nowrap" gap="md">
-        <Text size="sm" c="dimmed">
-          {type === 'expense' ? 'Структура расходов' : 'Структура доходов'}
-        </Text>
-        <Group gap="md" justify="flex-end" style={{ rowGap: 4 }}>
-          {legend.map((t) => (
-            <Group key={t.categoryId} gap={6} wrap="nowrap">
-              <ColorSwatch size={10} color={`var(--mantine-color-${t.color}-6)`} />
-              <Text size="xs">
-                {Math.round((t.total / sum) * 100)}% {t.name}
-              </Text>
-            </Group>
-          ))}
-        </Group>
-      </Group>
-
-      <Group gap={2} wrap="nowrap">
-        {sum === 0 ? (
-          <Box
-            h={10}
-            style={{ flex: 1, borderRadius: 999, background: 'var(--mantine-color-gray-light)' }}
-          />
-        ) : (
-          totals.map((t) => (
-            <Tooltip key={t.categoryId} label={`${t.name}: ${formatMoney(t.total)}`}>
-              <Box
-                h={10}
-                style={{
-                  flex: t.total,
-                  minWidth: 4,
-                  borderRadius: 999,
-                  background: `var(--mantine-color-${t.color}-6)`,
-                }}
-              />
-            </Tooltip>
-          ))
-        )}
-      </Group>
-    </Stack>
-  );
-}
-
 export function SummaryCard({
   periodic,
   type,
   period,
   date,
   total,
-  totals,
   plan,
   planMonth,
   today,
+  shareTotals,
+  onAdd,
 }: Props) {
   const progress = plan && periodic ? getMonthProgress(planMonth, today) : null;
   const planPercent =
@@ -123,7 +75,19 @@ export function SummaryCard({
   const overPlan = plan ? plan.remaining < 0 : false;
 
   return (
-    <Paper withBorder radius="lg" p="lg">
+    <Paper withBorder radius="lg" p="lg" pos="relative">
+      <ActionIcon
+        hiddenFrom="sm"
+        pos="absolute"
+        top={16}
+        right={16}
+        size="lg"
+        radius="xl"
+        aria-label="Добавить операцию"
+        onClick={onAdd}
+      >
+        <IconPlus size={20} />
+      </ActionIcon>
       <Stack gap="lg">
         <SimpleGrid cols={{ base: 1, sm: plan ? 3 : 1 }} spacing="lg">
           <Stack gap={2}>
@@ -139,6 +103,15 @@ export function SummaryCard({
                 По плану: {formatMoney(plan.spentInPlan)} из {formatMoney(plan.planned)} ·{' '}
                 {planPercent}%
               </Text>
+            )}
+            {shareTotals && shareTotals.length > 0 && (
+              <Stack gap={2} mt="xs">
+                {shareTotals.map((s) => (
+                  <Text key={s.name} size="xs" truncate>
+                    {s.name} — {formatMoney(s.total)}
+                  </Text>
+                ))}
+              </Stack>
             )}
           </Stack>
 
@@ -202,8 +175,6 @@ export function SummaryCard({
             )}
           </Box>
         )}
-
-        <StructureBar type={type} totals={totals} />
       </Stack>
     </Paper>
   );

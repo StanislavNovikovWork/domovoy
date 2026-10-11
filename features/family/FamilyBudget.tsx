@@ -1,7 +1,7 @@
 'use client';
 
 import { IconUsers } from '@tabler/icons-react';
-import { Button } from '@mantine/core';
+import { Menu } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { BudgetView, type CategoryOption } from '@/features/budget';
 import type { HouseholdMemberItem, InviteItem } from '@/server/households/queries';
@@ -18,22 +18,33 @@ type Props = {
   transactions: TransactionItem[];
   categories: CategoryOption[];
   plans: PlanItem[];
+  shareTotals: { name: string; total: number }[];
   members: HouseholdMemberItem[];
   invites: InviteItem[];
 };
 
 // общий бюджет = обычный BudgetView плюс кнопка и модалка участников
-export function FamilyBudget({ members, invites, currentUserId, role, name, ...budget }: Props) {
+export function FamilyBudget({
+  members,
+  invites,
+  currentUserId,
+  role,
+  name,
+  shareTotals,
+  ...budget
+}: Props) {
   const [opened, modal] = useDisclosure(false);
 
   return (
     <>
       <BudgetView
         {...budget}
+        shareTotals={shareTotals}
+        members={members.map((m) => ({ userId: m.userId, name: m.name }))}
         actions={
-          <Button variant="default" leftSection={<IconUsers size={16} />} onClick={modal.open}>
+          <Menu.Item leftSection={<IconUsers size={16} />} onClick={modal.open}>
             Участники
-          </Button>
+          </Menu.Item>
         }
       />
       <MembersModal

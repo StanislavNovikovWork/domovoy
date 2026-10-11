@@ -42,14 +42,9 @@ export function AllTransactionsModal({ opened, onClose, type, periodLabel, items
               <Text size="xs" c="dimmed" w={44} style={{ flexShrink: 0 }}>
                 {formatShortDate(t.occurredOn)}
               </Text>
-              <Box style={{ flex: 1, minWidth: 0 }}>
-                <Text size="sm" truncate>
-                  {t.note || t.categoryName}
-                </Text>
-                <Text size="xs" c="dimmed" truncate>
-                  {t.categoryName}
-                </Text>
-              </Box>
+              <Text size="sm" truncate style={{ flex: 1, minWidth: 0 }}>
+                {t.note || t.categoryName}
+              </Text>
               <Text
                 size="sm"
                 fw={500}

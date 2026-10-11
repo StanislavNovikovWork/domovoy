@@ -1,0 +1,1 @@
+ALTER TABLE "category" ADD COLUMN "selectable" boolean DEFAULT true NOT NULL;

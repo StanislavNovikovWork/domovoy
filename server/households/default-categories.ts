@@ -74,3 +74,11 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
   { name: 'Подработка', type: 'income', icon: 'cash', color: 'yellow', suggestions: [] },
   { name: 'Прочее', type: 'income', icon: 'tag', color: 'gray', suggestions: [] },
 ];
+
+// стартовый набор для разового бюджета (поездка, ремонт): только расходы
+export const DEFAULT_ONE_TIME_CATEGORIES: DefaultCategory[] = [
+  { name: 'Магазин', type: 'expense', icon: 'shopping-cart', color: 'green', suggestions: [] },
+  { name: 'Кафе', type: 'expense', icon: 'coffee', color: 'orange', suggestions: [] },
+  { name: 'Транспорт', type: 'expense', icon: 'bus', color: 'blue', suggestions: [] },
+  { name: 'Прочее', type: 'expense', icon: 'tag', color: 'gray', suggestions: [] },
+];

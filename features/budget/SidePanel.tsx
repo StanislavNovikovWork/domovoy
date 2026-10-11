@@ -7,7 +7,7 @@ import { formatShortDate } from '@/shared/lib/period';
 import { PayCircle } from './PayCircle';
 
 export const signedMoney = (t: Pick<TransactionItem, 'amount' | 'categoryType'>) =>
-  `${t.categoryType === 'expense' ? '−' : '+'}${formatMoney(t.amount)}`;
+  `${t.categoryType === 'expense' ? '' : '+'}${formatMoney(t.amount)}`;
 
 const divider = { borderTop: '1px solid var(--mantine-color-default-border)' } as const;
 
@@ -67,19 +67,25 @@ export function PendingPaymentsCard({
 export function RecentCard({
   items,
   onShowAll,
+  bare,
 }: {
   items: TransactionItem[];
-  onShowAll: () => void;
+  onShowAll?: () => void;
+  // без обводки и отступов: внутри табов на мобильных
+  bare?: boolean;
 }) {
-  return (
-    <Paper withBorder radius="lg" p="lg">
-      <Stack gap="xs">
-        <Group justify="space-between">
-          <Text fw={600}>Последние операции</Text>
-          <Anchor component="button" type="button" size="sm" onClick={onShowAll}>
-            Все операции
-          </Anchor>
-        </Group>
+  const content = (
+    <Stack gap="xs">
+        {!bare && (
+          <Group justify="space-between">
+            <Text fw={600}>Последние операции</Text>
+            {onShowAll && (
+              <Anchor component="button" type="button" size="sm" onClick={onShowAll}>
+                Все операции
+              </Anchor>
+            )}
+          </Group>
+        )}
 
         {items.length === 0 ? (
           <Text c="dimmed" size="sm">
@@ -98,14 +104,9 @@ export function RecentCard({
                 <Text size="xs" c="dimmed" w={44} style={{ flexShrink: 0 }}>
                   {formatShortDate(t.occurredOn)}
                 </Text>
-                <Box style={{ flex: 1, minWidth: 0 }}>
-                  <Text size="sm" truncate>
-                    {t.note || t.categoryName}
-                  </Text>
-                  <Text size="xs" c="dimmed" truncate>
-                    {t.categoryName}
-                  </Text>
-                </Box>
+                <Text size="sm" truncate style={{ flex: 1, minWidth: 0 }}>
+                  {t.note || t.categoryName}
+                </Text>
                 <Text
                   size="sm"
                   fw={500}
@@ -118,7 +119,7 @@ export function RecentCard({
             ))}
           </Stack>
         )}
-      </Stack>
-    </Paper>
+    </Stack>
   );
+  return bare ? content : <Paper withBorder radius="lg" p="lg">{content}</Paper>;
 }

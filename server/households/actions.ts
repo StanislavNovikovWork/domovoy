@@ -6,7 +6,10 @@ import 'server-only';
 import { db } from '@/server/db';
 import { category, household, householdInvite, householdMember } from '@/server/db/schema';
 import { requireHouseholdAccess } from '@/server/households/access';
-import { DEFAULT_CATEGORIES } from '@/server/households/default-categories';
+import {
+  DEFAULT_CATEGORIES,
+  DEFAULT_ONE_TIME_CATEGORIES,
+} from '@/server/households/default-categories';
 import { getInviteByToken, isInviteActive } from '@/server/households/queries';
 import { requireSession } from '@/server/session';
 import {
@@ -54,7 +57,9 @@ export async function createFamilyHousehold(input: unknown): Promise<Result<{ id
       db
         .insert(category)
         .values(
-          DEFAULT_CATEGORIES.map((c, index) => ({ ...c, householdId: id, sortOrder: index }))
+          (parsed.data.oneTime ? DEFAULT_ONE_TIME_CATEGORIES : DEFAULT_CATEGORIES).map(
+            (c, index) => ({ ...c, householdId: id, sortOrder: index })
+          )
         ),
     ]);
 

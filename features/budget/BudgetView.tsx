@@ -1,8 +1,8 @@
 'use client';
 
 import { useMemo, useState, type ReactNode } from 'react';
-import { IconSettings } from '@tabler/icons-react';
-import { Box, Button, Grid, Stack } from '@mantine/core';
+import { IconCategory, IconSettings } from '@tabler/icons-react';
+import { ActionIcon, Box, Grid, Menu, Paper, Stack, Tabs } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { CategoriesModal } from '@/features/categories';
 import {
@@ -10,7 +10,6 @@ import {
   buildPlainRows,
   buildPlanRows,
   filterTransactions,
-  groupByCategory,
   listPendingPayments,
   summarizePlan,
   type PlanItem,
@@ -27,7 +26,11 @@ import {
   type Period,
 } from '@/shared/lib/period';
 import { HeaderActions } from '@/shared/ui/HeaderActions';
-import { AddTransactionModal, type CategoryOption } from './AddTransactionModal';
+import {
+  AddTransactionModal,
+  type CategoryOption,
+  type ShareParticipant,
+} from './AddTransactionModal';
 import { AllTransactionsModal } from './AllTransactionsModal';
 import { BudgetToolbar } from './BudgetToolbar';
 import { CategoriesList } from './CategoriesList';
@@ -43,7 +46,11 @@ type Props = {
   plans: PlanItem[];
   /** false: разовый бюджет без периодов, всё считается за всё время */
   periodic?: boolean;
-  /** дополнительные кнопки в шапке рядом с «Категории» (например, «Участники» в семейном бюджете) */
+  /** члены бюджета для выбора участников расхода; показывается только при periodic=false */
+  members?: ShareParticipant[];
+  /** суммы расходов по участникам (разовые бюджеты); под общей суммой */
+  shareTotals?: { name: string; total: number }[];
+  /** дополнительные пункты меню настроек (шестерёнка в шапке), например «Участники» */
   actions?: ReactNode;
 };
 
@@ -51,11 +58,18 @@ export function BudgetView({
   householdId,
   initialDate,
   transactions,
-  categories,
+  categories: allCategories,
   plans,
   periodic = true,
+  members,
+  shareTotals,
   actions,
 }: Props) {
+  // в разовом бюджете только расходы: доходов и их категорий нет
+  const categories = useMemo(
+    () => (periodic ? allCategories : allCategories.filter((c) => c.type === 'expense')),
+    [allCategories, periodic]
+  );
   const [type, setType] = useState<TxType>('expense');
   const [period, setPeriod] = useState<Period>('month');
   const [date, setDate] = useState(initialDate);
@@ -85,7 +99,7 @@ export function BudgetView({
       ),
     [transactions, type, period, date, periodic]
   );
-  const totals = useMemo(() => groupByCategory(items), [items]);
+
 
   // план всегда за месяц выбранной даты, независимо от периода сверху
   const planMonth = periodic ? monthStart(date) : ONE_TIME_MONTH;
@@ -126,10 +140,11 @@ export function BudgetView({
     () => (type === 'expense' ? listPendingPayments(planRows) : []),
     [type, planRows]
   );
-  const recent = useMemo(
-    () => transactions.filter((t) => t.categoryType === type).slice(0, 5),
+  const typeTransactions = useMemo(
+    () => transactions.filter((t) => t.categoryType === type),
     [transactions, type]
   );
+  const recent = useMemo(() => typeTransactions.slice(0, 5), [typeTransactions]);
 
   const pay = (categoryId: string, name: string, remaining: number) => {
     setPrefill({ categoryId, note: name, amount: remaining / 100 });
@@ -139,16 +154,26 @@ export function BudgetView({
   return (
     <Box>
       <HeaderActions>
-        {actions}
-        <Button variant="default" leftSection={<IconSettings size={16} />} onClick={catsModal.open}>
-          Категории
-        </Button>
+        <Menu position="bottom-end" shadow="md" width={200}>
+          <Menu.Target>
+            <ActionIcon variant="default" size="lg" radius="xl" aria-label="Настройки бюджета">
+              <IconSettings size={18} />
+            </ActionIcon>
+          </Menu.Target>
+          <Menu.Dropdown>
+            {actions}
+            <Menu.Item leftSection={<IconCategory size={16} />} onClick={catsModal.open}>
+              Категории
+            </Menu.Item>
+          </Menu.Dropdown>
+        </Menu>
       </HeaderActions>
 
       <Stack gap="lg">
         <BudgetToolbar
           type={type}
           periodic={periodic}
+          expenseOnly={!periodic}
           period={period}
           date={date}
           onTypeChange={setType}
@@ -157,7 +182,57 @@ export function BudgetView({
           onAdd={addModal.open}
         />
 
-        <Grid gutter="lg">
+        {/* мобильная раскладка: «Последние» и «Категории» под табами в одном блоке */}
+        <Stack gap="lg" hiddenFrom="lg">
+          <SummaryCard
+            type={type}
+            periodic={periodic}
+            period={period}
+            date={date}
+            total={total}
+            plan={planSummary}
+            planMonth={planMonth}
+            today={initialDate}
+            shareTotals={shareTotals}
+            onAdd={addModal.open}
+          />
+
+          {pendingPayments.length > 0 && (
+            <PendingPaymentsCard payments={pendingPayments} onPay={pay} />
+          )}
+
+          <Paper withBorder radius="lg" p="lg">
+            <Tabs defaultValue="recent">
+              <Tabs.List grow>
+                <Tabs.Tab value="recent">Расходы</Tabs.Tab>
+                <Tabs.Tab value="categories">План</Tabs.Tab>
+              </Tabs.List>
+              <Tabs.Panel value="recent" pt="md">
+                {/* на мобильных показываем всю историю без ограничения, ссылка «Все операции» не нужна */}
+                <RecentCard bare items={typeTransactions} />
+              </Tabs.Panel>
+              <Tabs.Panel value="categories" pt="md">
+                <CategoriesList
+                  bare
+                  householdId={householdId}
+                  periodic={periodic}
+                  month={planMonth}
+                  rows={categoryRows}
+                  planMode={planMode}
+                  canEditPlan={type === 'expense'}
+                  hasPlan={planRows.length > 0}
+                  canCopy={hasPrevPlan}
+                  onEdit={() => openPlan(null)}
+                  onSetLimit={openPlan}
+                  onPay={pay}
+                />
+              </Tabs.Panel>
+            </Tabs>
+          </Paper>
+        </Stack>
+
+        {/* десктоп: категории слева, ожидаемые платежи и последние операции справа */}
+        <Grid gutter="lg" visibleFrom="lg">
           <Grid.Col span={{ base: 12, lg: 8 }}>
             <Stack gap="lg">
               <SummaryCard
@@ -166,10 +241,11 @@ export function BudgetView({
                 period={period}
                 date={date}
                 total={total}
-                totals={totals}
                 plan={planSummary}
                 planMonth={planMonth}
                 today={initialDate}
+                shareTotals={shareTotals}
+                onAdd={addModal.open}
               />
 
               <CategoriesList
@@ -207,6 +283,8 @@ export function BudgetView({
         }}
         householdId={householdId}
         categories={categories}
+        members={periodic ? undefined : members}
+        expenseOnly={!periodic}
         defaultType={type}
         prefill={prefill}
       />
@@ -235,6 +313,7 @@ export function BudgetView({
         onClose={catsModal.close}
         householdId={householdId}
         categories={categories}
+        expenseOnly={!periodic}
       />
     </Box>
   );

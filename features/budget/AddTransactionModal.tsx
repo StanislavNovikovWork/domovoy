@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { IconCalendar } from '@tabler/icons-react';
+import { IconCalendar, IconPlus, IconTrash } from '@tabler/icons-react';
 import {
+  ActionIcon,
   Box,
   Button,
   Chip,
@@ -32,12 +33,18 @@ type Type = 'expense' | 'income';
 
 const TYPES: Type[] = ['expense', 'income'];
 
+export type ShareParticipant = { userId: string; name: string };
+
 type Props = {
   opened: boolean;
   onClose: () => void;
   householdId: string;
   categories: CategoryOption[];
+  /** члены бюджета; если переданы, под суммой появляется блок «участники расхода» */
+  members?: ShareParticipant[];
   defaultType: Type;
+  /** разовый бюджет: только расходы, переключателя типа нет */
+  expenseOnly?: boolean;
   /** предзаполнение формы, например при оплате статьи плана; amount в рублях */
   prefill?: { categoryId: string; note: string; amount: number } | null;
 };
@@ -51,15 +58,22 @@ export function AddTransactionModal({ opened, onClose, ...rest }: Props) {
   );
 }
 
+type Share = { userId: string | null; name: string; amount: number | string };
+
 function TransactionForm({
   onClose,
   householdId,
   categories,
+  members,
   defaultType,
+  expenseOnly,
   prefill,
 }: Omit<Props, 'opened'>) {
   const [pending, startTransition] = useTransition();
   const [calendarOpened, setCalendarOpened] = useState(false);
+  // имена, вписанные вручную (не члены бюджета)
+  const [customNames, setCustomNames] = useState<string[]>([]);
+  const [newName, setNewName] = useState('');
 
   const now = new Date();
   const today = formatDate(now);
@@ -72,6 +86,7 @@ function TransactionForm({
       amount: (prefill?.amount ?? '') as number | string,
       occurredOn: today,
       note: prefill?.note ?? '',
+      shares: [] as Share[],
     },
     validate: {
       categoryId: (v) => (v ? null : 'Выберите категорию'),
@@ -96,7 +111,39 @@ function TransactionForm({
     form.setFieldValue('note', form.values.note === text ? '' : text);
   };
 
+  // участники: члены бюджета + вписанные вручную имена
+  const people: { userId: string | null; name: string }[] = [
+    ...(members ?? []),
+    ...customNames.map((name) => ({ userId: null, name })),
+  ];
+  const shareKey = (s: { userId: string | null; name: string }) => s.userId ?? `~${s.name}`;
+
+  const toggleShare = (person: { userId: string | null; name: string }) => {
+    const index = form.values.shares.findIndex((s) => shareKey(s) === shareKey(person));
+    if (index >= 0) {
+      form.removeListItem('shares', index);
+    } else {
+      form.insertListItem('shares', { ...person, amount: '' });
+    }
+  };
+
+  const addCustomParticipant = () => {
+    const name = newName.trim();
+    if (!name) return;
+    if (!people.some((p) => p.name === name)) setCustomNames((n) => [...n, name]);
+    if (!form.values.shares.some((s) => !s.userId && s.name === name)) {
+      form.insertListItem('shares', { userId: null, name, amount: '' });
+    }
+    setNewName('');
+  };
+
   const handleSubmit = form.onSubmit((values) => {
+    for (const s of values.shares) {
+      if (typeof s.amount !== 'number' || s.amount <= 0) {
+        notifications.show({ message: `Введите сумму для ${s.name}`, color: 'red' });
+        return;
+      }
+    }
     startTransition(async () => {
       const result = await createTransaction({
         householdId,
@@ -104,6 +151,11 @@ function TransactionForm({
         amount: Math.round(Number(values.amount) * 100), // рубли → копейки
         occurredOn: values.occurredOn,
         note: values.note.trim(),
+        shares: values.shares.map((s) => ({
+          userId: s.userId,
+          name: s.name,
+          amount: Math.round(Number(s.amount) * 100),
+        })),
       });
 
       if (result.ok) {
@@ -118,21 +170,23 @@ function TransactionForm({
   return (
     <form onSubmit={handleSubmit}>
       <Stack>
-        <SegmentedControl
-          fullWidth
-          value={form.values.type}
-          onChange={(v) => {
-            form.setFieldValue('type', v as Type);
-            form.setFieldValue('categoryId', ''); // категории другого типа не подходят
-            if (selectedCategory?.suggestions.includes(form.values.note)) {
-              form.setFieldValue('note', '');
-            }
-          }}
-          data={[
-            { value: 'expense', label: 'Расход' },
-            { value: 'income', label: 'Доход' },
-          ]}
-        />
+        {!expenseOnly && (
+          <SegmentedControl
+            fullWidth
+            value={form.values.type}
+            onChange={(v) => {
+              form.setFieldValue('type', v as Type);
+              form.setFieldValue('categoryId', ''); // категории другого типа не подходят
+              if (selectedCategory?.suggestions.includes(form.values.note)) {
+                form.setFieldValue('note', '');
+              }
+            }}
+            data={[
+              { value: 'expense', label: 'Расход' },
+              { value: 'income', label: 'Доход' },
+            ]}
+          />
+        )}
 
         <NumberInput
           label="Сумма"
@@ -146,6 +200,97 @@ function TransactionForm({
           data-autofocus
           {...form.getInputProps('amount')}
         />
+
+        {/* участники расхода: только в разовых бюджетах (members переданы) */}
+        {members && (
+          <div>
+            <Text size="sm" fw={500} mb={8}>
+              Участники расхода
+            </Text>
+            <Stack gap={4} mb="xs">
+              {people.map((p) => {
+                const i = form.values.shares.findIndex((s) => shareKey(s) === shareKey(p));
+                const share = i >= 0 ? form.values.shares[i] : null;
+                return (
+                  <Group key={shareKey(p)} gap="xs" wrap="nowrap">
+                    <UnstyledButton
+                      type="button"
+                      onClick={() => toggleShare(p)}
+                      style={{ flex: 1, minWidth: 0 }}
+                    >
+                      <Text size="sm" c={share ? undefined : 'dimmed'} truncate>
+                        {p.name}
+                      </Text>
+                    </UnstyledButton>
+                    {share && (
+                      <>
+                        <NumberInput
+                          size="xs"
+                          w={120}
+                          placeholder="Сумма"
+                          min={0}
+                          decimalScale={2}
+                          decimalSeparator=","
+                          thousandSeparator=" "
+                          suffix=" ₽"
+                          hideControls
+                          aria-label={`Сумма: ${share.name}`}
+                          value={share.amount}
+                          onChange={(v) => form.setFieldValue(`shares.${i}.amount`, v)}
+                          onFocus={() => {
+                            // единственный незаполненный участник: подставляем остаток от общей суммы
+                            if (share.amount !== '' || typeof form.values.amount !== 'number')
+                              return;
+                            const others = form.values.shares.filter((_, j) => j !== i);
+                            if (others.length === 0 || others.some((s) => typeof s.amount !== 'number' || s.amount <= 0))
+                              return;
+                            const rest =
+                              form.values.amount -
+                              others.reduce((acc, s) => acc + (s.amount as number), 0);
+                            if (rest > 0) form.setFieldValue(`shares.${i}.amount`, rest);
+                          }}
+                        />
+                        <ActionIcon
+                          variant="subtle"
+                          color="red"
+                          size="sm"
+                          aria-label={`Убрать ${share.name}`}
+                          onClick={() => form.removeListItem('shares', i)}
+                        >
+                          <IconTrash size={14} />
+                        </ActionIcon>
+                      </>
+                    )}
+                  </Group>
+                );
+              })}
+            </Stack>
+            <Group gap="xs" wrap="nowrap">
+              <TextInput
+                size="xs"
+                placeholder="Кто-то ещё: имя"
+                maxLength={40}
+                value={newName}
+                onChange={(e) => setNewName(e.currentTarget.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addCustomParticipant();
+                  }
+                }}
+                style={{ flex: 1 }}
+              />
+              <ActionIcon
+                variant="default"
+                size="lg"
+                aria-label="Добавить участника"
+                onClick={addCustomParticipant}
+              >
+                <IconPlus size={16} />
+              </ActionIcon>
+            </Group>
+          </div>
+        )}
 
         <div>
           <Text size="sm" fw={500} mb={8}>
@@ -264,15 +409,18 @@ function TransactionForm({
                 <Button
                   type="button"
                   variant={isCustomDate ? 'filled' : 'light'}
-                  leftSection={<IconCalendar size={16} />}
+                  aria-label="Выбрать дату"
+                  px={isCustomDate ? undefined : 10}
                   onClick={() => setCalendarOpened((o) => !o)}
                 >
-                  {isCustomDate
-                    ? parseDate(form.values.occurredOn).toLocaleDateString('ru-RU', {
-                        day: 'numeric',
-                        month: 'short',
-                      })
-                    : 'Календарь'}
+                  {isCustomDate ? (
+                    parseDate(form.values.occurredOn).toLocaleDateString('ru-RU', {
+                      day: 'numeric',
+                      month: 'short',
+                    })
+                  ) : (
+                    <IconCalendar size={18} />
+                  )}
                 </Button>
               </Popover.Target>
               <Popover.Dropdown>

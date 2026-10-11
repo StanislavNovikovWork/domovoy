@@ -31,6 +31,8 @@ type Props = {
   onClose: () => void;
   householdId: string;
   categories: CategoryOption[];
+  /** разовый бюджет: только расходы, переключателя типа нет */
+  expenseOnly?: boolean;
 };
 
 export function CategoriesModal({ opened, onClose, ...rest }: Props) {
@@ -43,7 +45,7 @@ export function CategoriesModal({ opened, onClose, ...rest }: Props) {
   );
 }
 
-function Content({ householdId, categories }: Omit<Props, 'opened' | 'onClose'>) {
+function Content({ householdId, categories, expenseOnly }: Omit<Props, 'opened' | 'onClose'>) {
   const [type, setType] = useState<Type>('expense');
   const [editing, setEditing] = useState<CategoryOption | 'new' | null>(null);
 
@@ -78,15 +80,17 @@ function Content({ householdId, categories }: Omit<Props, 'opened' | 'onClose'>)
       }
     >
       <Stack>
-        <SegmentedControl
-          fullWidth
-          value={type}
-          onChange={(v) => setType(v as Type)}
-          data={[
-            { value: 'expense', label: 'Расходы' },
-            { value: 'income', label: 'Доходы' },
-          ]}
-        />
+        {!expenseOnly && (
+          <SegmentedControl
+            fullWidth
+            value={type}
+            onChange={(v) => setType(v as Type)}
+            data={[
+              { value: 'expense', label: 'Расходы' },
+              { value: 'income', label: 'Доходы' },
+            ]}
+          />
+        )}
 
         <Stack gap={2}>
           {list.length === 0 && (

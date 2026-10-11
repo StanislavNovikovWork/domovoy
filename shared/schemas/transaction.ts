@@ -7,6 +7,17 @@ export const createTransactionSchema = z.object({
   amount: z.number().int().positive().max(100_000_000_000),
   occurredOn: z.iso.date(), // 'YYYY-MM-DD'
   note: z.string().trim().min(1).max(200),
+  // участники расхода (только у разовых бюджетов): член бюджета или вписанное имя
+  shares: z
+    .array(
+      z.object({
+        userId: z.string().min(1).nullable(),
+        name: z.string().trim().min(1).max(40),
+        amount: z.number().int().positive().max(100_000_000_000),
+      })
+    )
+    .max(50)
+    .optional(),
 });
 
 export type CreateTransactionInput = z.infer<typeof createTransactionSchema>;

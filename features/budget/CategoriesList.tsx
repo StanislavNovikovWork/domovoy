@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useTransition } from 'react';
 import { IconAdjustments, IconCheck, IconChevronDown } from '@tabler/icons-react';
 import {
   Badge,
@@ -9,7 +9,6 @@ import {
   Collapse,
   Group,
   Paper,
-  SegmentedControl,
   Stack,
   Text,
   ThemeIcon,
@@ -35,6 +34,8 @@ type Props = {
   canEditPlan: boolean;
   hasPlan: boolean; // на этот месяц есть план
   canCopy: boolean; // в прошлом месяце есть план
+  // без обводки и отступов: внутри табов на мобильных
+  bare?: boolean;
   onEdit: () => void;
   onSetLimit: (categoryId: string) => void;
   onPay: (categoryId: string, name: string, remaining: number) => void;
@@ -268,14 +269,12 @@ export function CategoriesList({
   canEditPlan,
   hasPlan,
   canCopy,
+  bare,
   onEdit,
   onSetLimit,
   onPay,
 }: Props) {
-  const [filter, setFilter] = useState<'all' | 'attention'>('all');
   const [pending, startTransition] = useTransition();
-
-  const visible = filter === 'attention' ? rows.filter(isOver) : rows;
 
   const copyFromPrev = () => {
     startTransition(async () => {
@@ -288,26 +287,12 @@ export function CategoriesList({
     });
   };
 
-  return (
-    <Paper withBorder radius="lg" p="lg">
-      <Stack gap="sm">
+  const content = (
+    <Stack gap="sm">
         <Group justify="space-between" gap="sm">
-          <Group gap="md">
-            <Text fw={600} size="lg">
-              Категории
-            </Text>
-            {planMode && (
-              <SegmentedControl
-                size="xs"
-                value={filter}
-                onChange={(v) => setFilter(v as 'all' | 'attention')}
-                data={[
-                  { value: 'all', label: 'Все' },
-                  { value: 'attention', label: 'Требуют внимания' },
-                ]}
-              />
-            )}
-          </Group>
+          <Text fw={600} size="lg">
+            Категории
+          </Text>
           {canEditPlan && (
             <Button
               variant="default"
@@ -331,17 +316,13 @@ export function CategoriesList({
           </Group>
         )}
 
-        {visible.length === 0 ? (
+        {rows.length === 0 ? (
           <Text c="dimmed" ta="center" size="sm" py="md">
-            {filter === 'attention'
-              ? 'Нет категорий, требующих внимания'
-              : periodic
-                ? 'Пока нет операций за этот период'
-                : 'Пока нет операций'}
+            {periodic ? 'Пока нет операций за этот период' : 'Пока нет операций'}
           </Text>
         ) : (
           <Stack gap={0}>
-            {visible.map((r, index) => (
+            {rows.map((r, index) => (
               <Box
                 key={r.categoryId}
                 style={
@@ -360,7 +341,11 @@ export function CategoriesList({
             ))}
           </Stack>
         )}
-      </Stack>
+    </Stack>
+  );
+  return bare ? content : (
+    <Paper withBorder radius="lg" p="lg">
+      {content}
     </Paper>
   );
 }

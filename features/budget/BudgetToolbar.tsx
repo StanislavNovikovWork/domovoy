@@ -7,6 +7,7 @@ import { PERIOD_OPTIONS, formatPeriodLabel, shiftDate, type Period } from '@/sha
 
 type Props = {
   periodic: boolean;
+  expenseOnly: boolean;
   type: TxType;
   period: Period;
   date: string;
@@ -18,6 +19,7 @@ type Props = {
 
 export function BudgetToolbar({
   periodic,
+  expenseOnly,
   type,
   period,
   date,
@@ -29,15 +31,17 @@ export function BudgetToolbar({
   return (
     <Group justify="space-between" gap="md">
       <Group gap="md">
-        <SegmentedControl
-          radius="md"
-          value={type}
-          onChange={(v) => onTypeChange(v as TxType)}
-          data={[
-            { value: 'expense', label: 'Расходы' },
-            { value: 'income', label: 'Доходы' },
-          ]}
-        />
+        {!expenseOnly && (
+          <SegmentedControl
+            radius="md"
+            value={type}
+            onChange={(v) => onTypeChange(v as TxType)}
+            data={[
+              { value: 'expense', label: 'Расходы' },
+              { value: 'income', label: 'Доходы' },
+            ]}
+          />
+        )}
         {periodic && (
           <>
             <SegmentedControl
@@ -71,7 +75,7 @@ export function BudgetToolbar({
         )}
       </Group>
 
-      <Button leftSection={<IconPlus size={16} />} onClick={onAdd}>
+      <Button visibleFrom="sm" leftSection={<IconPlus size={16} />} onClick={onAdd}>
         Добавить операцию
       </Button>
     </Group>
