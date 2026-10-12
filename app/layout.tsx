@@ -10,7 +10,12 @@ import { theme } from '../theme';
 export const metadata = {
   title: { default: 'Cash', template: '%s · Cash' },
   description: 'Личные, общие и разовые бюджеты',
+  // iOS: запуск с экрана «Домой» без интерфейса браузера
+  appleWebApp: { capable: true, title: 'Cash', statusBarStyle: 'default' as const },
 };
+
+// цвет адресной строки и системной панели в установленном приложении
+export const viewport = { themeColor: '#2457e6' };
 
 export default function RootLayout({ children }: { children: any }) {
   return (
