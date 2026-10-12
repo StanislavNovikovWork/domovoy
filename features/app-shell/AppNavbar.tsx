@@ -6,8 +6,8 @@ import { IconUsers, IconWallet } from '@tabler/icons-react';
 import { NavLink } from '@mantine/core';
 
 const LINKS = [
-  { href: '/', label: 'Личный бюджет', icon: IconWallet },
   { href: '/budgets', label: 'Мои бюджеты', icon: IconUsers },
+  { href: '/personal', label: 'Личный бюджет', icon: IconWallet },
 ];
 
 export function AppNavbar({ onNavigate }: { onNavigate: () => void }) {
@@ -22,7 +22,7 @@ export function AppNavbar({ onNavigate }: { onNavigate: () => void }) {
           href={href}
           label={label}
           leftSection={<Icon size={18} />}
-          active={href === '/' ? pathname === '/' : pathname.startsWith(href)}
+          active={pathname.startsWith(href)}
           onClick={onNavigate}
           style={{ borderRadius: 'var(--mantine-radius-md)' }}
         />

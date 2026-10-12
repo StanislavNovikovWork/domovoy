@@ -7,8 +7,12 @@ import { requirePageSession } from '@/server/session';
 import { listAllTransactions } from '@/server/transactions/queries';
 import { formatDate } from '@/shared/lib/period';
 
-export default async function BudgetPage() {
-  const { user } = await requirePageSession();
+export const metadata = {
+  title: 'Личный бюджет',
+};
+
+export default async function PersonalBudgetPage() {
+  const { user } = await requirePageSession('/personal');
   const personal = await getPersonalHousehold(user.id);
   if (!personal) notFound();
 

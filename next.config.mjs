@@ -6,6 +6,10 @@ const withBundleAnalyzer = bundleAnalyzer({
 
 export default withBundleAnalyzer({
   reactStrictMode: false,
+  // главная страница — список бюджетов; личный бюджет открывается на /personal
+  async redirects() {
+    return [{ source: '/', destination: '/budgets', permanent: false }];
+  },
   experimental: {
     optimizePackageImports: ['@mantine/core', '@mantine/hooks'],
   },

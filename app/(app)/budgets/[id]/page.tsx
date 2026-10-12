@@ -22,7 +22,7 @@ export default async function SharedBudgetPage({ params }: Props) {
 
   const budget = await getUserHousehold(user.id, id);
   if (!budget) notFound();
-  if (budget.type === 'personal') redirect('/');
+  if (budget.type === 'personal') redirect('/personal');
 
   const [transactions, categories, plans, members, invites, guests] = await Promise.all([
     listAllTransactions(budget.id),

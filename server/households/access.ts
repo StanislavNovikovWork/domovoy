@@ -21,6 +21,6 @@ export async function requireHouseholdAccess(householdId: string) {
 
 // Операции и категории показываются и в личном, и в семейном бюджете
 export function revalidateBudgetPages() {
-  revalidatePath('/');
+  revalidatePath('/personal');
   revalidatePath('/budgets', 'layout');
 }
