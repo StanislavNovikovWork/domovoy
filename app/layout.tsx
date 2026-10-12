@@ -8,8 +8,8 @@ import { ColorSchemeScriptOnce } from '@/shared/ui/ColorSchemeScriptOnce';
 import { theme } from '../theme';
 
 export const metadata = {
-  title: 'Mantine Next.js template',
-  description: 'I am using Mantine with Next.js!',
+  title: { default: 'Cash', template: '%s · Cash' },
+  description: 'Личные, общие и разовые бюджеты',
 };
 
 export default function RootLayout({ children }: { children: any }) {
@@ -17,7 +17,6 @@ export default function RootLayout({ children }: { children: any }) {
     <html lang="ru" {...mantineHtmlProps}>
       <head>
         <ColorSchemeScriptOnce />
-        <link rel="shortcut icon" href="/favicon.svg" />
         <meta
           name="viewport"
           content="minimum-scale=1, initial-scale=1, width=device-width, user-scalable=no"
