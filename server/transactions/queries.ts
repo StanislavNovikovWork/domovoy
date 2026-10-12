@@ -4,12 +4,13 @@ import { db } from '@/server/db';
 import { transaction, transactionShare, category } from '@/server/db/schema';
 
 export async function listAllTransactions(householdId: string) {
-  return db
+  const rows = await db
     .select({
       id: transaction.id,
       amount: transaction.amount,
       occurredOn: transaction.occurredOn,
       note: transaction.note,
+      paidByName: transaction.paidByName,
       categoryId: category.id,
       categoryName: category.name,
       categoryType: category.type,
@@ -20,6 +21,27 @@ export async function listAllTransactions(householdId: string) {
     .innerJoin(category, eq(category.id, transaction.categoryId))
     .where(eq(transaction.householdId, householdId))
     .orderBy(desc(transaction.occurredOn), desc(transaction.createdAt));
+
+  // доли участников по операциям бюджета (в разовых бюджетах)
+  const shareRows = await db
+    .select({
+      transactionId: transactionShare.transactionId,
+      name: transactionShare.name,
+      amount: transactionShare.amount,
+    })
+    .from(transactionShare)
+    .innerJoin(transaction, eq(transaction.id, transactionShare.transactionId))
+    .where(eq(transaction.householdId, householdId))
+    .orderBy(desc(transactionShare.amount));
+
+  const byTransaction = new Map<string, { name: string; amount: number }[]>();
+  for (const s of shareRows) {
+    const list = byTransaction.get(s.transactionId) ?? [];
+    list.push({ name: s.name, amount: s.amount });
+    byTransaction.set(s.transactionId, list);
+  }
+
+  return rows.map((r) => ({ ...r, shares: byTransaction.get(r.id) ?? [] }));
 }
 
 // суммы по участникам расходов (transaction_share) по всему бюджету, от большей к меньшей

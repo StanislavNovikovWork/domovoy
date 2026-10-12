@@ -1,6 +1,6 @@
 'use client';
 
-import { Anchor, Group, Paper, Stack, Text } from '@mantine/core';
+import { Anchor, Avatar, Group, Paper, Stack, Text, Tooltip } from '@mantine/core';
 import type { TransactionItem } from '@/shared/lib/budget';
 import { formatMoney } from '@/shared/lib/money';
 import { formatShortDate } from '@/shared/lib/period';
@@ -68,10 +68,32 @@ export function OneTimeOperations({ items, onShowAll, bare }: Props) {
                 </Text>
               </Group>
               {day.items.map((t) => (
-                <Group key={t.id} gap="sm" wrap="nowrap">
-                  <Text size="sm" truncate style={{ flex: 1, minWidth: 0 }}>
-                    {t.note || t.categoryName}
-                  </Text>
+                <Group key={t.id} gap="sm" wrap="nowrap" align="flex-start">
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <Group gap={6} wrap="nowrap">
+                      <Text size="sm" truncate style={{ minWidth: 0 }}>
+                        {t.note || t.categoryName}
+                      </Text>
+                      {t.paidByName && (
+                        <Tooltip label={`Платил: ${t.paidByName}`}>
+                          <Avatar
+                            size={16}
+                            radius="xl"
+                            color="blue"
+                            styles={{ placeholder: { fontSize: 9 } }}
+                            style={{ flexShrink: 0 }}
+                          >
+                            {t.paidByName.trim().charAt(0).toUpperCase()}
+                          </Avatar>
+                        </Tooltip>
+                      )}
+                    </Group>
+                    {t.shares && t.shares.length > 0 && (
+                      <Text size="xs" c="dimmed">
+                        {t.shares.map((s) => `${s.name} ${formatMoney(s.amount)}`).join(' / ')}
+                      </Text>
+                    )}
+                  </div>
                   <Text size="sm" fw={500} style={{ whiteSpace: 'nowrap' }}>
                     {signedMoney(t)}
                   </Text>
@@ -87,7 +109,7 @@ export function OneTimeOperations({ items, onShowAll, bare }: Props) {
   return bare ? (
     content
   ) : (
-    <Paper withBorder radius="lg" p="lg">
+    <Paper withBorder radius="lg" px="lg" py={0}>
       {content}
     </Paper>
   );

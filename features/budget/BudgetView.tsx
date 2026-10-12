@@ -51,6 +51,8 @@ type Props = {
   members?: ShareParticipant[];
   /** имена участников без аккаунта, ранее вписанных в бюджет */
   guestNames?: string[];
+  /** текущий пользователь: плательщик по умолчанию в разовом бюджете */
+  currentUserId?: string;
   /** суммы расходов по участникам (разовые бюджеты); под общей суммой */
   shareTotals?: { name: string; total: number }[];
   /** дополнительные пункты меню настроек (шестерёнка в шапке), например «Участники» */
@@ -66,6 +68,7 @@ export function BudgetView({
   periodic = true,
   members,
   guestNames,
+  currentUserId,
   shareTotals,
   actions,
 }: Props) {
@@ -298,6 +301,7 @@ export function BudgetView({
         categories={categories}
         members={periodic ? undefined : members}
         guestNames={guestNames}
+        currentUserId={currentUserId}
         expenseOnly={!periodic}
         defaultType={type}
         prefill={prefill}

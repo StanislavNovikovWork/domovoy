@@ -19,6 +19,9 @@ export const transaction = pgTable(
     occurredOn: date('occurred_on', { mode: 'string' }).notNull(),
     note: text('note'),
     createdBy: text('created_by').references(() => user.id, { onDelete: 'set null' }),
+    // кто платил (разовые бюджеты): член бюджета (userId) или гость (только имя)
+    paidByUserId: text('paid_by_user_id').references(() => user.id, { onDelete: 'set null' }),
+    paidByName: text('paid_by_name'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

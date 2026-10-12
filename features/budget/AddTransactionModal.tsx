@@ -46,6 +46,8 @@ type Props = {
   members?: ShareParticipant[];
   /** участники без аккаунта, сохранённые в бюджете */
   guestNames?: string[];
+  /** текущий пользователь: плательщик по умолчанию */
+  currentUserId?: string;
   defaultType: Type;
   /** разовый бюджет: только расходы, переключателя типа нет */
   expenseOnly?: boolean;
@@ -70,6 +72,7 @@ function TransactionForm({
   categories,
   members,
   guestNames,
+  currentUserId,
   defaultType,
   expenseOnly,
   prefill,
@@ -93,6 +96,8 @@ function TransactionForm({
       occurredOn: today,
       note: prefill?.note ?? '',
       shares: [] as Share[],
+      // кто платил: userId члена бюджета или «~имя» гостя; по умолчанию автор
+      paidBy: currentUserId ?? '',
     },
     validate: {
       categoryId: (v) => (v ? null : 'Выберите категорию'),
@@ -127,6 +132,9 @@ function TransactionForm({
     ...guestList.map((name) => ({ userId: null, name })),
   ];
   const shareKey = (s: { userId: string | null; name: string }) => s.userId ?? `~${s.name}`;
+  // плательщиком может быть любой участник: член бюджета или гость
+  const payers = people;
+  const payerKey = shareKey;
 
   const toggleShare = (person: { userId: string | null; name: string }) => {
     const index = form.values.shares.findIndex((s) => shareKey(s) === shareKey(person));
@@ -171,6 +179,7 @@ function TransactionForm({
         amount: Math.round(Number(values.amount) * 100), // рубли → копейки
         occurredOn: values.occurredOn,
         note: values.note.trim(),
+        paidBy: members ? payers.find((p) => payerKey(p) === values.paidBy) : undefined,
         shares: values.shares.map((s) => ({
           userId: s.userId,
           name: s.name,
@@ -220,6 +229,27 @@ function TransactionForm({
           data-autofocus
           {...form.getInputProps('amount')}
         />
+
+        {members && (
+          <div>
+            <Text size="sm" fw={500} mb={8}>
+              Кто платил
+            </Text>
+            <Chip.Group
+              multiple={false}
+              value={form.values.paidBy}
+              onChange={(v) => form.setFieldValue('paidBy', v)}
+            >
+              <Group gap="xs">
+                {payers.map((p) => (
+                  <Chip key={payerKey(p)} size="xs" variant="light" value={payerKey(p)}>
+                    {p.name}
+                  </Chip>
+                ))}
+              </Group>
+            </Chip.Group>
+          </div>
+        )}
 
         {/* участники расхода: только в разовых бюджетах (members переданы) */}
         {members && (

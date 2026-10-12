@@ -105,13 +105,23 @@ export function SummaryCard({
               </Text>
             )}
             {shareTotals && shareTotals.length > 0 && (
-              <Stack gap={2} mt="xs">
+              <Box
+                mt="xs"
+                style={{
+                  display: 'grid',
+                  gridTemplateRows: 'repeat(3, auto)',
+                  gridAutoFlow: 'column',
+                  gridAutoColumns: 'minmax(0, 1fr)',
+                  columnGap: 'var(--mantine-spacing-md)',
+                  rowGap: 2,
+                }}
+              >
                 {shareTotals.map((s) => (
                   <Text key={s.name} size="xs" truncate>
                     {s.name} — {formatMoney(s.total)}
                   </Text>
                 ))}
-              </Stack>
+              </Box>
             )}
           </Stack>
 

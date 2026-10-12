@@ -48,6 +48,7 @@ export function FamilyBudget({
         shareTotals={shareTotals}
         members={members.map((m) => ({ userId: m.userId, name: m.name }))}
         guestNames={guests.map((g) => g.name)}
+        currentUserId={currentUserId}
         actions={
           <Menu.Item leftSection={<IconUsers size={16} />} onClick={modal.open}>
             Участники

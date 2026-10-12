@@ -7,6 +7,13 @@ export const createTransactionSchema = z.object({
   amount: z.number().int().positive().max(100_000_000_000),
   occurredOn: z.iso.date(), // 'YYYY-MM-DD'
   note: z.string().trim().min(1).max(200),
+  // кто платил (только у разовых бюджетов); по умолчанию автор
+  paidBy: z
+    .object({
+      userId: z.string().min(1).nullable(),
+      name: z.string().trim().min(1).max(40),
+    })
+    .optional(),
   // участники расхода (только у разовых бюджетов): член бюджета или вписанное имя
   shares: z
     .array(
