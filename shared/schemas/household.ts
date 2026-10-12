@@ -27,6 +27,16 @@ export const removeMemberSchema = z.object({
   userId: z.string().min(1),
 });
 
+export const addGuestSchema = z.object({
+  householdId: z.uuid(),
+  name: z.string().trim().min(1).max(40),
+});
+
+export const removeGuestSchema = z.object({
+  householdId: z.uuid(),
+  guestId: z.uuid(),
+});
+
 export const acceptInviteSchema = z.object({
   token: inviteTokenSchema,
 });

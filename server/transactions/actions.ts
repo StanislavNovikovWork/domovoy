@@ -3,7 +3,7 @@
 import { and, eq, isNull } from 'drizzle-orm';
 import 'server-only';
 import { db } from '@/server/db';
-import { category, transaction, transactionShare } from '@/server/db/schema';
+import { category, household, transaction, transactionShare } from '@/server/db/schema';
 import { requireHouseholdAccess, revalidateBudgetPages } from '@/server/households/access';
 import { createTransactionSchema } from '@/shared/schemas/transaction';
 
@@ -46,9 +46,22 @@ export async function createTransaction(input: unknown): Promise<Result> {
       })
       .returning({ id: transaction.id });
 
-    if (data.shares?.length) {
+    // в разовом бюджете без выбранных участников расход целиком записывается на автора
+    let shares = data.shares ?? [];
+    if (shares.length === 0) {
+      const [h] = await db
+        .select({ kind: household.kind })
+        .from(household)
+        .where(eq(household.id, data.householdId))
+        .limit(1);
+      if (h?.kind === 'one_time') {
+        shares = [{ userId: session.user.id, name: session.user.name, amount: data.amount }];
+      }
+    }
+
+    if (shares.length > 0) {
       await db.insert(transactionShare).values(
-        data.shares.map((s) => ({
+        shares.map((s) => ({
           transactionId: row.id,
           userId: s.userId,
           name: s.name,

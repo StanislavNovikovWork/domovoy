@@ -55,6 +55,23 @@ export const householdMember = pgTable(
   ]
 );
 
+// участник без аккаунта: вписан по имени, участвует в расходах, но в приложение не заходит
+export const householdGuest = pgTable(
+  'household_guest',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    householdId: uuid('household_id')
+      .notNull()
+      .references(() => household.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    // имя уникально внутри бюджета без учёта регистра
+    uniqueIndex('household_guest_name_idx').on(t.householdId, sql`lower(${t.name})`),
+  ]
+);
+
 // одноразовая ссылка-приглашение; активна, пока не использована, не отозвана и не истекла
 export const householdInvite = pgTable(
   'household_invite',

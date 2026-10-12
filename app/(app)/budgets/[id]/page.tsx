@@ -2,7 +2,12 @@ import { notFound, redirect } from 'next/navigation';
 import { z } from 'zod';
 import { FamilyBudget } from '@/features/family';
 import { listActiveCategories } from '@/server/categories/queries';
-import { getUserHousehold, listActiveInvites, listMembers } from '@/server/households/queries';
+import {
+  getUserHousehold,
+  listActiveInvites,
+  listGuests,
+  listMembers,
+} from '@/server/households/queries';
 import { listPlans } from '@/server/plans/queries';
 import { requirePageSession } from '@/server/session';
 import { listAllTransactions, listShareTotals } from '@/server/transactions/queries';
@@ -19,7 +24,7 @@ export default async function SharedBudgetPage({ params }: Props) {
   if (!budget) notFound();
   if (budget.type === 'personal') redirect('/');
 
-  const [transactions, categories, plans, members, invites, shareTotals] = await Promise.all([
+  const [transactions, categories, plans, members, invites, shareTotals, guests] = await Promise.all([
     listAllTransactions(budget.id),
     listActiveCategories(budget.id),
     listPlans(budget.id),
@@ -27,6 +32,7 @@ export default async function SharedBudgetPage({ params }: Props) {
     // приглашения видит только владелец
     budget.role === 'owner' ? listActiveInvites(budget.id) : Promise.resolve([]),
     listShareTotals(budget.id),
+    listGuests(budget.id),
   ]);
 
   return (
@@ -42,6 +48,7 @@ export default async function SharedBudgetPage({ params }: Props) {
       plans={plans}
       shareTotals={shareTotals}
       members={members}
+      guests={guests}
       invites={invites}
     />
   );

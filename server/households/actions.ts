@@ -4,7 +4,13 @@ import { revalidatePath } from 'next/cache';
 import { and, eq, gt, isNull } from 'drizzle-orm';
 import 'server-only';
 import { db } from '@/server/db';
-import { category, household, householdInvite, householdMember } from '@/server/db/schema';
+import {
+  category,
+  household,
+  householdGuest,
+  householdInvite,
+  householdMember,
+} from '@/server/db/schema';
 import { requireHouseholdAccess } from '@/server/households/access';
 import {
   DEFAULT_CATEGORIES,
@@ -14,8 +20,10 @@ import { getInviteByToken, isInviteActive } from '@/server/households/queries';
 import { requireSession } from '@/server/session';
 import {
   acceptInviteSchema,
+  addGuestSchema,
   createFamilySchema,
   householdIdSchema,
+  removeGuestSchema,
   removeMemberSchema,
   renameHouseholdSchema,
   revokeInviteSchema,
@@ -260,6 +268,49 @@ export async function renameHousehold(input: unknown): Promise<Result> {
   } catch (error) {
     console.error('renameHousehold failed', error);
     return { ok: false, error: 'Не удалось переименовать бюджет' };
+  }
+}
+
+// участник без аккаунта: любой член бюджета может вписать имя; повтор имени не создаёт дубль
+export async function addGuest(input: unknown): Promise<Result> {
+  const parsed = addGuestSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: 'Введите имя' };
+
+  try {
+    await requireHouseholdAccess(parsed.data.householdId);
+    await db
+      .insert(householdGuest)
+      .values({ householdId: parsed.data.householdId, name: parsed.data.name })
+      .onConflictDoNothing();
+
+    revalidatePath('/budgets', 'layout');
+    return { ok: true };
+  } catch (error) {
+    console.error('addGuest failed', error);
+    return { ok: false, error: 'Не удалось добавить участника' };
+  }
+}
+
+export async function removeGuest(input: unknown): Promise<Result> {
+  const parsed = removeGuestSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: 'Некорректный запрос' };
+
+  try {
+    await requireOwner(parsed.data.householdId);
+    await db
+      .delete(householdGuest)
+      .where(
+        and(
+          eq(householdGuest.id, parsed.data.guestId),
+          eq(householdGuest.householdId, parsed.data.householdId)
+        )
+      );
+
+    revalidatePath('/budgets', 'layout');
+    return { ok: true };
+  } catch (error) {
+    console.error('removeGuest failed', error);
+    return { ok: false, error: 'Не удалось удалить участника' };
   }
 }
 

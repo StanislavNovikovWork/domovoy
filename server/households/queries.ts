@@ -2,7 +2,13 @@ import { cache } from 'react';
 import { and, asc, eq, gt, isNull, sql } from 'drizzle-orm';
 import 'server-only';
 import { db } from '@/server/db';
-import { household, householdInvite, householdMember, user } from '@/server/db/schema';
+import {
+  household,
+  householdGuest,
+  householdInvite,
+  householdMember,
+  user,
+} from '@/server/db/schema';
 
 const householdColumns = {
   id: household.id,
@@ -48,6 +54,17 @@ export async function listUserHouseholds(userId: string) {
     .innerJoin(household, eq(household.id, householdMember.householdId))
     .where(and(eq(householdMember.userId, userId), eq(household.type, 'family')))
     .orderBy(asc(household.createdAt));
+}
+
+export type HouseholdGuestItem = Awaited<ReturnType<typeof listGuests>>[number];
+
+// участники без аккаунта
+export async function listGuests(householdId: string) {
+  return db
+    .select({ id: householdGuest.id, name: householdGuest.name })
+    .from(householdGuest)
+    .where(eq(householdGuest.householdId, householdId))
+    .orderBy(asc(householdGuest.createdAt));
 }
 
 export type HouseholdMemberItem = Awaited<ReturnType<typeof listMembers>>[number];

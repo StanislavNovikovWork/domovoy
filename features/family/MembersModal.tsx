@@ -21,11 +21,16 @@ import {
   createInvite,
   deleteHousehold,
   leaveHousehold,
+  removeGuest,
   removeMember,
   renameHousehold,
   revokeInvite,
 } from '@/server/households/actions';
-import type { HouseholdMemberItem, InviteItem } from '@/server/households/queries';
+import type {
+  HouseholdGuestItem,
+  HouseholdMemberItem,
+  InviteItem,
+} from '@/server/households/queries';
 
 type Props = {
   opened: boolean;
@@ -35,6 +40,7 @@ type Props = {
   currentUserId: string;
   role: 'owner' | 'member';
   members: HouseholdMemberItem[];
+  guests: HouseholdGuestItem[];
   invites: InviteItem[];
 };
 
@@ -48,6 +54,7 @@ export function MembersModal({
   currentUserId,
   role,
   members,
+  guests,
   invites,
 }: Props) {
   const router = useRouter();
@@ -163,6 +170,38 @@ export function MembersModal({
                       onClick={() =>
                         run(
                           () => removeMember({ householdId, userId: m.userId }),
+                          'Участник удалён'
+                        )
+                      }
+                    >
+                      <IconUserMinus size={16} />
+                    </ActionIcon>
+                  </Tooltip>
+                )}
+              </Group>
+            </Group>
+          ))}
+          {guests.map((g) => (
+            <Group key={g.id} justify="space-between" wrap="nowrap">
+              <Group gap="sm" wrap="nowrap">
+                <Avatar radius="xl" color="gray" name={g.name} />
+                <Text size="sm" fw={500}>
+                  {g.name}
+                </Text>
+              </Group>
+              <Group gap="xs" wrap="nowrap">
+                <Badge variant="light" color="gray">
+                  Без аккаунта
+                </Badge>
+                {isOwner && (
+                  <Tooltip label="Удалить из списка">
+                    <ActionIcon
+                      variant="subtle"
+                      color="red"
+                      disabled={pending}
+                      onClick={() =>
+                        run(
+                          () => removeGuest({ householdId, guestId: g.id }),
                           'Участник удалён'
                         )
                       }

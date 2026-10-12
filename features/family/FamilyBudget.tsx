@@ -4,7 +4,11 @@ import { IconUsers } from '@tabler/icons-react';
 import { Menu } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { BudgetView, type CategoryOption } from '@/features/budget';
-import type { HouseholdMemberItem, InviteItem } from '@/server/households/queries';
+import type {
+  HouseholdGuestItem,
+  HouseholdMemberItem,
+  InviteItem,
+} from '@/server/households/queries';
 import type { PlanItem, TransactionItem } from '@/shared/lib/budget';
 import { MembersModal } from './MembersModal';
 
@@ -20,12 +24,14 @@ type Props = {
   plans: PlanItem[];
   shareTotals: { name: string; total: number }[];
   members: HouseholdMemberItem[];
+  guests: HouseholdGuestItem[];
   invites: InviteItem[];
 };
 
 // общий бюджет = обычный BudgetView плюс кнопка и модалка участников
 export function FamilyBudget({
   members,
+  guests,
   invites,
   currentUserId,
   role,
@@ -41,6 +47,7 @@ export function FamilyBudget({
         {...budget}
         shareTotals={shareTotals}
         members={members.map((m) => ({ userId: m.userId, name: m.name }))}
+        guestNames={guests.map((g) => g.name)}
         actions={
           <Menu.Item leftSection={<IconUsers size={16} />} onClick={modal.open}>
             Участники
@@ -55,6 +62,7 @@ export function FamilyBudget({
         currentUserId={currentUserId}
         role={role}
         members={members}
+        guests={guests}
         invites={invites}
       />
     </>

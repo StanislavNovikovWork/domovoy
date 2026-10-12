@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { IconCalendar, IconPlus, IconTrash } from '@tabler/icons-react';
 import {
   ActionIcon,
@@ -22,6 +23,7 @@ import {
 import { DatePicker } from '@mantine/dates';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
+import { addGuest } from '@/server/households/actions';
 import { createTransaction } from '@/server/transactions/actions';
 import { formatDate, parseDate } from '@/shared/lib/period';
 import type { CategoryOption } from '@/shared/types/category';
@@ -42,6 +44,8 @@ type Props = {
   categories: CategoryOption[];
   /** члены бюджета; если переданы, под суммой появляется блок «участники расхода» */
   members?: ShareParticipant[];
+  /** участники без аккаунта, сохранённые в бюджете */
+  guestNames?: string[];
   defaultType: Type;
   /** разовый бюджет: только расходы, переключателя типа нет */
   expenseOnly?: boolean;
@@ -65,10 +69,12 @@ function TransactionForm({
   householdId,
   categories,
   members,
+  guestNames,
   defaultType,
   expenseOnly,
   prefill,
 }: Omit<Props, 'opened'>) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [calendarOpened, setCalendarOpened] = useState(false);
   // имена, вписанные вручную (не члены бюджета)
@@ -111,10 +117,14 @@ function TransactionForm({
     form.setFieldValue('note', form.values.note === text ? '' : text);
   };
 
-  // участники: члены бюджета + вписанные вручную имена
+  // участники: члены бюджета + сохранённые гости + только что вписанные имена (без повторов)
+  const guestList = [...(guestNames ?? [])];
+  for (const n of customNames) {
+    if (!guestList.some((g) => g.toLowerCase() === n.toLowerCase())) guestList.push(n);
+  }
   const people: { userId: string | null; name: string }[] = [
     ...(members ?? []),
-    ...customNames.map((name) => ({ userId: null, name })),
+    ...guestList.map((name) => ({ userId: null, name })),
   ];
   const shareKey = (s: { userId: string | null; name: string }) => s.userId ?? `~${s.name}`;
 
@@ -130,9 +140,19 @@ function TransactionForm({
   const addCustomParticipant = () => {
     const name = newName.trim();
     if (!name) return;
-    if (!people.some((p) => p.name === name)) setCustomNames((n) => [...n, name]);
-    if (!form.values.shares.some((s) => !s.userId && s.name === name)) {
-      form.insertListItem('shares', { userId: null, name, amount: '' });
+    // совпадение с уже существующим гостем: берём его написание
+    const existing = guestList.find((g) => g.toLowerCase() === name.toLowerCase());
+    const finalName = existing ?? name;
+    if (!existing) {
+      setCustomNames((n) => [...n, finalName]);
+      // сохраняем гостя в бюджете, чтобы он остался участником и в следующих операциях
+      addGuest({ householdId, name: finalName }).then((result) => {
+        if (result.ok) router.refresh();
+        else notifications.show({ message: result.error, color: 'red' });
+      });
+    }
+    if (!form.values.shares.some((s) => !s.userId && s.name === finalName)) {
+      form.insertListItem('shares', { userId: null, name: finalName, amount: '' });
     }
     setNewName('');
   };

@@ -35,6 +35,7 @@ import { AllTransactionsModal } from './AllTransactionsModal';
 import { BudgetToolbar } from './BudgetToolbar';
 import { CategoriesList } from './CategoriesList';
 import { PlanModal } from './PlanModal';
+import { OneTimeOperations } from './OneTimeOperations';
 import { PendingPaymentsCard, RecentCard } from './SidePanel';
 import { SummaryCard } from './SummaryCard';
 
@@ -48,6 +49,8 @@ type Props = {
   periodic?: boolean;
   /** члены бюджета для выбора участников расхода; показывается только при periodic=false */
   members?: ShareParticipant[];
+  /** имена участников без аккаунта, ранее вписанных в бюджет */
+  guestNames?: string[];
   /** суммы расходов по участникам (разовые бюджеты); под общей суммой */
   shareTotals?: { name: string; total: number }[];
   /** дополнительные пункты меню настроек (шестерёнка в шапке), например «Участники» */
@@ -62,6 +65,7 @@ export function BudgetView({
   plans,
   periodic = true,
   members,
+  guestNames,
   shareTotals,
   actions,
 }: Props) {
@@ -201,34 +205,39 @@ export function BudgetView({
             <PendingPaymentsCard payments={pendingPayments} onPay={pay} />
           )}
 
-          <Paper withBorder radius="lg" p="lg">
-            <Tabs defaultValue="recent">
-              <Tabs.List grow>
-                <Tabs.Tab value="recent">Расходы</Tabs.Tab>
-                <Tabs.Tab value="categories">План</Tabs.Tab>
-              </Tabs.List>
-              <Tabs.Panel value="recent" pt="md">
-                {/* на мобильных показываем всю историю без ограничения, ссылка «Все операции» не нужна */}
-                <RecentCard bare items={typeTransactions} />
-              </Tabs.Panel>
-              <Tabs.Panel value="categories" pt="md">
-                <CategoriesList
-                  bare
-                  householdId={householdId}
-                  periodic={periodic}
-                  month={planMonth}
-                  rows={categoryRows}
-                  planMode={planMode}
-                  canEditPlan={type === 'expense'}
-                  hasPlan={planRows.length > 0}
-                  canCopy={hasPrevPlan}
-                  onEdit={() => openPlan(null)}
-                  onSetLimit={openPlan}
-                  onPay={pay}
-                />
-              </Tabs.Panel>
-            </Tabs>
-          </Paper>
+          {periodic ? (
+            <Paper withBorder radius="lg" p="lg">
+              <Tabs defaultValue="recent">
+                <Tabs.List grow>
+                  <Tabs.Tab value="recent">Расходы</Tabs.Tab>
+                  <Tabs.Tab value="categories">План</Tabs.Tab>
+                </Tabs.List>
+                <Tabs.Panel value="recent" pt="md">
+                  {/* на мобильных показываем всю историю без ограничения, ссылка «Все операции» не нужна */}
+                  <RecentCard bare items={typeTransactions} />
+                </Tabs.Panel>
+                <Tabs.Panel value="categories" pt="md">
+                  <CategoriesList
+                    bare
+                    householdId={householdId}
+                    periodic={periodic}
+                    month={planMonth}
+                    rows={categoryRows}
+                    planMode={planMode}
+                    canEditPlan={type === 'expense'}
+                    hasPlan={planRows.length > 0}
+                    canCopy={hasPrevPlan}
+                    onEdit={() => openPlan(null)}
+                    onSetLimit={openPlan}
+                    onPay={pay}
+                  />
+                </Tabs.Panel>
+              </Tabs>
+            </Paper>
+          ) : (
+            // разовый бюджет: без табов, «План» будет вынесен в другое место
+            <OneTimeOperations items={typeTransactions} />
+          )}
         </Stack>
 
         {/* десктоп: категории слева, ожидаемые платежи и последние операции справа */}
@@ -269,7 +278,11 @@ export function BudgetView({
               {pendingPayments.length > 0 && (
                 <PendingPaymentsCard payments={pendingPayments} onPay={pay} />
               )}
-              <RecentCard items={recent} onShowAll={allModal.open} />
+              {periodic ? (
+                <RecentCard items={recent} onShowAll={allModal.open} />
+              ) : (
+                <OneTimeOperations items={recent} onShowAll={allModal.open} />
+              )}
             </Stack>
           </Grid.Col>
         </Grid>
@@ -284,6 +297,7 @@ export function BudgetView({
         householdId={householdId}
         categories={categories}
         members={periodic ? undefined : members}
+        guestNames={guestNames}
         expenseOnly={!periodic}
         defaultType={type}
         prefill={prefill}
