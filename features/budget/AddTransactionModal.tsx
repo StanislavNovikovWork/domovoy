@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { IconCalendar, IconPlus, IconTrash } from '@tabler/icons-react';
 import {
@@ -24,9 +24,9 @@ import { DatePicker } from '@mantine/dates';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import { addGuest } from '@/server/households/actions';
-import { createTransaction, updateTransaction } from '@/server/transactions/actions';
 import type { TransactionItem } from '@/shared/lib/budget';
 import { formatDate, parseDate } from '@/shared/lib/period';
+import type { CreateTransactionInput } from '@/shared/schemas/transaction';
 import type { CategoryOption } from '@/shared/types/category';
 import { CategoryBadge } from '@/shared/ui/CategoryBadge';
 
@@ -37,6 +37,15 @@ type Type = 'expense' | 'income';
 const TYPES: Type[] = ['expense', 'income'];
 
 export type ShareParticipant = { userId: string; name: string };
+
+export type SaveTransactionRequest = {
+  // id редактируемой операции; без него создаётся новая
+  editingId?: string;
+  // данные для сервера
+  payload: Omit<CreateTransactionInput, 'id'>;
+  // то же для мгновенного показа в списке
+  item: TransactionItem;
+};
 
 type Props = {
   opened: boolean;
@@ -56,6 +65,8 @@ type Props = {
   prefill?: { categoryId: string; note: string; amount: number } | null;
   /** редактирование существующей операции: форма заполняется её данными */
   editing?: TransactionItem | null;
+  /** сохранение операции: родитель показывает её сразу и отправляет запрос в фоне */
+  onSave: (request: SaveTransactionRequest) => void;
 };
 
 export function AddTransactionModal({ opened, onClose, ...rest }: Props) {
@@ -87,9 +98,9 @@ function TransactionForm({
   expenseOnly,
   prefill,
   editing,
+  onSave,
 }: Omit<Props, 'opened'>) {
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
   const [calendarOpened, setCalendarOpened] = useState(false);
   // имена, вписанные вручную (не члены бюджета); при редактировании сюда попадают гости операции
   const [customNames, setCustomNames] = useState<string[]>(() =>
@@ -206,34 +217,49 @@ function TransactionForm({
         return;
       }
     }
-    startTransition(async () => {
-      const payload = {
+    const amount = Math.round(Number(values.amount) * 100); // рубли → копейки
+    const paidBy = members ? payers.find((p) => payerKey(p) === values.paidBy) : undefined;
+    const shares = values.shares.map((s) => ({
+      userId: s.userId,
+      name: s.name,
+      amount: Math.round(Number(s.amount) * 100),
+    }));
+    const category = categories.find((c) => c.id === values.categoryId);
+    if (!category) return;
+
+    // без выбранных участников сервер записывает расход на автора: показываем так же сразу
+    const me = members?.find((m) => m.userId === currentUserId);
+    const shownShares =
+      shares.length === 0 && me ? [{ userId: me.userId, name: me.name, amount }] : shares;
+
+    // операция уходит наверх и сохраняется в фоне, форма закрывается сразу
+    onSave({
+      editingId: editing?.id,
+      payload: {
         householdId,
         categoryId: values.categoryId,
-        amount: Math.round(Number(values.amount) * 100), // рубли → копейки
+        amount,
         occurredOn: values.occurredOn,
         note: values.note.trim(),
-        paidBy: members ? payers.find((p) => payerKey(p) === values.paidBy) : undefined,
-        shares: values.shares.map((s) => ({
-          userId: s.userId,
-          name: s.name,
-          amount: Math.round(Number(s.amount) * 100),
-        })),
-      };
-      const result = editing
-        ? await updateTransaction({ ...payload, id: editing.id })
-        : await createTransaction(payload);
-
-      if (result.ok) {
-        notifications.show({
-          message: editing ? 'Операция сохранена' : 'Операция добавлена',
-          color: 'teal',
-        });
-        onClose();
-      } else {
-        notifications.show({ message: result.error, color: 'red' });
-      }
+        paidBy,
+        shares,
+      },
+      item: {
+        id: editing?.id ?? crypto.randomUUID(),
+        amount,
+        occurredOn: values.occurredOn,
+        note: values.note.trim(),
+        paidByUserId: paidBy?.userId ?? null,
+        paidByName: paidBy?.name ?? null,
+        shares: members ? shownShares : undefined,
+        categoryId: category.id,
+        categoryName: category.name,
+        categoryType: category.type,
+        categoryIcon: category.icon,
+        categoryColor: category.color,
+      },
     });
+    onClose();
   });
 
   return (
@@ -529,7 +555,7 @@ function TransactionForm({
           </Group>
         </div>
 
-        <Button type="submit" loading={pending}>
+        <Button type="submit">
           {editing ? 'Сохранить' : 'Добавить'}
         </Button>
       </Stack>

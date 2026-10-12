@@ -10,7 +10,7 @@ import {
 } from '@/server/households/queries';
 import { listPlans } from '@/server/plans/queries';
 import { requirePageSession } from '@/server/session';
-import { listAllTransactions, listShareTotals } from '@/server/transactions/queries';
+import { listAllTransactions } from '@/server/transactions/queries';
 import { formatDate } from '@/shared/lib/period';
 
 type Props = { params: Promise<{ id: string }> };
@@ -24,14 +24,13 @@ export default async function SharedBudgetPage({ params }: Props) {
   if (!budget) notFound();
   if (budget.type === 'personal') redirect('/');
 
-  const [transactions, categories, plans, members, invites, shareTotals, guests] = await Promise.all([
+  const [transactions, categories, plans, members, invites, guests] = await Promise.all([
     listAllTransactions(budget.id),
     listActiveCategories(budget.id),
     listPlans(budget.id),
     listMembers(budget.id),
     // приглашения видит только владелец
     budget.role === 'owner' ? listActiveInvites(budget.id) : Promise.resolve([]),
-    listShareTotals(budget.id),
     listGuests(budget.id),
   ]);
 
@@ -46,7 +45,6 @@ export default async function SharedBudgetPage({ params }: Props) {
       transactions={transactions}
       categories={categories}
       plans={plans}
-      shareTotals={shareTotals}
       members={members}
       guests={guests}
       invites={invites}

@@ -1,7 +1,8 @@
 'use client';
 
-import { IconUsers } from '@tabler/icons-react';
-import { Menu } from '@mantine/core';
+import Link from 'next/link';
+import { IconArrowLeft, IconUsers } from '@tabler/icons-react';
+import { ActionIcon, Menu } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { BudgetView, type CategoryOption } from '@/features/budget';
 import type {
@@ -10,6 +11,7 @@ import type {
   InviteItem,
 } from '@/server/households/queries';
 import type { PlanItem, TransactionItem } from '@/shared/lib/budget';
+import { HeaderLeft } from '@/shared/ui/HeaderActions';
 import { MembersModal } from './MembersModal';
 
 type Props = {
@@ -22,7 +24,6 @@ type Props = {
   transactions: TransactionItem[];
   categories: CategoryOption[];
   plans: PlanItem[];
-  shareTotals: { name: string; total: number }[];
   members: HouseholdMemberItem[];
   guests: HouseholdGuestItem[];
   invites: InviteItem[];
@@ -36,16 +37,26 @@ export function FamilyBudget({
   currentUserId,
   role,
   name,
-  shareTotals,
   ...budget
 }: Props) {
   const [opened, modal] = useDisclosure(false);
 
   return (
     <>
+      <HeaderLeft>
+        <ActionIcon
+          component={Link}
+          href="/budgets"
+          variant="default"
+          size="lg"
+          radius="xl"
+          aria-label="К списку бюджетов"
+        >
+          <IconArrowLeft size={18} />
+        </ActionIcon>
+      </HeaderLeft>
       <BudgetView
         {...budget}
-        shareTotals={shareTotals}
         members={members.map((m) => ({ userId: m.userId, name: m.name }))}
         guestNames={guests.map((g) => g.name)}
         currentUserId={currentUserId}

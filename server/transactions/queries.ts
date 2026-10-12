@@ -1,4 +1,4 @@
-import { desc, eq, sql } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import 'server-only';
 import { db } from '@/server/db';
 import { transaction, transactionShare, category } from '@/server/db/schema';
@@ -49,16 +49,3 @@ export async function listAllTransactions(householdId: string) {
   return rows.map((r) => ({ ...r, shares: byTransaction.get(r.id) ?? [] }));
 }
 
-// суммы по участникам расходов (transaction_share) по всему бюджету, от большей к меньшей
-export async function listShareTotals(householdId: string) {
-  return db
-    .select({
-      name: transactionShare.name,
-      total: sql<number>`sum(${transactionShare.amount})::int`,
-    })
-    .from(transactionShare)
-    .innerJoin(transaction, eq(transaction.id, transactionShare.transactionId))
-    .where(eq(transaction.householdId, householdId))
-    .groupBy(transactionShare.name)
-    .orderBy(desc(sql`sum(${transactionShare.amount})`));
-}

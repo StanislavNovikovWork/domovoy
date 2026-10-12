@@ -94,6 +94,7 @@ export async function createTransaction(input: unknown): Promise<Result> {
     const [row] = await db
       .insert(transaction)
       .values({
+        id: data.id,
         householdId: data.householdId,
         categoryId: data.categoryId,
         amount: data.amount,

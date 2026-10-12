@@ -1,6 +1,8 @@
 import { z } from 'zod';
 
 export const createTransactionSchema = z.object({
+  // id, созданный на клиенте для мгновенного отображения; настоящая запись приходит с тем же id
+  id: z.uuid().optional(),
   householdId: z.uuid(),
   categoryId: z.uuid(),
   // сумма в копейках, целое положительное число (до 1 млрд рублей)
