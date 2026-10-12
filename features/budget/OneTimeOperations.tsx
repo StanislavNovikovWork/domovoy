@@ -1,6 +1,7 @@
 'use client';
 
-import { Anchor, Avatar, Group, Paper, Stack, Text, Tooltip } from '@mantine/core';
+import type { ReactNode } from 'react';
+import { Anchor, Avatar, Divider, Group, Paper, Stack, Text, Tooltip } from '@mantine/core';
 import type { TransactionItem } from '@/shared/lib/budget';
 import { formatMoney } from '@/shared/lib/money';
 import { formatShortDate } from '@/shared/lib/period';
@@ -13,6 +14,8 @@ type Props = {
   onShowAll?: () => void;
   // без обводки и отступов: внутри табов на мобильных
   bare?: boolean;
+  // кнопки справа от суммы (редактирование и удаление в окне «Все операции»)
+  renderActions?: (t: TransactionItem) => ReactNode;
 };
 
 type Day = { date: string; total: number; items: TransactionItem[] };
@@ -33,18 +36,22 @@ function groupByDay(items: TransactionItem[]): Day[] {
 }
 
 // блок операций разового бюджета; отдельно от RecentCard, чтобы менять его независимо
-export function OneTimeOperations({ items, onShowAll, bare }: Props) {
+export function OneTimeOperations({ items, onShowAll, bare, renderActions }: Props) {
   const days = groupByDay(items);
 
   const content = (
-    <Stack gap="xs">
-      {onShowAll && (
-        <Group justify="flex-end">
-          <Anchor component="button" type="button" size="sm" onClick={onShowAll}>
-            Все операции
-          </Anchor>
+    <Stack gap={0}>
+      {!bare && (
+        <Group justify="space-between" pt={8}>
+          <Text fw={600}>Список операций</Text>
+          {onShowAll && (
+            <Anchor component="button" type="button" size="sm" onClick={onShowAll}>
+              Все операции
+            </Anchor>
+          )}
         </Group>
       )}
+      {!bare && <Divider mt={2} />}
 
       {days.length === 0 ? (
         <Text c="dimmed" size="sm">
@@ -97,6 +104,7 @@ export function OneTimeOperations({ items, onShowAll, bare }: Props) {
                   <Text size="sm" fw={500} style={{ whiteSpace: 'nowrap' }}>
                     {signedMoney(t)}
                   </Text>
+                  {renderActions?.(t)}
                 </Group>
               ))}
             </Stack>

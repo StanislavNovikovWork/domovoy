@@ -24,7 +24,8 @@ import { DatePicker } from '@mantine/dates';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import { addGuest } from '@/server/households/actions';
-import { createTransaction } from '@/server/transactions/actions';
+import { createTransaction, updateTransaction } from '@/server/transactions/actions';
+import type { TransactionItem } from '@/shared/lib/budget';
 import { formatDate, parseDate } from '@/shared/lib/period';
 import type { CategoryOption } from '@/shared/types/category';
 import { CategoryBadge } from '@/shared/ui/CategoryBadge';
@@ -53,11 +54,20 @@ type Props = {
   expenseOnly?: boolean;
   /** предзаполнение формы, например при оплате статьи плана; amount в рублях */
   prefill?: { categoryId: string; note: string; amount: number } | null;
+  /** редактирование существующей операции: форма заполняется её данными */
+  editing?: TransactionItem | null;
 };
 
 export function AddTransactionModal({ opened, onClose, ...rest }: Props) {
   return (
-    <Modal opened={opened} onClose={onClose} title="Новая операция" centered>
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title={rest.editing ? 'Редактирование операции' : 'Новая операция'}
+      // при редактировании форма открывается поверх окна «Все операции» (200); календарь и списки выше (300)
+      zIndex={rest.editing ? 250 : undefined}
+      centered
+    >
       {/* форма внутри модалки: при каждом открытии создаётся заново и сбрасывается */}
       <TransactionForm onClose={onClose} {...rest} />
     </Modal>
@@ -76,12 +86,20 @@ function TransactionForm({
   defaultType,
   expenseOnly,
   prefill,
+  editing,
 }: Omit<Props, 'opened'>) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [calendarOpened, setCalendarOpened] = useState(false);
-  // имена, вписанные вручную (не члены бюджета)
-  const [customNames, setCustomNames] = useState<string[]>([]);
+  // имена, вписанные вручную (не члены бюджета); при редактировании сюда попадают гости операции
+  const [customNames, setCustomNames] = useState<string[]>(() =>
+    editing
+      ? [
+          ...(editing.shares ?? []).filter((s) => !s.userId).map((s) => s.name),
+          ...(!editing.paidByUserId && editing.paidByName ? [editing.paidByName] : []),
+        ]
+      : []
+  );
   const [newName, setNewName] = useState('');
 
   const now = new Date();
@@ -89,16 +107,32 @@ function TransactionForm({
   const yesterday = formatDate(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1));
 
   const form = useForm({
-    initialValues: {
-      type: (prefill ? 'expense' : defaultType) as Type,
-      categoryId: prefill?.categoryId ?? '',
-      amount: (prefill?.amount ?? '') as number | string,
-      occurredOn: today,
-      note: prefill?.note ?? '',
-      shares: [] as Share[],
-      // кто платил: userId члена бюджета или «~имя» гостя; по умолчанию автор
-      paidBy: currentUserId ?? '',
-    },
+    initialValues: editing
+      ? {
+          type: editing.categoryType as Type,
+          categoryId: editing.categoryId,
+          amount: editing.amount / 100 as number | string,
+          occurredOn: editing.occurredOn,
+          note: editing.note ?? '',
+          shares: (editing.shares ?? []).map((s) => ({
+            userId: s.userId,
+            name: s.name,
+            amount: s.amount / 100,
+          })) as Share[],
+          paidBy:
+            editing.paidByUserId ??
+            (editing.paidByName ? `~${editing.paidByName}` : (currentUserId ?? '')),
+        }
+      : {
+          type: (prefill ? 'expense' : defaultType) as Type,
+          categoryId: prefill?.categoryId ?? '',
+          amount: (prefill?.amount ?? '') as number | string,
+          occurredOn: today,
+          note: prefill?.note ?? '',
+          shares: [] as Share[],
+          // кто платил: userId члена бюджета или «~имя» гостя; по умолчанию автор
+          paidBy: currentUserId ?? '',
+        },
     validate: {
       categoryId: (v) => (v ? null : 'Выберите категорию'),
       amount: (v) => (typeof v === 'number' && v > 0 ? null : 'Введите сумму'),
@@ -173,7 +207,7 @@ function TransactionForm({
       }
     }
     startTransition(async () => {
-      const result = await createTransaction({
+      const payload = {
         householdId,
         categoryId: values.categoryId,
         amount: Math.round(Number(values.amount) * 100), // рубли → копейки
@@ -185,10 +219,16 @@ function TransactionForm({
           name: s.name,
           amount: Math.round(Number(s.amount) * 100),
         })),
-      });
+      };
+      const result = editing
+        ? await updateTransaction({ ...payload, id: editing.id })
+        : await createTransaction(payload);
 
       if (result.ok) {
-        notifications.show({ message: 'Операция добавлена', color: 'teal' });
+        notifications.show({
+          message: editing ? 'Операция сохранена' : 'Операция добавлена',
+          color: 'teal',
+        });
         onClose();
       } else {
         notifications.show({ message: result.error, color: 'red' });
@@ -490,7 +530,7 @@ function TransactionForm({
         </div>
 
         <Button type="submit" loading={pending}>
-          Добавить
+          {editing ? 'Сохранить' : 'Добавить'}
         </Button>
       </Stack>
     </form>

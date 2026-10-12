@@ -10,6 +10,7 @@ export async function listAllTransactions(householdId: string) {
       amount: transaction.amount,
       occurredOn: transaction.occurredOn,
       note: transaction.note,
+      paidByUserId: transaction.paidByUserId,
       paidByName: transaction.paidByName,
       categoryId: category.id,
       categoryName: category.name,
@@ -26,6 +27,7 @@ export async function listAllTransactions(householdId: string) {
   const shareRows = await db
     .select({
       transactionId: transactionShare.transactionId,
+      userId: transactionShare.userId,
       name: transactionShare.name,
       amount: transactionShare.amount,
     })
@@ -34,10 +36,13 @@ export async function listAllTransactions(householdId: string) {
     .where(eq(transaction.householdId, householdId))
     .orderBy(desc(transactionShare.amount));
 
-  const byTransaction = new Map<string, { name: string; amount: number }[]>();
+  const byTransaction = new Map<
+    string,
+    { userId: string | null; name: string; amount: number }[]
+  >();
   for (const s of shareRows) {
     const list = byTransaction.get(s.transactionId) ?? [];
-    list.push({ name: s.name, amount: s.amount });
+    list.push({ userId: s.userId, name: s.name, amount: s.amount });
     byTransaction.set(s.transactionId, list);
   }
 

@@ -27,4 +27,11 @@ export const createTransactionSchema = z.object({
     .optional(),
 });
 
+export const updateTransactionSchema = createTransactionSchema.extend({ id: z.uuid() });
+
+export const deleteTransactionSchema = z.object({
+  householdId: z.uuid(),
+  id: z.uuid(),
+});
+
 export type CreateTransactionInput = z.infer<typeof createTransactionSchema>;

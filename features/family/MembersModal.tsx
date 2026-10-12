@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { IconCheck, IconCopy, IconLink, IconTrash, IconUserMinus } from '@tabler/icons-react';
 import {
@@ -58,7 +58,16 @@ export function MembersModal({
   invites,
 }: Props) {
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
+  // ключ выполняемого действия: загрузка показывается только на нажатой кнопке
+  const [pendingKey, setPendingKey] = useState<string | null>(null);
+  const track = async (key: string, fn: () => Promise<void>) => {
+    setPendingKey(key);
+    try {
+      await fn();
+    } finally {
+      setPendingKey(null);
+    }
+  };
   const [newLink, setNewLink] = useState<string | null>(null);
   // origin доступен только в браузере: при SSR window нет
   const [origin, setOrigin] = useState('');
@@ -69,7 +78,7 @@ export function MembersModal({
   useEffect(() => setNewName(name), [name]);
 
   const rename = () => {
-    startTransition(async () => {
+    track('rename', async () => {
       const result = await renameHousehold({ householdId, name: newName });
       if (result.ok) {
         notifications.show({ message: 'Название изменено', color: 'teal' });
@@ -85,7 +94,7 @@ export function MembersModal({
       !window.confirm(`Удалить бюджет «${name}» вместе со всеми операциями? Это нельзя отменить.`)
     )
       return;
-    startTransition(async () => {
+    track('delete', async () => {
       const result = await deleteHousehold({ householdId });
       if (result.ok) {
         notifications.show({ message: 'Бюджет удалён', color: 'teal' });
@@ -97,8 +106,12 @@ export function MembersModal({
     });
   };
 
-  const run = (action: () => Promise<{ ok: boolean; error?: string }>, success?: string) => {
-    startTransition(async () => {
+  const run = (
+    key: string,
+    action: () => Promise<{ ok: boolean; error?: string }>,
+    success?: string
+  ) => {
+    track(key, async () => {
       const result = await action();
       if (result.ok) {
         if (success) notifications.show({ message: success, color: 'teal' });
@@ -110,7 +123,7 @@ export function MembersModal({
   };
 
   const invite = () => {
-    startTransition(async () => {
+    track('invite', async () => {
       const result = await createInvite({ householdId });
       if (result.ok) {
         setNewLink(inviteUrl(result.token));
@@ -122,7 +135,7 @@ export function MembersModal({
   };
 
   const leave = () => {
-    startTransition(async () => {
+    track('leave', async () => {
       const result = await leaveHousehold({ householdId });
       if (result.ok) {
         notifications.show({ message: 'Вы вышли из бюджета', color: 'teal' });
@@ -166,9 +179,10 @@ export function MembersModal({
                     <ActionIcon
                       variant="subtle"
                       color="red"
-                      disabled={pending}
+                      disabled={pendingKey === `member:${m.userId}`}
                       onClick={() =>
                         run(
+                          `member:${m.userId}`,
                           () => removeMember({ householdId, userId: m.userId }),
                           'Участник удалён'
                         )
@@ -198,9 +212,10 @@ export function MembersModal({
                     <ActionIcon
                       variant="subtle"
                       color="red"
-                      disabled={pending}
+                      disabled={pendingKey === `guest:${g.id}`}
                       onClick={() =>
                         run(
+                          `guest:${g.id}`,
                           () => removeGuest({ householdId, guestId: g.id }),
                           'Участник удалён'
                         )
@@ -221,7 +236,7 @@ export function MembersModal({
               variant="light"
               leftSection={<IconLink size={16} />}
               onClick={invite}
-              loading={pending}
+              loading={pendingKey === 'invite'}
             >
               Создать ссылку-приглашение
             </Button>
@@ -284,9 +299,10 @@ export function MembersModal({
                           <ActionIcon
                             variant="subtle"
                             color="red"
-                            disabled={pending}
+                            disabled={pendingKey === `invite:${i.id}`}
                             onClick={() =>
                               run(
+                                `invite:${i.id}`,
                                 () => revokeInvite({ householdId, inviteId: i.id }),
                                 'Приглашение отозвано'
                               )
@@ -317,20 +333,20 @@ export function MembersModal({
               <Button
                 variant="default"
                 onClick={rename}
-                loading={pending}
+                loading={pendingKey === 'rename'}
                 disabled={!newName.trim() || newName.trim() === name}
               >
                 Сохранить
               </Button>
             </Group>
-            <Button variant="subtle" color="red" onClick={remove} loading={pending}>
+            <Button variant="subtle" color="red" onClick={remove} loading={pendingKey === 'delete'}>
               Удалить бюджет
             </Button>
           </>
         )}
 
         {!isOwner && (
-          <Button variant="subtle" color="red" onClick={leave} loading={pending}>
+          <Button variant="subtle" color="red" onClick={leave} loading={pendingKey === 'leave'}>
             Выйти из бюджета
           </Button>
         )}

@@ -35,6 +35,7 @@ import { AllTransactionsModal } from './AllTransactionsModal';
 import { BudgetToolbar } from './BudgetToolbar';
 import { CategoriesList } from './CategoriesList';
 import { PlanModal } from './PlanModal';
+import { OneTimeAllOperationsModal } from './OneTimeAllOperationsModal';
 import { OneTimeOperations } from './OneTimeOperations';
 import { PendingPaymentsCard, RecentCard } from './SidePanel';
 import { SummaryCard } from './SummaryCard';
@@ -81,6 +82,8 @@ export function BudgetView({
   const [period, setPeriod] = useState<Period>('month');
   const [date, setDate] = useState(initialDate);
   const [addOpened, addModal] = useDisclosure(false);
+  // операция, открытая на редактирование (окно «Все операции» разового бюджета)
+  const [editing, setEditing] = useState<TransactionItem | null>(null);
   const [catsOpened, catsModal] = useDisclosure(false);
   const [planOpened, planModal] = useDisclosure(false);
   const [allOpened, allModal] = useDisclosure(false);
@@ -239,12 +242,12 @@ export function BudgetView({
             </Paper>
           ) : (
             // разовый бюджет: без табов, «План» будет вынесен в другое место
-            <OneTimeOperations items={typeTransactions} />
+            <OneTimeOperations items={typeTransactions} onShowAll={allModal.open} />
           )}
         </Stack>
 
         {/* десктоп: категории слева, ожидаемые платежи и последние операции справа */}
-        <Grid gutter="lg" visibleFrom="lg">
+        <Grid gap="lg" visibleFrom="lg">
           <Grid.Col span={{ base: 12, lg: 8 }}>
             <Stack gap="lg">
               <SummaryCard
@@ -292,11 +295,13 @@ export function BudgetView({
       </Stack>
 
       <AddTransactionModal
-        opened={addOpened}
+        opened={addOpened || !!editing}
         onClose={() => {
           addModal.close();
           setPrefill(null);
+          setEditing(null);
         }}
+        editing={editing}
         householdId={householdId}
         categories={categories}
         members={periodic ? undefined : members}
@@ -307,13 +312,23 @@ export function BudgetView({
         prefill={prefill}
       />
 
-      <AllTransactionsModal
-        opened={allOpened}
-        onClose={allModal.close}
-        type={type}
-        periodLabel={periodic ? formatPeriodLabel(period, date) : 'за всё время'}
-        items={items}
-      />
+      {periodic ? (
+        <AllTransactionsModal
+          opened={allOpened}
+          onClose={allModal.close}
+          type={type}
+          periodLabel={formatPeriodLabel(period, date)}
+          items={items}
+        />
+      ) : (
+        <OneTimeAllOperationsModal
+          opened={allOpened}
+          onClose={allModal.close}
+          householdId={householdId}
+          items={typeTransactions}
+          onEdit={setEditing}
+        />
+      )}
 
       <PlanModal
         opened={planOpened}

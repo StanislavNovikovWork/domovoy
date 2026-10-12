@@ -5,8 +5,9 @@ export type TransactionItem = {
   amount: number; // копейки
   occurredOn: string; // YYYY-MM-DD
   note: string | null;
+  paidByUserId?: string | null; // кто платил: член бюджета (разовые бюджеты)
   paidByName?: string | null; // кто платил (разовые бюджеты)
-  shares?: { name: string; amount: number }[]; // доли участников (разовые бюджеты)
+  shares?: { userId: string | null; name: string; amount: number }[]; // доли участников (разовые бюджеты)
   categoryId: string;
   categoryName: string;
   categoryType: TxType;
