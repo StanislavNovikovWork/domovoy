@@ -2,7 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { IconCheck, IconCopy, IconLink, IconTrash, IconUserMinus } from '@tabler/icons-react';
+import {
+  IconCheck,
+  IconCopy,
+  IconLink,
+  IconPlus,
+  IconTrash,
+  IconUserMinus,
+} from '@tabler/icons-react';
 import {
   ActionIcon,
   Avatar,
@@ -18,6 +25,7 @@ import {
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import {
+  addGuest,
   createInvite,
   deleteHousehold,
   leaveHousehold,
@@ -147,6 +155,22 @@ export function MembersModal({
     });
   };
 
+  const [guestName, setGuestName] = useState('');
+  // участник без аккаунта: сохраняется гостем бюджета и появляется в форме расхода
+  const addGuestByName = () => {
+    const guest = guestName.trim();
+    if (!guest) return;
+    track('addGuest', async () => {
+      const result = await addGuest({ householdId, name: guest });
+      if (result.ok) {
+        setGuestName('');
+        router.refresh();
+      } else {
+        notifications.show({ message: result.error, color: 'red' });
+      }
+    });
+  };
+
   return (
     <Modal opened={opened} onClose={onClose} title="Участники" size="md">
       <Stack>
@@ -229,6 +253,32 @@ export function MembersModal({
             </Group>
           ))}
         </Stack>
+
+        <Group gap="xs" wrap="nowrap">
+          <TextInput
+            size="sm"
+            placeholder="Участник без аккаунта: имя"
+            maxLength={40}
+            value={guestName}
+            onChange={(e) => setGuestName(e.currentTarget.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                addGuestByName();
+              }
+            }}
+            style={{ flex: 1 }}
+          />
+          <ActionIcon
+            variant="default"
+            size="lg"
+            aria-label="Добавить участника"
+            disabled={!guestName.trim() || pendingKey === 'addGuest'}
+            onClick={addGuestByName}
+          >
+            <IconPlus size={16} />
+          </ActionIcon>
+        </Group>
 
         {isOwner && (
           <>

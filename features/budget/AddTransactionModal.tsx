@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { IconCalendar, IconPlus, IconTrash } from '@tabler/icons-react';
+import { IconCalendar, IconTrash } from '@tabler/icons-react';
 import {
   ActionIcon,
   Box,
@@ -14,6 +13,7 @@ import {
   NumberInput,
   Popover,
   SegmentedControl,
+  Select,
   SimpleGrid,
   Stack,
   Text,
@@ -22,8 +22,8 @@ import {
 } from '@mantine/core';
 import { DatePicker } from '@mantine/dates';
 import { useForm } from '@mantine/form';
+import { useMediaQuery } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { addGuest } from '@/server/households/actions';
 import type { TransactionItem } from '@/shared/lib/budget';
 import { formatDate, parseDate } from '@/shared/lib/period';
 import type { CreateTransactionInput } from '@/shared/schemas/transaction';
@@ -70,6 +70,9 @@ type Props = {
 };
 
 export function AddTransactionModal({ opened, onClose, ...rest }: Props) {
+  // на мобильных форма выезжает снизу на всю ширину, без отступов, с закруглёнными верхними углами
+  const isMobile = useMediaQuery('(max-width: 47.99375em)');
+
   return (
     <Modal
       opened={opened}
@@ -77,7 +80,27 @@ export function AddTransactionModal({ opened, onClose, ...rest }: Props) {
       title={rest.editing ? 'Редактирование операции' : 'Новая операция'}
       // при редактировании форма открывается поверх окна «Все операции» (200); календарь и списки выше (300)
       zIndex={rest.editing ? 250 : undefined}
-      centered
+      centered={!isMobile}
+      size={isMobile ? '100%' : undefined}
+      xOffset={isMobile ? 0 : undefined}
+      yOffset={isMobile ? 0 : undefined}
+      transitionProps={isMobile ? { transition: 'slide-up' } : undefined}
+      styles={
+        isMobile
+          ? {
+              inner: { alignItems: 'flex-end' },
+              content: {
+                width: '100%',
+                maxWidth: '100%',
+                // svh, не dvh: динамическая высота меняется при скрытии адресной строки,
+                // а её пересчёт со скроллом к селекту уходит в цикл — мерцает вся форма
+                maxHeight: '92svh',
+                borderRadius: 'var(--mantine-radius-lg) var(--mantine-radius-lg) 0 0',
+              },
+              body: { paddingBottom: 'max(var(--mantine-spacing-md), env(safe-area-inset-bottom))' },
+            }
+          : undefined
+      }
     >
       {/* форма внутри модалки: при каждом открытии создаётся заново и сбрасывается */}
       <TransactionForm onClose={onClose} {...rest} />
@@ -100,22 +123,25 @@ function TransactionForm({
   editing,
   onSave,
 }: Omit<Props, 'opened'>) {
-  const router = useRouter();
   const [calendarOpened, setCalendarOpened] = useState(false);
-  // имена, вписанные вручную (не члены бюджета); при редактировании сюда попадают гости операции
-  const [customNames, setCustomNames] = useState<string[]>(() =>
-    editing
-      ? [
-          ...(editing.shares ?? []).filter((s) => !s.userId).map((s) => s.name),
-          ...(!editing.paidByUserId && editing.paidByName ? [editing.paidByName] : []),
-        ]
-      : []
-  );
-  const [newName, setNewName] = useState('');
+  // гости редактируемой операции, которых уже нет среди гостей бюджета (например, удалены)
+  const customNames: string[] = editing
+    ? [
+        ...(editing.shares ?? []).filter((s) => !s.userId).map((s) => s.name),
+        ...(!editing.paidByUserId && editing.paidByName ? [editing.paidByName] : []),
+      ]
+    : [];
 
   const now = new Date();
   const today = formatDate(now);
   const yesterday = formatDate(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1));
+
+  // в разовом бюджете категорию не спрашиваем: любой расход уходит в «Прочее»
+  const miscCategoryId =
+    (expenseOnly &&
+      (categories.find((c) => c.name === 'Прочее' && c.type === 'expense')?.id ??
+        categories.find((c) => c.type === 'expense')?.id)) ||
+    '';
 
   const form = useForm({
     initialValues: editing
@@ -136,7 +162,7 @@ function TransactionForm({
         }
       : {
           type: (prefill ? 'expense' : defaultType) as Type,
-          categoryId: prefill?.categoryId ?? '',
+          categoryId: prefill?.categoryId ?? miscCategoryId,
           amount: (prefill?.amount ?? '') as number | string,
           occurredOn: today,
           note: prefill?.note ?? '',
@@ -188,26 +214,6 @@ function TransactionForm({
     } else {
       form.insertListItem('shares', { ...person, amount: '' });
     }
-  };
-
-  const addCustomParticipant = () => {
-    const name = newName.trim();
-    if (!name) return;
-    // совпадение с уже существующим гостем: берём его написание
-    const existing = guestList.find((g) => g.toLowerCase() === name.toLowerCase());
-    const finalName = existing ?? name;
-    if (!existing) {
-      setCustomNames((n) => [...n, finalName]);
-      // сохраняем гостя в бюджете, чтобы он остался участником и в следующих операциях
-      addGuest({ householdId, name: finalName }).then((result) => {
-        if (result.ok) router.refresh();
-        else notifications.show({ message: result.error, color: 'red' });
-      });
-    }
-    if (!form.values.shares.some((s) => !s.userId && s.name === finalName)) {
-      form.insertListItem('shares', { userId: null, name: finalName, amount: '' });
-    }
-    setNewName('');
   };
 
   const handleSubmit = form.onSubmit((values) => {
@@ -297,24 +303,15 @@ function TransactionForm({
         />
 
         {members && (
-          <div>
-            <Text size="sm" fw={500} mb={8}>
-              Кто платил
-            </Text>
-            <Chip.Group
-              multiple={false}
-              value={form.values.paidBy}
-              onChange={(v) => form.setFieldValue('paidBy', v)}
-            >
-              <Group gap="xs">
-                {payers.map((p) => (
-                  <Chip key={payerKey(p)} size="xs" variant="light" value={payerKey(p)}>
-                    {p.name}
-                  </Chip>
-                ))}
-              </Group>
-            </Chip.Group>
-          </div>
+          <Select
+            label="Кто платил"
+            data={payers.map((p) => ({ value: payerKey(p), label: p.name }))}
+            allowDeselect={false}
+            // без портала: дропдаун внутри модалки, иначе у края нижней шторки
+            // перепозиционирование уходит в цикл и мерцает вся форма (mantine#8255)
+            comboboxProps={{ withinPortal: false, position: 'bottom', middlewares: { flip: false } }}
+            {...form.getInputProps('paidBy')}
+          />
         )}
 
         {/* участники расхода: только в разовых бюджетах (members переданы) */}
@@ -323,12 +320,13 @@ function TransactionForm({
             <Text size="sm" fw={500} mb={8}>
               Участники расхода
             </Text>
-            <Stack gap={4} mb="xs">
+            <Stack gap={0} mb="xs">
               {people.map((p) => {
                 const i = form.values.shares.findIndex((s) => shareKey(s) === shareKey(p));
                 const share = i >= 0 ? form.values.shares[i] : null;
                 return (
-                  <Group key={shareKey(p)} gap="xs" wrap="nowrap">
+                  // mih под высоту инпута: строка не прыгает, когда он появляется
+                  <Group key={shareKey(p)} gap="xs" wrap="nowrap" mih={26}>
                     <UnstyledButton
                       type="button"
                       onClick={() => toggleShare(p)}
@@ -342,6 +340,7 @@ function TransactionForm({
                       <>
                         <NumberInput
                           size="xs"
+                          variant="unstyled"
                           w={120}
                           placeholder="Сумма"
                           min={0}
@@ -351,6 +350,7 @@ function TransactionForm({
                           suffix=" ₽"
                           hideControls
                           aria-label={`Сумма: ${share.name}`}
+                          styles={{ input: { height: 26, minHeight: 26 } }}
                           value={share.amount}
                           onChange={(v) => form.setFieldValue(`shares.${i}.amount`, v)}
                           onFocus={() => {
@@ -369,7 +369,7 @@ function TransactionForm({
                         <ActionIcon
                           variant="subtle"
                           color="red"
-                          size="sm"
+                          size={26}
                           aria-label={`Убрать ${share.name}`}
                           onClick={() => form.removeListItem('shares', i)}
                         >
@@ -381,33 +381,11 @@ function TransactionForm({
                 );
               })}
             </Stack>
-            <Group gap="xs" wrap="nowrap">
-              <TextInput
-                size="xs"
-                placeholder="Кто-то ещё: имя"
-                maxLength={40}
-                value={newName}
-                onChange={(e) => setNewName(e.currentTarget.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    addCustomParticipant();
-                  }
-                }}
-                style={{ flex: 1 }}
-              />
-              <ActionIcon
-                variant="default"
-                size="lg"
-                aria-label="Добавить участника"
-                onClick={addCustomParticipant}
-              >
-                <IconPlus size={16} />
-              </ActionIcon>
-            </Group>
           </div>
         )}
 
+        {/* в разовом бюджете категорий нет: всё уходит в «Прочее» */}
+        {!expenseOnly && (
         <div>
           <Text size="sm" fw={500} mb={8}>
             Категория
@@ -462,6 +440,7 @@ function TransactionForm({
             </Text>
           )}
         </div>
+        )}
 
         <div>
           <Input.Label required mb={8}>

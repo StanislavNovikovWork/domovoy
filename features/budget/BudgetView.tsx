@@ -269,8 +269,10 @@ export function BudgetView({
             periodic
               ? undefined
               : {
+                  // svh, не dvh: иначе высота прыгает каждый раз, когда при скролле
+                  // прячется/появляется адресная строка браузера
                   height:
-                    'calc(100dvh - var(--app-shell-header-offset, 0rem) - 2 * var(--mantine-spacing-md))',
+                    'calc(100svh - var(--app-shell-header-offset, 0rem) - 2 * var(--mantine-spacing-md))',
                 }
           }
         >
