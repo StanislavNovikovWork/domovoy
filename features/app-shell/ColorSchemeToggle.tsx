@@ -2,12 +2,15 @@
 
 import { IconMoon, IconSun } from '@tabler/icons-react';
 import { ActionIcon, useComputedColorScheme, useMantineColorScheme } from '@mantine/core';
+import { useMounted } from '@mantine/hooks';
 
 export function ColorSchemeToggle() {
   const { setColorScheme } = useMantineColorScheme();
-  // getInitialValueInEffect: на сервере схема неизвестна, иначе будет расхождение при гидрации
   const computed = useComputedColorScheme('light', { getInitialValueInEffect: true });
-  const dark = computed === 'dark';
+  // сохранённая тема читается из localStorage уже при первом клиентском рендере, а сервер её не знает:
+  // до монтирования рисуем «светлую» иконку, как на сервере, иначе гидрация не сойдётся
+  const mounted = useMounted();
+  const dark = mounted && computed === 'dark';
 
   return (
     <ActionIcon

@@ -2,15 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { IconUsers, IconWallet } from '@tabler/icons-react';
+import { IconUsers } from '@tabler/icons-react';
 import { NavLink } from '@mantine/core';
 
-const LINKS = [
-  { href: '/budgets', label: 'Мои бюджеты', icon: IconUsers },
-  { href: '/personal', label: 'Личный бюджет', icon: IconWallet },
-];
+const LINKS = [{ href: '/budgets', label: 'Мои бюджеты', icon: IconUsers }];
 
-export function AppNavbar({ onNavigate }: { onNavigate: () => void }) {
+export function AppNavbar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
 
   return (

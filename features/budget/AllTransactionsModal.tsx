@@ -1,8 +1,9 @@
 'use client';
 
-import { Box, Group, Modal, Stack, Text } from '@mantine/core';
+import { Group, Modal, Stack, Text } from '@mantine/core';
 import type { TransactionItem, TxType } from '@/shared/lib/budget';
 import { formatShortDate } from '@/shared/lib/period';
+import { capitalize } from '@/shared/lib/text';
 import { signedMoney } from './SidePanel';
 
 type Props = {
@@ -43,7 +44,7 @@ export function AllTransactionsModal({ opened, onClose, type, periodLabel, items
                 {formatShortDate(t.occurredOn)}
               </Text>
               <Text size="sm" truncate style={{ flex: 1, minWidth: 0 }}>
-                {t.note || t.categoryName}
+                {capitalize(t.note || t.categoryName)}
               </Text>
               <Text
                 size="sm"

@@ -216,6 +216,22 @@ function TransactionForm({
     }
   };
 
+  // делит общую сумму между выбранными участниками поровну; лишние копейки достаются первым
+  const splitEvenly = () => {
+    const total = form.values.amount;
+    if (typeof total !== 'number' || total <= 0) {
+      notifications.show({ message: 'Сначала введите сумму', color: 'red' });
+      return;
+    }
+    const count = form.values.shares.length;
+    const kopecks = Math.round(total * 100);
+    const base = Math.floor(kopecks / count);
+    const extra = kopecks - base * count;
+    form.values.shares.forEach((_, i) => {
+      form.setFieldValue(`shares.${i}.amount`, (base + (i < extra ? 1 : 0)) / 100);
+    });
+  };
+
   const handleSubmit = form.onSubmit((values) => {
     for (const s of values.shares) {
       if (typeof s.amount !== 'number' || s.amount <= 0) {
@@ -317,9 +333,16 @@ function TransactionForm({
         {/* участники расхода: только в разовых бюджетах (members переданы) */}
         {members && (
           <div>
-            <Text size="sm" fw={500} mb={8}>
-              Участники расхода
-            </Text>
+            <Group justify="space-between" align="center" mb={8} mih={22}>
+              <Text size="sm" fw={500}>
+                Участники расхода
+              </Text>
+              {form.values.shares.length >= 2 && (
+                <Button type="button" variant="light" size="compact-xs" onClick={splitEvenly}>
+                  Поровну
+                </Button>
+              )}
+            </Group>
             <Stack gap={0} mb="xs">
               {people.map((p) => {
                 const i = form.values.shares.findIndex((s) => shareKey(s) === shareKey(p));

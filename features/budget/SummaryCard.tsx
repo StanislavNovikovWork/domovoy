@@ -4,6 +4,7 @@ import { IconPlus } from '@tabler/icons-react';
 import {
   ActionIcon,
   Box,
+  Group,
   Paper,
   Progress,
   SimpleGrid,
@@ -14,6 +15,8 @@ import type { PlanSummary, TxType } from '@/shared/lib/budget';
 import { formatMoney } from '@/shared/lib/money';
 import { formatPeriodCaption, getMonthProgress, type Period } from '@/shared/lib/period';
 import { pluralRu } from '@/shared/lib/plural';
+
+const BORDER = '1px solid var(--mantine-color-default-border)';
 
 type Props = {
   periodic: boolean;
@@ -74,13 +77,21 @@ export function SummaryCard({
     plan && plan.planned > 0 ? Math.round((plan.spentInPlan / plan.planned) * 100) : 0;
   const overPlan = plan ? plan.remaining < 0 : false;
 
+  // разовый бюджет на мобильных: без рамки и боковых отступов, блок сливается со страницей
+  const flat = !periodic;
+
   return (
-    <Paper withBorder radius="lg" p="lg" pos="relative">
+    <Paper
+      radius="lg"
+      p={flat ? { base: 0, sm: 'lg' } : 'lg'}
+      pos="relative"
+      bd={flat ? { base: 'none', sm: BORDER } : BORDER}
+    >
       <ActionIcon
         hiddenFrom="sm"
         pos="absolute"
-        top={16}
-        right={16}
+        top={flat ? 0 : 16}
+        right={flat ? 0 : 16}
         size="lg"
         radius="xl"
         aria-label="Добавить операцию"
@@ -91,10 +102,11 @@ export function SummaryCard({
       <Stack gap="lg">
         <SimpleGrid cols={{ base: 1, sm: plan ? 3 : 1 }} spacing="lg">
           <Stack gap={2}>
-            <Text size="sm" c="dimmed">
-              {type === 'expense' ? 'Потрачено' : 'Получено'}{' '}
-              {periodic ? formatPeriodCaption(period, date) : 'за всё время'}
-            </Text>
+            {periodic && (
+              <Text size="sm" c="dimmed">
+                {type === 'expense' ? 'Потрачено' : 'Получено'} {formatPeriodCaption(period, date)}
+              </Text>
+            )}
             <Text fz={32} fw={700} lh={1.1}>
               {formatMoney(total)}
             </Text>
@@ -117,9 +129,14 @@ export function SummaryCard({
                 }}
               >
                 {shareTotals.map((s) => (
-                  <Text key={s.name} size="xs" truncate>
-                    {s.name} — {formatMoney(s.total)}
-                  </Text>
+                  <Group key={s.name} justify="space-between" gap="xs" wrap="nowrap">
+                    <Text size="xs" truncate>
+                      {s.name}
+                    </Text>
+                    <Text size="xs" style={{ whiteSpace: 'nowrap' }}>
+                      {formatMoney(s.total)}
+                    </Text>
+                  </Group>
                 ))}
               </Box>
             )}

@@ -4,6 +4,7 @@ import { Anchor, Box, Group, Paper, Stack, Text } from '@mantine/core';
 import type { PendingPayment, TransactionItem } from '@/shared/lib/budget';
 import { formatMoney } from '@/shared/lib/money';
 import { formatShortDate } from '@/shared/lib/period';
+import { capitalize } from '@/shared/lib/text';
 import { PayCircle } from './PayCircle';
 
 export const signedMoney = (t: Pick<TransactionItem, 'amount' | 'categoryType'>) =>
@@ -105,7 +106,7 @@ export function RecentCard({
                   {formatShortDate(t.occurredOn)}
                 </Text>
                 <Text size="sm" truncate style={{ flex: 1, minWidth: 0 }}>
-                  {t.note || t.categoryName}
+                  {capitalize(t.note || t.categoryName)}
                 </Text>
                 <Text
                   size="sm"

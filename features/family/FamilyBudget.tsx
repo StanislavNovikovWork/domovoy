@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { IconArrowLeft, IconUsers } from '@tabler/icons-react';
-import { ActionIcon, Menu } from '@mantine/core';
+import { ActionIcon, Box, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { BudgetView, type CategoryOption } from '@/features/budget';
 import type {
@@ -60,10 +60,33 @@ export function FamilyBudget({
         members={members.map((m) => ({ userId: m.userId, name: m.name }))}
         guestNames={guests.map((g) => g.name)}
         currentUserId={currentUserId}
-        actions={
-          <Menu.Item leftSection={<IconUsers size={16} />} onClick={modal.open}>
-            Участники
-          </Menu.Item>
+        extraSettings={[
+          {
+            key: 'members',
+            label: 'Участники',
+            icon: <IconUsers size={18} />,
+            onClick: modal.open,
+          },
+        ]}
+        mobileTop={
+          // на мобильных шапки нет: «назад» слева, название бюджета по центру страницы
+          <Box pos="relative" h={36}>
+            <ActionIcon
+              component={Link}
+              href="/budgets"
+              variant="default"
+              size="lg"
+              radius="xl"
+              aria-label="К списку бюджетов"
+              style={{ position: 'absolute', left: 0, top: 0 }}
+            >
+              <IconArrowLeft size={18} />
+            </ActionIcon>
+            {/* отступы по бокам, чтобы длинное название не заходило под кнопку */}
+            <Text fw={600} ta="center" lh="36px" truncate mx={44}>
+              {name}
+            </Text>
+          </Box>
         }
       />
       <MembersModal

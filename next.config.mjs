@@ -6,7 +6,7 @@ const withBundleAnalyzer = bundleAnalyzer({
 
 export default withBundleAnalyzer({
   reactStrictMode: false,
-  // главная страница — список бюджетов; личный бюджет открывается на /personal
+  // главная страница — список бюджетов
   async redirects() {
     return [{ source: '/', destination: '/budgets', permanent: false }];
   },

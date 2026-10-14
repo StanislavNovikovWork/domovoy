@@ -2,7 +2,7 @@
 
 import { useMemo, useOptimistic, useState, useTransition, type ReactNode } from 'react';
 import { IconCategory, IconSettings } from '@tabler/icons-react';
-import { ActionIcon, Box, Grid, Menu, Paper, Stack, Tabs } from '@mantine/core';
+import { ActionIcon, Box, Grid, Menu, Paper, ScrollArea, Stack, Tabs } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { CategoriesModal } from '@/features/categories';
 import {
@@ -31,6 +31,10 @@ import {
   type Period,
 } from '@/shared/lib/period';
 import { HeaderActions } from '@/shared/ui/HeaderActions';
+import {
+  useRegisterSettingsItems,
+  type SettingsItem,
+} from '@/shared/ui/SettingsItems';
 import {
   AddTransactionModal,
   type CategoryOption,
@@ -65,8 +69,10 @@ type Props = {
   guestNames?: string[];
   /** текущий пользователь: плательщик по умолчанию в разовом бюджете */
   currentUserId?: string;
-  /** дополнительные пункты меню настроек (шестерёнка в шапке), например «Участники» */
-  actions?: ReactNode;
+  /** дополнительные пункты настроек (шестерёнка в шапке и шторка «Настройки» на мобильных), например «Участники» */
+  extraSettings?: SettingsItem[];
+  /** верх страницы только для мобильных (там нет шапки), например кнопка «назад» */
+  mobileTop?: ReactNode;
 };
 
 export function BudgetView({
@@ -79,7 +85,8 @@ export function BudgetView({
   members,
   guestNames,
   currentUserId,
-  actions,
+  extraSettings,
+  mobileTop,
 }: Props) {
   // оптимистичный список: операция появляется, изменяется или исчезает сразу, запрос идёт в фоне.
   // Состояние держится, пока идёт действие и обновление страницы; при ошибке откатывается само
@@ -226,6 +233,18 @@ export function BudgetView({
     addModal.open();
   };
 
+  // пункты настроек бюджета: шестерёнка в шапке (десктоп) и шторка «Настройки» в нижнем меню (мобильные)
+  const settingsItems: SettingsItem[] = [
+    ...(extraSettings ?? []),
+    {
+      key: 'categories',
+      label: 'Категории',
+      icon: <IconCategory size={18} />,
+      onClick: catsModal.open,
+    },
+  ];
+  useRegisterSettingsItems(settingsItems);
+
   return (
     <Box>
       <HeaderActions>
@@ -236,10 +255,11 @@ export function BudgetView({
             </ActionIcon>
           </Menu.Target>
           <Menu.Dropdown>
-            {actions}
-            <Menu.Item leftSection={<IconCategory size={16} />} onClick={catsModal.open}>
-              Категории
-            </Menu.Item>
+            {settingsItems.map((item) => (
+              <Menu.Item key={item.key} leftSection={item.icon} onClick={item.onClick}>
+                {item.label}
+              </Menu.Item>
+            ))}
           </Menu.Dropdown>
         </Menu>
       </HeaderActions>
@@ -260,9 +280,10 @@ export function BudgetView({
           />
         </Box>
 
-        {/* мобильная раскладка: «Последние» и «Категории» под табами в одном блоке */}
+        {/* мобильная раскладка: «Последние» и «Категории» под табами в одном блоке;
+            у разового бюджета блоки стоят плотнее */}
         <Stack
-          gap="lg"
+          gap={periodic ? 'lg' : 'sm'}
           hiddenFrom="lg"
           // разовый бюджет: страница не скроллится, итоги сверху неподвижны, прокручивается только список операций
           style={
@@ -272,10 +293,12 @@ export function BudgetView({
                   // svh, не dvh: иначе высота прыгает каждый раз, когда при скролле
                   // прячется/появляется адресная строка браузера
                   height:
-                    'calc(100svh - var(--app-shell-header-offset, 0rem) - 2 * var(--mantine-spacing-md))',
+                    'calc(100svh - var(--app-shell-header-offset, 0rem) - var(--app-shell-footer-offset, 0rem) - 2 * var(--mantine-spacing-md))',
                 }
           }
         >
+          {mobileTop && <Box hiddenFrom="sm">{mobileTop}</Box>}
+
           <SummaryCard
             type={type}
             periodic={periodic}
@@ -323,11 +346,11 @@ export function BudgetView({
               </Tabs>
             </Paper>
           ) : (
-            // разовый бюджет: без табов, «План» будет вынесен в другое место;
-            // прокручивается только эта область, остальное закреплено
-            <Box style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+            // разовый бюджет: без табов; прокручивается только эта область без видимой полосы,
+            // остальное закреплено
+            <ScrollArea type="never" style={{ flex: 1, minHeight: 0 }}>
               <OneTimeOperations items={typeTransactions} onShowAll={allModal.open} />
-            </Box>
+            </ScrollArea>
           )}
         </Stack>
 

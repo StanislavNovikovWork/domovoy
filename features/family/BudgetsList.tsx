@@ -22,7 +22,7 @@ import {
 import { useForm } from '@mantine/form';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { createFamilyHousehold } from '@/server/households/actions';
+import { createHousehold } from '@/server/households/actions';
 import type { HouseholdListItem } from '@/server/households/queries';
 
 const pluralMembers = (n: number) => {
@@ -50,7 +50,7 @@ export function BudgetsList({ budgets }: { budgets: HouseholdListItem[] }) {
 
   const handleSubmit = form.onSubmit((values) => {
     startTransition(async () => {
-      const result = await createFamilyHousehold(values);
+      const result = await createHousehold(values);
       if (result.ok) {
         notifications.show({ message: 'Бюджет создан', color: 'teal' });
         router.push(`/budgets/${result.id}`);
@@ -105,16 +105,9 @@ export function BudgetsList({ budgets }: { budgets: HouseholdListItem[] }) {
                   <Text fw={600} truncate>
                     {b.name}
                   </Text>
-                  <Group gap={6} wrap="nowrap">
-                    {b.kind === 'one_time' && (
-                      <Badge variant="light" color="grape">
-                        Разовый
-                      </Badge>
-                    )}
-                    <Badge variant="light" color={b.role === 'owner' ? 'teal' : 'gray'}>
-                      {b.role === 'owner' ? 'Владелец' : 'Участник'}
-                    </Badge>
-                  </Group>
+                  <Badge variant="light" color={b.role === 'owner' ? 'teal' : 'gray'}>
+                    {b.role === 'owner' ? 'Владелец' : 'Участник'}
+                  </Badge>
                 </Group>
                 <Group gap={6} mt="xs" c="dimmed">
                   <IconUsers size={16} />

@@ -19,8 +19,7 @@ export async function requireHouseholdAccess(householdId: string) {
   return { session, member };
 }
 
-// Операции и категории показываются и в личном, и в семейном бюджете
+// Операции и категории меняют страницу бюджета и список бюджетов
 export function revalidateBudgetPages() {
-  revalidatePath('/personal');
   revalidatePath('/budgets', 'layout');
 }

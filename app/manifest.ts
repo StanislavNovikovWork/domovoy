@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'Cash',
     short_name: 'Cash',
-    description: 'Личные, общие и разовые бюджеты',
+    description: 'Общие и разовые бюджеты',
     lang: 'ru',
     start_url: '/',
     scope: '/',

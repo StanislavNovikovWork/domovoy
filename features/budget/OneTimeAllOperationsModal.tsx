@@ -17,7 +17,7 @@ type Props = {
 // все операции разового бюджета: редактирование и удаление
 export function OneTimeAllOperationsModal({ opened, onClose, items, onEdit, onDelete }: Props) {
   return (
-    <Modal opened={opened} onClose={onClose} title="Все операции" size="md">
+    <Modal opened={opened} onClose={onClose} title="Все операции" fullScreen>
       <OneTimeOperations
         bare
         items={items}

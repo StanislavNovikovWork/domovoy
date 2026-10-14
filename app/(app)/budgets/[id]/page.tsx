@@ -1,4 +1,4 @@
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { z } from 'zod';
 import { FamilyBudget } from '@/features/family';
 import { listActiveCategories } from '@/server/categories/queries';
@@ -22,7 +22,6 @@ export default async function SharedBudgetPage({ params }: Props) {
 
   const budget = await getUserHousehold(user.id, id);
   if (!budget) notFound();
-  if (budget.type === 'personal') redirect('/personal');
 
   const [transactions, categories, plans, members, invites, guests] = await Promise.all([
     listAllTransactions(budget.id),

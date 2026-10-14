@@ -13,22 +13,9 @@ import {
 const householdColumns = {
   id: household.id,
   name: household.name,
-  type: household.type,
   kind: household.kind,
   role: householdMember.role,
 };
-
-// cache() выполняет запрос один раз за HTTP-запрос
-export const getPersonalHousehold = cache(async (userId: string) => {
-  const [row] = await db
-    .select(householdColumns)
-    .from(householdMember)
-    .innerJoin(household, eq(household.id, householdMember.householdId))
-    .where(and(eq(householdMember.userId, userId), eq(household.type, 'personal')))
-    .orderBy(asc(householdMember.joinedAt))
-    .limit(1);
-  return row ?? null;
-});
 
 // бюджет, если пользователь в нём состоит
 export const getUserHousehold = cache(async (userId: string, householdId: string) => {
@@ -43,7 +30,7 @@ export const getUserHousehold = cache(async (userId: string, householdId: string
 
 export type HouseholdListItem = Awaited<ReturnType<typeof listUserHouseholds>>[number];
 
-// все общие (не личные) бюджеты пользователя
+// все бюджеты, в которых состоит пользователь
 export async function listUserHouseholds(userId: string) {
   return db
     .select({
@@ -52,7 +39,7 @@ export async function listUserHouseholds(userId: string) {
     })
     .from(householdMember)
     .innerJoin(household, eq(household.id, householdMember.householdId))
-    .where(and(eq(householdMember.userId, userId), eq(household.type, 'family')))
+    .where(eq(householdMember.userId, userId))
     .orderBy(asc(household.createdAt));
 }
 
@@ -107,7 +94,7 @@ export async function listActiveInvites(householdId: string) {
     .orderBy(asc(householdInvite.createdAt));
 }
 
-// приглашение по токену вместе с названием семьи и именем пригласившего (для страницы /invite)
+// приглашение по токену вместе с названием бюджета и именем пригласившего (для страницы /invite)
 export async function getInviteByToken(token: string) {
   const [row] = await db
     .select({

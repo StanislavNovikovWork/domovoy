@@ -3,7 +3,7 @@ import { z } from 'zod';
 // 32 случайных байта в base64url = 43 символа
 export const inviteTokenSchema = z.string().regex(/^[A-Za-z0-9_-]{43}$/);
 
-export const createFamilySchema = z.object({
+export const createHouseholdSchema = z.object({
   name: z.string().trim().min(1).max(40),
   oneTime: z.boolean().optional(),
 });

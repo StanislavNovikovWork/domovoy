@@ -21,7 +21,7 @@ import { requireSession } from '@/server/session';
 import {
   acceptInviteSchema,
   addGuestSchema,
-  createFamilySchema,
+  createHouseholdSchema,
   householdIdSchema,
   removeGuestSchema,
   removeMemberSchema,
@@ -44,8 +44,8 @@ async function requireOwner(householdId: string) {
   return access;
 }
 
-export async function createFamilyHousehold(input: unknown): Promise<Result<{ id: string }>> {
-  const parsed = createFamilySchema.safeParse(input);
+export async function createHousehold(input: unknown): Promise<Result<{ id: string }>> {
+  const parsed = createHouseholdSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: 'Введите название' };
 
   try {
@@ -55,7 +55,6 @@ export async function createFamilyHousehold(input: unknown): Promise<Result<{ id
       db.insert(household).values({
         id,
         name: parsed.data.name,
-        type: 'family',
         kind: parsed.data.oneTime ? 'one_time' : 'periodic',
         createdBy: session.user.id,
       }),
@@ -74,7 +73,7 @@ export async function createFamilyHousehold(input: unknown): Promise<Result<{ id
     revalidatePath('/budgets', 'layout');
     return { ok: true, id };
   } catch (error) {
-    console.error('createFamilyHousehold failed', error);
+    console.error('createHousehold failed', error);
     return { ok: false, error: 'Не удалось создать бюджет' };
   }
 }
@@ -241,23 +240,12 @@ export async function leaveHousehold(input: unknown): Promise<Result> {
   }
 }
 
-async function requireOwnedFamily(householdId: string) {
-  const access = await requireOwner(householdId);
-  const [row] = await db
-    .select({ type: household.type })
-    .from(household)
-    .where(eq(household.id, householdId))
-    .limit(1);
-  if (row?.type !== 'family') throw new Error('FORBIDDEN');
-  return access;
-}
-
 export async function renameHousehold(input: unknown): Promise<Result> {
   const parsed = renameHouseholdSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: 'Введите название' };
 
   try {
-    await requireOwnedFamily(parsed.data.householdId);
+    await requireOwner(parsed.data.householdId);
     await db
       .update(household)
       .set({ name: parsed.data.name })
@@ -319,7 +307,7 @@ export async function deleteHousehold(input: unknown): Promise<Result> {
   if (!parsed.success) return { ok: false, error: 'Некорректный запрос' };
 
   try {
-    await requireOwnedFamily(parsed.data.householdId);
+    await requireOwner(parsed.data.householdId);
     await db.delete(household).where(eq(household.id, parsed.data.householdId));
 
     revalidatePath('/budgets', 'layout');

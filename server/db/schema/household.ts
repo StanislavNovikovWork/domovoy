@@ -12,7 +12,6 @@ import {
 } from 'drizzle-orm/pg-core';
 import { user } from './auth';
 
-export const householdType = pgEnum('household_type', ['personal', 'family']);
 // periodic: учёт по дням, неделям, месяцам; one_time: разовый (поездка, ремонт) без периодов
 export const householdKind = pgEnum('household_kind', ['periodic', 'one_time']);
 export const householdRole = pgEnum('household_role', ['owner', 'member']);
@@ -22,19 +21,12 @@ export const household = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     name: text('name').notNull(),
-    type: householdType('type').notNull(),
     kind: householdKind('kind').notNull().default('periodic'),
     createdBy: text('created_by')
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (t) => [
-    // не более одного личного household на пользователя
-    uniqueIndex('household_one_personal_per_user')
-      .on(t.createdBy)
-      .where(sql`${t.type} = 'personal'`),
-  ]
+  }
 );
 
 export const householdMember = pgTable(

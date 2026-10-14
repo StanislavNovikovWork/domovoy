@@ -21,6 +21,7 @@ import type { CategoryRow, PlanRowItem } from '@/shared/lib/budget';
 import { formatMoney } from '@/shared/lib/money';
 import { formatShortDate, prevMonth } from '@/shared/lib/period';
 import { pluralRu } from '@/shared/lib/plural';
+import { capitalize } from '@/shared/lib/text';
 import { CategoryBadge } from '@/shared/ui/CategoryBadge';
 import { PayCircle } from './PayCircle';
 import { PlanProgress } from './PlanProgress';
@@ -244,7 +245,7 @@ function CategoryRowView({
                       truncate
                       style={{ flex: 1, minWidth: 0 }}
                     >
-                      {t.note || 'Без описания'}
+                      {t.note ? capitalize(t.note) : 'Без описания'}
                     </Text>
                     <Text size="xs" style={{ whiteSpace: 'nowrap' }}>
                       {formatMoney(t.amount)}
