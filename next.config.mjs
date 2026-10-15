@@ -12,5 +12,8 @@ export default withBundleAnalyzer({
   },
   experimental: {
     optimizePackageImports: ['@mantine/core', '@mantine/hooks'],
+    // клиентский кэш роутера: повторный переход на уже открытую страницу в течение 30с —
+    // мгновенный, без запроса к серверу (mutations с revalidatePath кэш сбрасывают)
+    staleTimes: { dynamic: 30 },
   },
 });

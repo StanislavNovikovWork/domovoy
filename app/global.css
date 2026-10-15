@@ -1,0 +1,16 @@
+/* прячем полосу прокрутки везде: скролл работает, полосы нет */
+* {
+  scrollbar-width: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+}
+
+/* iOS не зумирует страницу при фокусе на поле, если его шрифт >= 16px */
+@media (max-width: 48em) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
