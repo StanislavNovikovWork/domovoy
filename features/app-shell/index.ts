@@ -1,1 +1,1 @@
-export { AppShellLayout } from './AppShellLayout';
+export { AppShellLayout, FOOTER_HEIGHT } from './AppShellLayout';

@@ -13,8 +13,8 @@ type Props = {
   children: React.ReactNode;
 };
 
-// высота нижнего меню на мобильных с учётом нижней безопасной зоны (iPhone с «чёлкой»)
-const FOOTER_HEIGHT = 'calc(60px + env(safe-area-inset-bottom, 0px))';
+// высота нижнего меню на мобильных: полоса, нижний отступ-надбавка и безопасная зона iPhone
+export const FOOTER_HEIGHT = 'calc(72px + env(safe-area-inset-bottom, 0px))';
 
 // десктоп: шапка и боковая панель; мобильные: без шапки, навигация в нижнем меню
 export function AppShellLayout({ user, children }: Props) {
@@ -23,7 +23,8 @@ export function AppShellLayout({ user, children }: Props) {
       <AppShell
         header={{ height: { base: 0, sm: 60 } }}
         navbar={{ width: 240, breakpoint: 'sm', collapsed: { mobile: true } }}
-        footer={{ height: { base: FOOTER_HEIGHT, sm: 0 } }}
+        // offset: false — мейн заезжает под нижнее меню до края экрана, без пустой полосы
+        footer={{ height: { base: FOOTER_HEIGHT, sm: 0 }, offset: false }}
         padding="md"
       >
         <AppShell.Header visibleFrom="sm">
@@ -50,7 +51,10 @@ export function AppShellLayout({ user, children }: Props) {
           <Box maw={1200}>{children}</Box>
         </AppShell.Main>
 
-        <AppShell.Footer hiddenFrom="sm" pb="env(safe-area-inset-bottom, 0px)">
+        <AppShell.Footer
+          hiddenFrom="sm"
+          pb="calc(env(safe-area-inset-bottom, 0px) + 12px)"
+        >
           <BottomNav />
         </AppShell.Footer>
       </AppShell>

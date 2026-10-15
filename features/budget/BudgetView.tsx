@@ -4,6 +4,7 @@ import { useMemo, useOptimistic, useState, useTransition, type ReactNode } from 
 import { IconCategory, IconSettings } from '@tabler/icons-react';
 import { ActionIcon, Box, Grid, Menu, Paper, ScrollArea, Stack, Tabs } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
+import { FOOTER_HEIGHT } from '@/features/app-shell';
 import { CategoriesModal } from '@/features/categories';
 import {
   createTransaction,
@@ -291,9 +292,10 @@ export function BudgetView({
               ? undefined
               : {
                   // svh, не dvh: иначе высота прыгает каждый раз, когда при скролле
-                  // прячется/появляется адресная строка браузера
+                  // прячется/появляется адресная строка браузера.
+                  // вычитаем только верхний отступ: низ уходит под нижнее меню
                   height:
-                    'calc(100svh - var(--app-shell-header-offset, 0rem) - var(--app-shell-footer-offset, 0rem) - 2 * var(--mantine-spacing-md))',
+                    'calc(100svh - var(--app-shell-header-offset, 0rem) - var(--mantine-spacing-md))',
                 }
           }
         >
@@ -347,9 +349,11 @@ export function BudgetView({
             </Paper>
           ) : (
             // разовый бюджет: без табов; прокручивается только эта область без видимой полосы,
-            // остальное закреплено
+            // остальное закреплено; запас снизу, чтобы список доскролливался выше нижнего меню
             <ScrollArea type="never" style={{ flex: 1, minHeight: 0 }}>
-              <OneTimeOperations items={typeTransactions} onShowAll={allModal.open} />
+              <Box pb={FOOTER_HEIGHT}>
+                <OneTimeOperations items={typeTransactions} onShowAll={allModal.open} />
+              </Box>
             </ScrollArea>
           )}
         </Stack>
