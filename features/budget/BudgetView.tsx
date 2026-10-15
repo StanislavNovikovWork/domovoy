@@ -56,6 +56,15 @@ type OptimisticAction =
   | { type: 'update'; item: TransactionItem }
   | { type: 'delete'; id: string };
 
+// фактическая трата пользователя по операции: его доля, а не сумма, которую он платил
+function mySpend(t: TransactionItem, userId?: string) {
+  const share = t.shares?.find((s) => s.userId === userId);
+  if (share) return share.amount;
+  // нет долей и платил я — весь расход мой; иначе моя трата 0
+  if (!t.shares?.length && t.paidByUserId === userId) return t.amount;
+  return 0;
+}
+
 type Props = {
   householdId: string;
   initialDate: string;
@@ -183,6 +192,16 @@ export function BudgetView({
     [transactions, type, period, date, periodic]
   );
 
+  // «Все расходы / Мои расходы» в списке операций разового бюджета (только мобильная раскладка)
+  const [scope, setScope] = useState<'all' | 'mine'>('all');
+  const visibleItems = useMemo(() => {
+    if (periodic || scope === 'all' || !currentUserId) return items;
+    return items
+      .map((t) => ({ t, amount: mySpend(t, currentUserId) }))
+      .filter((x) => x.amount > 0)
+      .map((x) => ({ ...x.t, amount: x.amount }));
+  }, [items, periodic, scope, currentUserId]);
+
 
   // план всегда за месяц выбранной даты, независимо от периода сверху
   const planMonth = periodic ? monthStart(date) : ONE_TIME_MONTH;
@@ -211,7 +230,7 @@ export function BudgetView({
     [planMode, planRows, items, categories]
   );
 
-  const total = useMemo(() => items.reduce((acc, t) => acc + t.amount, 0), [items]);
+  const total = useMemo(() => visibleItems.reduce((acc, t) => acc + t.amount, 0), [visibleItems]);
   // блоки плана есть только у расходов
   const planSummary = useMemo(
     () => (type === 'expense' && planRows.length > 0 ? summarizePlan(planRows) : null),
@@ -352,7 +371,12 @@ export function BudgetView({
             // остальное закреплено; запас снизу, чтобы список доскролливался выше нижнего меню
             <ScrollArea type="never" style={{ flex: 1, minHeight: 0 }}>
               <Box pb={FOOTER_HEIGHT}>
-                <OneTimeOperations items={typeTransactions} onShowAll={allModal.open} />
+                <OneTimeOperations
+                  items={visibleItems}
+                  onShowAll={allModal.open}
+                  scope={scope}
+                  onScopeChange={setScope}
+                />
               </Box>
             </ScrollArea>
           )}

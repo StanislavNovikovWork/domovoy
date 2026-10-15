@@ -5,7 +5,6 @@ import { HEADER_ACTIONS_ID, HEADER_LEFT_ID } from '@/shared/ui/HeaderActions';
 import { SettingsItemsProvider } from '@/shared/ui/SettingsItems';
 import { AppNavbar } from './AppNavbar';
 import { BottomNav } from './BottomNav';
-import { ColorSchemeToggle } from './ColorSchemeToggle';
 import { UserMenu } from './UserMenu';
 
 type Props = {
@@ -37,7 +36,6 @@ export function AppShellLayout({ user, children }: Props) {
             </Group>
             <Group gap="sm">
               <Group gap="xs" id={HEADER_ACTIONS_ID} />
-              <ColorSchemeToggle />
               <UserMenu user={user} />
             </Group>
           </Group>

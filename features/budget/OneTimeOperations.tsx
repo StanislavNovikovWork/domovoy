@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { IconPencil } from '@tabler/icons-react';
-import { ActionIcon, Divider, Group, Paper, Stack, Text } from '@mantine/core';
+import { ActionIcon, Button, Divider, Group, Paper, Stack, Text } from '@mantine/core';
 import type { TransactionItem } from '@/shared/lib/budget';
 import { formatMoney } from '@/shared/lib/money';
 import { formatShortDate } from '@/shared/lib/period';
@@ -18,6 +18,10 @@ type Props = {
   bare?: boolean;
   // кнопки справа от суммы (редактирование и удаление в окне «Все операции»)
   renderActions?: (t: TransactionItem) => ReactNode;
+  // переключатель «Все расходы / Мои расходы»: состояние живёт в BudgetView,
+  // чтобы сводка считалась по тому же списку
+  scope?: 'all' | 'mine';
+  onScopeChange?: (scope: 'all' | 'mine') => void;
 };
 
 type Day = { date: string; total: number; items: TransactionItem[] };
@@ -38,14 +42,33 @@ function groupByDay(items: TransactionItem[]): Day[] {
 }
 
 // блок операций разового бюджета; отдельно от RecentCard, чтобы менять его независимо
-export function OneTimeOperations({ items, onShowAll, bare, renderActions }: Props) {
+export function OneTimeOperations({ items, onShowAll, bare, renderActions, scope, onScopeChange }: Props) {
+  // mine: в строках не показываем плательщика и доли (сумма уже посчитана снаружи)
+  const mine = scope === 'mine';
   const days = groupByDay(items);
 
   const content = (
     <Stack gap={0}>
       {!bare && (
-        <Group justify="space-between" pt={8}>
-          <Text fw={600}>Список операций</Text>
+        <Group justify="space-between" pt={8} wrap="nowrap">
+          {onScopeChange ? (
+            <Group gap="xs" wrap="nowrap">
+              {(['all', 'mine'] as const).map((v) => (
+                <Button
+                  key={v}
+                  size="compact-xs"
+                  radius="xl"
+                  variant={scope === v ? 'filled' : 'light'}
+                  color={scope === v ? undefined : 'gray'}
+                  onClick={() => onScopeChange(v)}
+                >
+                  {v === 'all' ? 'Все расходы' : 'Мои расходы'}
+                </Button>
+              ))}
+            </Group>
+          ) : (
+            <Text fw={600}>Список операций</Text>
+          )}
           {onShowAll && (
             <ActionIcon
               variant="subtle"
@@ -87,7 +110,7 @@ export function OneTimeOperations({ items, onShowAll, bare, renderActions }: Pro
                     <Text size="sm" truncate>
                       {capitalize(t.note || t.categoryName)}
                     </Text>
-                    {t.shares && t.shares.length > 0 && (
+                    {!mine && t.shares && t.shares.length > 0 && (
                       <Text size="xs" c="dimmed">
                         {t.shares.map((s) => `${s.name} ${formatMoney(s.amount)}`).join(' / ')}
                       </Text>
@@ -98,7 +121,7 @@ export function OneTimeOperations({ items, onShowAll, bare, renderActions }: Pro
                     <Text size="sm" fw={500} style={{ whiteSpace: 'nowrap' }}>
                       {signedMoney(t)}
                     </Text>
-                    {t.paidByName && (
+                    {!mine && t.paidByName && (
                       <Text size="xs" c="dimmed" truncate>
                         {t.paidByName}
                       </Text>

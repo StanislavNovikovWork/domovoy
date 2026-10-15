@@ -1,14 +1,28 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { IconLogout } from '@tabler/icons-react';
-import { Avatar, Button, Paper, Stack, Text, Title } from '@mantine/core';
+import { IconLogout, IconMoon } from '@tabler/icons-react';
+import {
+  Avatar,
+  Button,
+  Group,
+  Paper,
+  Stack,
+  Switch,
+  Text,
+  Title,
+  useComputedColorScheme,
+  useMantineColorScheme,
+} from '@mantine/core';
 import { authClient } from '@/shared/lib/auth-client';
 
 type Props = { user: { name: string; email: string } };
 
 export function ProfileView({ user }: Props) {
   const router = useRouter();
+  const { setColorScheme } = useMantineColorScheme();
+  // getInitialValueInEffect: на сервере схема неизвестна, иначе расхождение при гидрации
+  const dark = useComputedColorScheme('light', { getInitialValueInEffect: true }) === 'dark';
 
   const handleSignOut = async () => {
     await authClient.signOut({
@@ -44,6 +58,18 @@ export function ProfileView({ user }: Props) {
           </Text>
         </Stack>
       </Paper>
+
+      <Group justify="space-between" wrap="nowrap">
+        <Group gap="sm" wrap="nowrap">
+          <IconMoon size={18} />
+          <Text>Тёмная тема</Text>
+        </Group>
+        <Switch
+          checked={dark}
+          onChange={(e) => setColorScheme(e.currentTarget.checked ? 'dark' : 'light')}
+          aria-label="Тёмная тема"
+        />
+      </Group>
 
       <Button
         variant="light"
