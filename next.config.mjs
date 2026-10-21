@@ -6,6 +6,8 @@ const withBundleAnalyzer = bundleAnalyzer({
 
 export default withBundleAnalyzer({
   reactStrictMode: false,
+  // самодостаточная сборка для Docker: в образ попадает только нужное, без всего node_modules
+  output: 'standalone',
   // главная страница — список бюджетов
   async redirects() {
     return [{ source: '/', destination: '/budgets', permanent: false }];

@@ -1,0 +1,13 @@
+node_modules
+.next
+.git
+.github
+.vscode
+.storybook
+.env
+.env.*
+*.log
+*.tsbuildinfo
+.DS_Store
+coverage
+README.md
