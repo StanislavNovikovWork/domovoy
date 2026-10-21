@@ -3,8 +3,8 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { IconSettings, IconUser, IconUsers } from '@tabler/icons-react';
-import { ActionIcon, Drawer, NavLink, Stack, Text, UnstyledButton } from '@mantine/core';
+import { IconChevronRight, IconSettings, IconUser, IconUsers } from '@tabler/icons-react';
+import { ActionIcon, Modal, NavLink, Stack, Text, UnstyledButton } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { useSettingsItems } from '@/shared/ui/SettingsItems';
 
@@ -94,13 +94,14 @@ export function BottomNav() {
         </ActionIcon>
       )}
 
-      <Drawer
+      {/* полноэкранные настройки; пункты открывают вложенные окна поверх (zIndex выше), сами не закрываются */}
+      <Modal
         opened={settingsOpened}
         onClose={settings.close}
-        position="bottom"
-        size="auto"
-        radius="lg"
+        fullScreen
+        radius={0}
         title="Настройки"
+        transitionProps={{ transition: 'slide-up' }}
       >
         <Stack gap={2} pb="md">
           {items.map((item) => (
@@ -108,15 +109,13 @@ export function BottomNav() {
               key={item.key}
               label={item.label}
               leftSection={item.icon}
-              onClick={() => {
-                settings.close();
-                item.onClick();
-              }}
+              rightSection={<IconChevronRight size={16} />}
+              onClick={item.onClick}
               style={{ borderRadius: 'var(--mantine-radius-md)' }}
             />
           ))}
         </Stack>
-      </Drawer>
+      </Modal>
     </>
   );
 }

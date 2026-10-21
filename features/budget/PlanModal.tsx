@@ -21,6 +21,7 @@ import { formatPeriodLabel } from '@/shared/lib/period';
 import type { CategoryOption } from '@/shared/types/category';
 import { AnimatedHeight } from '@/shared/ui/AnimatedHeight';
 import { CategoryBadge } from '@/shared/ui/CategoryBadge';
+import { useMobileModal } from '@/shared/ui/useMobileModal';
 
 type Props = {
   opened: boolean;
@@ -73,12 +74,14 @@ export function PlanModal({
   categories,
   initialCategoryId,
 }: Props) {
+  const mobileModal = useMobileModal();
   return (
     <Modal
       opened={opened}
       onClose={onClose}
       title={periodic ? `План затрат, ${formatPeriodLabel('month', month)}` : 'План затрат'}
       size="lg"
+      {...mobileModal}
     >
       {/* содержимое пересоздаётся при каждом открытии */}
       <AnimatedHeight>

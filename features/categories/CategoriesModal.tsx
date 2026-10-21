@@ -23,6 +23,7 @@ import { CATEGORY_COLORS, CATEGORY_ICONS } from '@/shared/config/category-option
 import type { CategoryOption } from '@/shared/types/category';
 import { AnimatedHeight } from '@/shared/ui/AnimatedHeight';
 import { CategoryBadge } from '@/shared/ui/CategoryBadge';
+import { useMobileModal } from '@/shared/ui/useMobileModal';
 
 type Type = 'expense' | 'income';
 
@@ -36,9 +37,17 @@ type Props = {
 };
 
 export function CategoriesModal({ opened, onClose, ...rest }: Props) {
+  const mobileModal = useMobileModal();
   // без centered: верх модалки зафиксирован отступом, при смене контента меняется только низ
   return (
-    <Modal opened={opened} onClose={onClose} title="Категории" size="lg" yOffset="10dvh">
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title="Категории"
+      size="lg"
+      yOffset="10dvh"
+      {...mobileModal}
+    >
       {/* содержимое пересоздаётся при каждом открытии, поэтому всегда начинается со списка */}
       <Content {...rest} />
     </Modal>

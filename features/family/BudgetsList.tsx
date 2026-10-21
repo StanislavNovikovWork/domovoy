@@ -24,6 +24,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { createHousehold } from '@/server/households/actions';
 import type { HouseholdListItem } from '@/server/households/queries';
+import { useMobileModal } from '@/shared/ui/useMobileModal';
 
 const pluralMembers = (n: number) => {
   const mod10 = n % 10;
@@ -37,6 +38,7 @@ export function BudgetsList({ budgets }: { budgets: HouseholdListItem[] }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [opened, modal] = useDisclosure(false);
+  const mobileModal = useMobileModal();
 
   const form = useForm({
     initialValues: { name: '', oneTime: false },
@@ -70,7 +72,7 @@ export function BudgetsList({ budgets }: { budgets: HouseholdListItem[] }) {
           </ActionIcon>
         </Group>
 
-        <Modal opened={opened} onClose={close} title="Новый бюджет">
+        <Modal opened={opened} onClose={close} title="Новый бюджет" {...mobileModal}>
           <form onSubmit={handleSubmit}>
             <Stack>
               <TextInput

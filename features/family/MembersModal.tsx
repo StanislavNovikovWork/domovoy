@@ -39,6 +39,7 @@ import type {
   HouseholdMemberItem,
   InviteItem,
 } from '@/server/households/queries';
+import { useMobileModal } from '@/shared/ui/useMobileModal';
 
 type Props = {
   opened: boolean;
@@ -66,6 +67,7 @@ export function MembersModal({
   invites,
 }: Props) {
   const router = useRouter();
+  const mobileModal = useMobileModal();
   // ключ выполняемого действия: загрузка показывается только на нажатой кнопке
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const track = async (key: string, fn: () => Promise<void>) => {
@@ -172,7 +174,7 @@ export function MembersModal({
   };
 
   return (
-    <Modal opened={opened} onClose={onClose} title="Участники" size="md">
+    <Modal opened={opened} onClose={onClose} title="Участники" size="md" {...mobileModal}>
       <Stack>
         <Stack gap="xs">
           {members.map((m) => (
