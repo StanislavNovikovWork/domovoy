@@ -5,10 +5,12 @@ export function PayCircle({
   partial,
   label,
   onClick,
+  size = 20,
 }: {
   partial: boolean;
   label: string;
   onClick: () => void;
+  size?: number;
 }) {
   return (
     <Tooltip label="Оплатить">
@@ -16,8 +18,8 @@ export function PayCircle({
         onClick={onClick}
         aria-label={label}
         style={{
-          width: 20,
-          height: 20,
+          width: size,
+          height: size,
           flexShrink: 0,
           borderRadius: '50%',
           border: partial

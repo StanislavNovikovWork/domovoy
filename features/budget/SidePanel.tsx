@@ -1,16 +1,34 @@
 'use client';
 
 import { Anchor, Box, Group, Paper, Stack, Text } from '@mantine/core';
-import type { PendingPayment, TransactionItem } from '@/shared/lib/budget';
+import { groupTransactions, type PendingPayment, type TransactionItem } from '@/shared/lib/budget';
 import { formatMoney } from '@/shared/lib/money';
 import { formatShortDate } from '@/shared/lib/period';
 import { capitalize } from '@/shared/lib/text';
+import { CategoryBadge } from '@/shared/ui/CategoryBadge';
 import { PayCircle } from './PayCircle';
 
 export const signedMoney = (t: Pick<TransactionItem, 'amount' | 'categoryType'>) =>
   `${t.categoryType === 'expense' ? '' : '+'}${formatMoney(t.amount)}`;
 
 const divider = { borderTop: '1px solid var(--mantine-color-default-border)' } as const;
+
+type Day = { date: string; total: number; items: TransactionItem[] };
+
+// операции приходят отсортированными по дате (новые сверху): группируем подряд идущие по дню
+function groupByDay(items: TransactionItem[]): Day[] {
+  const days: Day[] = [];
+  for (const t of items) {
+    const last = days[days.length - 1];
+    if (last && last.date === t.occurredOn) {
+      last.items.push(t);
+      last.total += t.amount;
+    } else {
+      days.push({ date: t.occurredOn, total: t.amount, items: [t] });
+    }
+  }
+  return days;
+}
 
 export function PendingPaymentsCard({
   payments,
@@ -94,14 +112,70 @@ export function RecentCard({
           </Text>
         ) : (
           <Stack gap={0}>
-            {items.map((t, index) => (
-              <Group
-                key={t.id}
-                gap="sm"
-                wrap="nowrap"
-                py="xs"
-                style={index > 0 ? divider : undefined}
-              >
+            {groupByDay(items).map((day, index) => (
+              <Stack key={day.date} gap={4} py="sm" style={index > 0 ? divider : undefined}>
+                <Group justify="space-between" wrap="nowrap">
+                  <Text size="xs" fw={600} c="dimmed">
+                    {formatShortDate(day.date)}
+                  </Text>
+                  <Text size="xs" fw={600} c="dimmed" style={{ whiteSpace: 'nowrap' }}>
+                    {signedMoney({ amount: day.total, categoryType: day.items[0].categoryType })}
+                  </Text>
+                </Group>
+                {day.items.map((t) => (
+                  <Group key={t.id} gap="sm" wrap="nowrap">
+                    <CategoryBadge icon={t.categoryIcon} color={t.categoryColor} size={22} />
+                    <Text size="sm" truncate style={{ flex: 1, minWidth: 0 }}>
+                      {capitalize(t.note || t.categoryName)}
+                    </Text>
+                    <Text
+                      size="sm"
+                      fw={500}
+                      c={t.categoryType === 'income' ? 'teal' : undefined}
+                      style={{ whiteSpace: 'nowrap' }}
+                    >
+                      {signedMoney(t)}
+                    </Text>
+                  </Group>
+                ))}
+              </Stack>
+            ))}
+          </Stack>
+        )}
+    </Stack>
+  );
+  return bare ? content : <Paper withBorder radius="lg" p="lg">{content}</Paper>;
+}
+
+// операции того же вида, что «Последние операции», но сгруппированные по категориям (от большей суммы к меньшей)
+export function OperationsByCategory({ items }: { items: TransactionItem[] }) {
+  if (items.length === 0) {
+    return (
+      <Text c="dimmed" size="sm">
+        Пока нет операций
+      </Text>
+    );
+  }
+
+  return (
+    <Stack gap={0}>
+      {groupTransactions(items).map((group, index) => {
+        const categoryType = group.items[0].categoryType;
+        return (
+          <Stack key={group.categoryId} gap={4} py="sm" style={index > 0 ? divider : undefined}>
+            <Group justify="space-between" wrap="nowrap">
+              <Group gap="xs" wrap="nowrap" style={{ minWidth: 0 }}>
+                <CategoryBadge icon={group.icon} color={group.color} size={22} />
+                <Text size="sm" fw={600} truncate>
+                  {group.name}
+                </Text>
+              </Group>
+              <Text size="sm" fw={600} style={{ whiteSpace: 'nowrap' }}>
+                {signedMoney({ amount: group.total, categoryType })}
+              </Text>
+            </Group>
+            {group.items.map((t) => (
+              <Group key={t.id} gap="sm" wrap="nowrap">
                 <Text size="xs" c="dimmed" w={44} style={{ flexShrink: 0 }}>
                   {formatShortDate(t.occurredOn)}
                 </Text>
@@ -110,8 +184,7 @@ export function RecentCard({
                 </Text>
                 <Text
                   size="sm"
-                  fw={500}
-                  c={t.categoryType === 'income' ? 'teal' : undefined}
+                  c={categoryType === 'income' ? 'teal' : undefined}
                   style={{ whiteSpace: 'nowrap' }}
                 >
                   {signedMoney(t)}
@@ -119,8 +192,8 @@ export function RecentCard({
               </Group>
             ))}
           </Stack>
-        )}
+        );
+      })}
     </Stack>
   );
-  return bare ? content : <Paper withBorder radius="lg" p="lg">{content}</Paper>;
 }

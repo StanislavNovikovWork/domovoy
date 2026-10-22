@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { IconPlus } from '@tabler/icons-react';
 import {
   ActionIcon,
@@ -30,6 +31,8 @@ type Props = {
   // суммы расходов по участникам (разовый бюджет), список под общей суммой
   shareTotals?: { name: string; total: number }[];
   onAdd: () => void; // «+» в углу карточки, только на мобильных
+  // фильтры (расходы/доходы, период, навигация) внутри карточки; «+» тогда стоит рядом с суммой на всех экранах
+  filters?: ReactNode;
 };
 
 function Metric({
@@ -71,6 +74,7 @@ export function SummaryCard({
   today,
   shareTotals,
   onAdd,
+  filters,
 }: Props) {
   const progress = plan && periodic ? getMonthProgress(planMonth, today) : null;
   const planPercent =
@@ -87,20 +91,38 @@ export function SummaryCard({
       pos="relative"
       bd={flat ? { base: 'none', sm: BORDER } : BORDER}
     >
-      <ActionIcon
-        hiddenFrom="sm"
-        pos="absolute"
-        top={flat ? 0 : 16}
-        right={flat ? 0 : 16}
-        size="lg"
-        radius="xl"
-        aria-label="Добавить операцию"
-        onClick={onAdd}
-      >
-        <IconPlus size={20} />
-      </ActionIcon>
+      {!filters && (
+        <ActionIcon
+          hiddenFrom="sm"
+          pos="absolute"
+          top={flat ? 0 : 16}
+          right={flat ? 0 : 16}
+          size="lg"
+          radius="xl"
+          aria-label="Добавить операцию"
+          onClick={onAdd}
+        >
+          <IconPlus size={20} />
+        </ActionIcon>
+      )}
+      {filters && (
+        // «+» у правого края карточки по центру высоты; справа у суммы и плана оставлено место, чтобы не накрывать их
+        <ActionIcon
+          pos="absolute"
+          top="50%"
+          right={16}
+          size="lg"
+          radius="xl"
+          aria-label="Добавить операцию"
+          onClick={onAdd}
+          style={{ transform: 'translateY(-50%)' }}
+        >
+          <IconPlus size={20} />
+        </ActionIcon>
+      )}
       <Stack gap="lg">
-        <SimpleGrid cols={{ base: 1, sm: plan ? 3 : 1 }} spacing="lg">
+        {filters}
+        <SimpleGrid cols={{ base: 1, sm: plan ? 2 : 1 }} spacing="lg" pr={filters ? 48 : undefined}>
           <Stack gap={2}>
             {periodic && (
               <Text size="sm" c="dimmed">
@@ -154,21 +176,12 @@ export function SummaryCard({
                     : undefined
                 }
               />
-              <Metric
-                label="Ещё ожидается оплатить"
-                value={formatMoney(plan.pendingAmount)}
-                hint={`${plan.pendingCount} ${pluralRu(plan.pendingCount, [
-                  'запланированный платёж',
-                  'запланированных платежа',
-                  'запланированных платежей',
-                ])}`}
-              />
             </>
           )}
         </SimpleGrid>
 
         {plan && plan.planned > 0 && (
-          <Box pos="relative" pb={progress ? 28 : 0}>
+          <Box pos="relative" pb={progress ? 28 : 0} pr={filters ? 48 : undefined}>
             <Progress
               value={Math.min(100, (plan.spentInPlan / plan.planned) * 100)}
               color={plan.spentInPlan > plan.planned ? 'red' : 'blue'}

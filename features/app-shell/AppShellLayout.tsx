@@ -46,7 +46,7 @@ export function AppShellLayout({ user, children }: Props) {
         </AppShell.Navbar>
 
         <AppShell.Main>
-          <Box maw={1200}>{children}</Box>
+          <Box>{children}</Box>
         </AppShell.Main>
 
         <AppShell.Footer
