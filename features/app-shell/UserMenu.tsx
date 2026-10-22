@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { IconLogout } from '@tabler/icons-react';
-import { Avatar, Menu, Text } from '@mantine/core';
+import { Avatar, Group, Menu, Text, UnstyledButton } from '@mantine/core';
 import { authClient } from '@/shared/lib/auth-client';
 
 type Props = { user: { name: string; email: string } };
@@ -24,11 +24,28 @@ export function UserMenu({ user }: Props) {
   const initials = (user.name || user.email).slice(0, 2).toUpperCase();
 
   return (
-    <Menu position="bottom-end" width={220}>
+    <Menu position="top-start" width={220}>
       <Menu.Target>
-        <Avatar radius="xl" color="blue" style={{ cursor: 'pointer' }}>
-          {initials}
-        </Avatar>
+        <UnstyledButton
+          w="100%"
+          p="xs"
+          style={{ borderRadius: 'var(--mantine-radius-md)' }}
+          aria-label="Профиль"
+        >
+          <Group gap="sm" wrap="nowrap">
+            <Avatar radius="xl" color="blue">
+              {initials}
+            </Avatar>
+            <div style={{ minWidth: 0 }}>
+              <Text size="sm" fw={500} truncate>
+                {user.name}
+              </Text>
+              <Text size="xs" c="dimmed" truncate>
+                {user.email}
+              </Text>
+            </div>
+          </Group>
+        </UnstyledButton>
       </Menu.Target>
       <Menu.Dropdown>
         <Menu.Label>

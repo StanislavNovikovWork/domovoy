@@ -2,6 +2,7 @@
 
 import { IconPencil, IconTrash } from '@tabler/icons-react';
 import { ActionIcon, Group, Modal } from '@mantine/core';
+import { useMediaQuery } from '@mantine/hooks';
 import type { TransactionItem } from '@/shared/lib/budget';
 import { OneTimeOperations } from './OneTimeOperations';
 
@@ -16,8 +17,17 @@ type Props = {
 
 // все операции разового бюджета: редактирование и удаление
 export function OneTimeAllOperationsModal({ opened, onClose, items, onEdit, onDelete }: Props) {
+  // на мобильных окно на весь экран, на десктопе обычная модалка
+  const isMobile = useMediaQuery('(max-width: 47.99375em)');
+
   return (
-    <Modal opened={opened} onClose={onClose} title="Все операции" fullScreen>
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title="Все операции"
+      size="lg"
+      fullScreen={!!isMobile}
+    >
       <OneTimeOperations
         bare
         items={items}

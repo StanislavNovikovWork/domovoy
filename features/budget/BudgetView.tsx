@@ -1,13 +1,11 @@
 'use client';
 
 import { useMemo, useOptimistic, useState, useTransition, type ReactNode } from 'react';
-import { IconCategory, IconPlus, IconSettings } from '@tabler/icons-react';
+import { IconCategory, IconSettings } from '@tabler/icons-react';
 import {
   ActionIcon,
   Box,
-  Button,
   Grid,
-  Group,
   Menu,
   Paper,
   ScrollArea,
@@ -23,8 +21,6 @@ import {
   updateTransaction,
 } from '@/server/transactions/actions';
 import {
-  buildCategoryRows,
-  buildPlainRows,
   buildPlanRows,
   filterTransactions,
   listPendingPayments,
@@ -42,7 +38,6 @@ import {
   prevMonth,
   type Period,
 } from '@/shared/lib/period';
-import { HeaderActions } from '@/shared/ui/HeaderActions';
 import {
   useRegisterSettingsItems,
   type SettingsItem,
@@ -55,7 +50,6 @@ import {
 } from './AddTransactionModal';
 import { AllTransactionsModal } from './AllTransactionsModal';
 import { BudgetFilters } from './BudgetToolbar';
-import { CategoriesList } from './CategoriesList';
 import { PlanModal } from './PlanModal';
 import { OneTimeAllOperationsModal } from './OneTimeAllOperationsModal';
 import { OneTimeOperations } from './OneTimeOperations';
@@ -228,20 +222,6 @@ export function BudgetView({
     return buildPlanRows(plans, categories, [], prev, getPeriodRange('month', prev)).length > 0;
   }, [plans, categories, planMonth, periodic]);
 
-  // лимиты и статьи показываем только в расходах за месяц; иначе обычный список по категориям
-  const planMode = type === 'expense' && (!periodic || period === 'month');
-  const categoryRows = useMemo(
-    () =>
-      planMode
-        ? buildCategoryRows(
-            planRows,
-            items,
-            categories.map((c) => c.id)
-          )
-        : buildPlainRows(items),
-    [planMode, planRows, items, categories]
-  );
-
   const total = useMemo(() => visibleItems.reduce((acc, t) => acc + t.amount, 0), [visibleItems]);
   // блоки плана есть только у расходов
   const planSummary = useMemo(
@@ -249,7 +229,7 @@ export function BudgetView({
     [type, planRows]
   );
 
-  // правая колонка: ожидаемые платежи (всегда за месяц плана) и последние операции
+  // ожидаемые платежи разового бюджета (всегда за месяц плана)
   const pendingPayments = useMemo(
     () => (type === 'expense' ? listPendingPayments(planRows) : []),
     [type, planRows]
@@ -258,7 +238,6 @@ export function BudgetView({
     () => transactions.filter((t) => t.categoryType === type),
     [transactions, type]
   );
-  const recent = useMemo(() => typeTransactions.slice(0, 5), [typeTransactions]);
 
   const pay = (categoryId: string, name: string, remaining: number) => {
     setPrefill({ categoryId, note: name, amount: remaining / 100 });
@@ -324,12 +303,15 @@ export function BudgetView({
     ) : null;
 
   return (
-    <Box>
-      <HeaderActions>
+    <Box pos="relative">
+      {/* десктоп: кнопка настроек в правом верхнем углу экрана, поверх контента и не сдвигает его вниз.
+          Отрицательные отступы -4px ставят её в 12px от краёв экрана (поле страницы 16px).
+          На мобильных настройки открываются кнопкой в углу из нижнего меню */}
+      <Box visibleFrom="sm" pos="absolute" top={-4} right={-4} style={{ zIndex: 10 }}>
         <Menu position="bottom-end" shadow="md" width={200}>
           <Menu.Target>
-            <ActionIcon variant="default" size="lg" radius="xl" aria-label="Настройки бюджета">
-              <IconSettings size={18} />
+            <ActionIcon variant="default" size={28} radius="xl" aria-label="Настройки бюджета">
+              <IconSettings size={16} />
             </ActionIcon>
           </Menu.Target>
           <Menu.Dropdown>
@@ -340,19 +322,9 @@ export function BudgetView({
             ))}
           </Menu.Dropdown>
         </Menu>
-      </HeaderActions>
+      </Box>
 
       <Stack gap="lg">
-        {/* разовый бюджет, десктоп: кнопка над блоком; у периодического «+» внутри карточки сводки, на мобильных тоже */}
-        {!periodic && (
-          <Box visibleFrom="sm">
-            <Group justify="flex-end">
-              <Button leftSection={<IconPlus size={16} />} onClick={addModal.open}>
-                Добавить операцию
-              </Button>
-            </Group>
-          </Box>
-        )}
 
         {/* мобильная раскладка: «Последние» и «Категории» под табами в одном блоке;
             у разового бюджета блоки стоят плотнее */}
@@ -413,7 +385,7 @@ export function BudgetView({
           {monthPlan}
         </Stack>
 
-        {/* десктоп: категории слева, ожидаемые платежи и последние операции справа */}
+        {/* десктоп: сводка и список операций слева, справа план (периодический) или ожидаемые платежи (разовый) */}
         <Grid gap="lg" visibleFrom="lg">
           <Grid.Col span={{ base: 12, lg: periodic ? 'content' : 8 }}>
             {/* периодический бюджет: левая часть шириной 720px, план затрат встаёт рядом с ней */}
@@ -435,41 +407,30 @@ export function BudgetView({
               {periodic ? (
                 periodicTabs
               ) : (
-                <CategoriesList
-                  householdId={householdId}
-                  periodic={periodic}
-                  month={planMonth}
-                  rows={categoryRows}
-                  planMode={planMode}
-                  canEditPlan={type === 'expense'}
-                  hasPlan={planRows.length > 0}
-                  canCopy={hasPrevPlan}
-                  onEdit={() => openPlan(null)}
-                  onSetLimit={openPlan}
-                  onPay={pay}
+                // разовый бюджет: список операций под сводкой, блок категорий пока убран
+                <OneTimeOperations
+                  items={visibleItems}
+                  onShowAll={allModal.open}
+                  scope={scope}
+                  onScopeChange={setScope}
                 />
               )}
             </Stack>
           </Grid.Col>
 
-          {periodic ? (
-            monthPlan && (
-              <Grid.Col span={{ base: 12, lg: 'auto' }}>
-                <Box maw={460} miw={400}>
-                  {monthPlan}
-                </Box>
-              </Grid.Col>
-            )
-          ) : (
-            <Grid.Col span={{ base: 12, lg: 4 }}>
-              <Stack gap="lg">
-                {pendingPayments.length > 0 && (
+          {periodic
+            ? monthPlan && (
+                <Grid.Col span={{ base: 12, lg: 'auto' }}>
+                  <Box maw={460} miw={400}>
+                    {monthPlan}
+                  </Box>
+                </Grid.Col>
+              )
+            : pendingPayments.length > 0 && (
+                <Grid.Col span={{ base: 12, lg: 4 }}>
                   <PendingPaymentsCard payments={pendingPayments} onPay={pay} />
-                )}
-                <OneTimeOperations items={recent} onShowAll={allModal.open} />
-              </Stack>
-            </Grid.Col>
-          )}
+                </Grid.Col>
+              )}
         </Grid>
       </Stack>
 

@@ -63,7 +63,7 @@ export function BudgetsList({ budgets }: { budgets: HouseholdListItem[] }) {
   });
 
   return (
-    <Container size="md" p={0}>
+    <Container size="md" p={0} mx={0}>
       <Stack gap="lg">
         <Group justify="space-between">
           <Title order={2}>Мои бюджеты</Title>

@@ -1,7 +1,14 @@
 'use client';
 
-import { Anchor, Box, Group, Paper, Stack, Text } from '@mantine/core';
-import { groupTransactions, type PendingPayment, type TransactionItem } from '@/shared/lib/budget';
+import { IconChevronDown } from '@tabler/icons-react';
+import { Anchor, Box, Collapse, Group, Paper, Stack, Text, UnstyledButton } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
+import {
+  groupTransactions,
+  type CategoryGroup,
+  type PendingPayment,
+  type TransactionItem,
+} from '@/shared/lib/budget';
 import { formatMoney } from '@/shared/lib/money';
 import { formatShortDate } from '@/shared/lib/period';
 import { capitalize } from '@/shared/lib/text';
@@ -159,41 +166,67 @@ export function OperationsByCategory({ items }: { items: TransactionItem[] }) {
 
   return (
     <Stack gap={0}>
-      {groupTransactions(items).map((group, index) => {
-        const categoryType = group.items[0].categoryType;
-        return (
-          <Stack key={group.categoryId} gap={4} py="sm" style={index > 0 ? divider : undefined}>
-            <Group justify="space-between" wrap="nowrap">
-              <Group gap="xs" wrap="nowrap" style={{ minWidth: 0 }}>
-                <CategoryBadge icon={group.icon} color={group.color} size={22} />
-                <Text size="sm" fw={600} truncate>
-                  {group.name}
-                </Text>
-              </Group>
-              <Text size="sm" fw={600} style={{ whiteSpace: 'nowrap' }}>
-                {signedMoney({ amount: group.total, categoryType })}
+      {groupTransactions(items).map((group, index) => (
+        <Box key={group.categoryId} style={index > 0 ? divider : undefined}>
+          <CategoryOperationsGroup group={group} />
+        </Box>
+      ))}
+    </Stack>
+  );
+}
+
+// категория как сворачиваемый блок: заголовок с суммой, под ним операции
+function CategoryOperationsGroup({ group }: { group: CategoryGroup }) {
+  const [opened, { toggle }] = useDisclosure(false);
+  const categoryType = group.items[0].categoryType;
+
+  return (
+    <Stack gap={0} py="sm">
+      <UnstyledButton onClick={toggle} aria-expanded={opened}>
+        <Group justify="space-between" wrap="nowrap">
+          <Group gap="xs" wrap="nowrap" style={{ minWidth: 0 }}>
+            <CategoryBadge icon={group.icon} color={group.color} size={22} />
+            <Text size="sm" fw={600} truncate>
+              {group.name}
+            </Text>
+          </Group>
+          <Group gap="xs" wrap="nowrap">
+            <Text size="sm" fw={600} style={{ whiteSpace: 'nowrap' }}>
+              {signedMoney({ amount: group.total, categoryType })}
+            </Text>
+            <IconChevronDown
+              size={16}
+              style={{
+                flexShrink: 0,
+                transform: opened ? 'rotate(180deg)' : undefined,
+                transition: 'transform 150ms',
+              }}
+            />
+          </Group>
+        </Group>
+      </UnstyledButton>
+
+      <Collapse expanded={opened}>
+        <Stack gap={4} pt="xs">
+          {group.items.map((t) => (
+            <Group key={t.id} gap="sm" wrap="nowrap">
+              <Text size="xs" c="dimmed" w={44} style={{ flexShrink: 0 }}>
+                {formatShortDate(t.occurredOn)}
+              </Text>
+              <Text size="sm" truncate style={{ flex: 1, minWidth: 0 }}>
+                {capitalize(t.note || t.categoryName)}
+              </Text>
+              <Text
+                size="sm"
+                c={categoryType === 'income' ? 'teal' : undefined}
+                style={{ whiteSpace: 'nowrap' }}
+              >
+                {signedMoney(t)}
               </Text>
             </Group>
-            {group.items.map((t) => (
-              <Group key={t.id} gap="sm" wrap="nowrap">
-                <Text size="xs" c="dimmed" w={44} style={{ flexShrink: 0 }}>
-                  {formatShortDate(t.occurredOn)}
-                </Text>
-                <Text size="sm" truncate style={{ flex: 1, minWidth: 0 }}>
-                  {capitalize(t.note || t.categoryName)}
-                </Text>
-                <Text
-                  size="sm"
-                  c={categoryType === 'income' ? 'teal' : undefined}
-                  style={{ whiteSpace: 'nowrap' }}
-                >
-                  {signedMoney(t)}
-                </Text>
-              </Group>
-            ))}
-          </Stack>
-        );
-      })}
+          ))}
+        </Stack>
+      </Collapse>
     </Stack>
   );
 }

@@ -93,10 +93,9 @@ export function SummaryCard({
     >
       {!filters && (
         <ActionIcon
-          hiddenFrom="sm"
           pos="absolute"
-          top={flat ? 0 : 16}
-          right={flat ? 0 : 16}
+          top={flat ? { base: 0, sm: 16 } : 16}
+          right={flat ? { base: 0, sm: 16 } : 16}
           size="lg"
           radius="xl"
           aria-label="Добавить операцию"

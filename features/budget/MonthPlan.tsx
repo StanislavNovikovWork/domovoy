@@ -35,8 +35,8 @@ type Props = {
 const divider = { borderTop: '1px solid var(--mantine-color-default-border)' } as const;
 
 function PlanCategory({ row, onPay }: { row: PlanRow; onPay: Props['onPay'] }) {
-  // статьи раскрыты сразу: из них быстро создаётся операция
-  const [opened, { toggle }] = useDisclosure(true);
+  // статьи по умолчанию свёрнуты
+  const [opened, { toggle }] = useDisclosure(false);
   const hasItems = row.items.length > 0;
 
   return (

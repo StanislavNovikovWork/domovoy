@@ -11,7 +11,6 @@ import type {
   InviteItem,
 } from '@/server/households/queries';
 import type { PlanItem, TransactionItem } from '@/shared/lib/budget';
-import { HeaderLeft } from '@/shared/ui/HeaderActions';
 import { MembersModal } from './MembersModal';
 
 type Props = {
@@ -43,18 +42,6 @@ export function FamilyBudget({
 
   return (
     <>
-      <HeaderLeft>
-        <ActionIcon
-          component={Link}
-          href="/budgets"
-          variant="default"
-          size="lg"
-          radius="xl"
-          aria-label="К списку бюджетов"
-        >
-          <IconArrowLeft size={18} />
-        </ActionIcon>
-      </HeaderLeft>
       <BudgetView
         {...budget}
         members={members.map((m) => ({ userId: m.userId, name: m.name }))}
