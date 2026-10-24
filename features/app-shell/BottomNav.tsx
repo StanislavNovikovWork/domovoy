@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { IconChevronRight, IconSettings, IconUser, IconUsers } from '@tabler/icons-react';
@@ -57,6 +57,12 @@ export function BottomNav() {
   const pathname = usePathname();
   const [settingsOpened, settings] = useDisclosure(false);
   const items = useSettingsItems();
+
+  // окно настроек живёт в общем лейауте: закрываем при смене страницы (например, после удаления бюджета)
+  // и когда у страницы не осталось пунктов настроек
+  useEffect(() => {
+    settings.close();
+  }, [pathname, items.length === 0]);
 
   return (
     <>

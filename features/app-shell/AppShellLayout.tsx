@@ -24,7 +24,7 @@ export function AppShellLayout({ user, children }: Props) {
         footer={{ height: { base: FOOTER_HEIGHT, sm: 0 }, offset: false }}
         padding="md"
       >
-        <AppShell.Navbar p="md">
+        <AppShell.Navbar p="md" withBorder={false}>
           <AppShell.Section grow>
             <AppNavbar />
           </AppShell.Section>

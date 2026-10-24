@@ -7,7 +7,6 @@ import {
   Box,
   Group,
   Paper,
-  Progress,
   SimpleGrid,
   Stack,
   Text,
@@ -178,42 +177,6 @@ export function SummaryCard({
             </>
           )}
         </SimpleGrid>
-
-        {plan && plan.planned > 0 && (
-          <Box pos="relative" pb={progress ? 28 : 0} pr={filters ? 48 : undefined}>
-            <Progress
-              value={Math.min(100, (plan.spentInPlan / plan.planned) * 100)}
-              color={plan.spentInPlan > plan.planned ? 'red' : 'blue'}
-              size="md"
-              radius="xl"
-            />
-            {progress && (
-              <>
-                {/* маркер «сегодня»: доля прошедшего месяца */}
-                <Box
-                  pos="absolute"
-                  top={-5}
-                  w={2}
-                  h={18}
-                  style={{ left: `${progress.percent}%`, background: 'var(--mantine-color-text)' }}
-                />
-                <Text
-                  size="xs"
-                  fw={500}
-                  pos="absolute"
-                  top={20}
-                  style={{
-                    left: `${progress.percent}%`,
-                    transform: `translateX(-${progress.percent}%)`,
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  Сегодня, {progress.dayLabel} · прошло {progress.percent}% месяца
-                </Text>
-              </>
-            )}
-          </Box>
-        )}
       </Stack>
     </Paper>
   );

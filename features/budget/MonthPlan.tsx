@@ -53,7 +53,7 @@ function PlanCategory({ row, onPay }: { row: PlanRow; onPay: Props['onPay'] }) {
           <Text size="sm" fw={600} style={{ whiteSpace: 'nowrap' }}>
             {formatMoney(row.planned)}
           </Text>
-          {hasItems && (
+          {hasItems ? (
             <IconChevronDown
               size={16}
               style={{
@@ -62,6 +62,9 @@ function PlanCategory({ row, onPay }: { row: PlanRow; onPay: Props['onPay'] }) {
                 transition: 'transform 150ms',
               }}
             />
+          ) : (
+            // пустое место под стрелку, чтобы сумма стояла вровень с категориями со статьями
+            <Box w={16} style={{ flexShrink: 0 }} />
           )}
         </Group>
       </UnstyledButton>

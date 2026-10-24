@@ -99,11 +99,11 @@ export function MembersModal({
     });
   };
 
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  // вызывается после подтверждения в окне Mantine
   const remove = () => {
-    if (
-      !window.confirm(`Удалить бюджет «${name}» вместе со всеми операциями? Это нельзя отменить.`)
-    )
-      return;
+    setConfirmDelete(false);
     track('delete', async () => {
       const result = await deleteHousehold({ householdId });
       if (result.ok) {
@@ -174,6 +174,30 @@ export function MembersModal({
   };
 
   return (
+    <>
+    <Modal
+      opened={confirmDelete}
+      onClose={() => setConfirmDelete(false)}
+      title="Удалить бюджет?"
+      size="sm"
+      centered
+      zIndex={350}
+    >
+      <Stack>
+        <Text size="sm">
+          Бюджет «{name}» будет удалён вместе со всеми операциями. Это нельзя отменить.
+        </Text>
+        <Group justify="flex-end">
+          <Button variant="default" onClick={() => setConfirmDelete(false)}>
+            Отмена
+          </Button>
+          <Button color="red" onClick={remove}>
+            Удалить
+          </Button>
+        </Group>
+      </Stack>
+    </Modal>
+
     <Modal opened={opened} onClose={onClose} title="Участники" size="md" {...mobileModal}>
       <Stack>
         <Stack gap="xs">
@@ -391,7 +415,12 @@ export function MembersModal({
                 Сохранить
               </Button>
             </Group>
-            <Button variant="subtle" color="red" onClick={remove} loading={pendingKey === 'delete'}>
+            <Button
+              variant="subtle"
+              color="red"
+              onClick={() => setConfirmDelete(true)}
+              loading={pendingKey === 'delete'}
+            >
               Удалить бюджет
             </Button>
           </>
@@ -404,5 +433,6 @@ export function MembersModal({
         )}
       </Stack>
     </Modal>
+    </>
   );
 }
