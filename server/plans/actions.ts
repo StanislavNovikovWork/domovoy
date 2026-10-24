@@ -14,6 +14,7 @@ import {
 } from '@/shared/schemas/plan';
 
 type Result = { ok: true } | { ok: false; error: string };
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 // планировать можно только активные расходные категории этого бюджета
 async function isPlannableCategory(householdId: string, categoryId: string) {
@@ -48,8 +49,8 @@ async function findPlanId(householdId: string, categoryId: string, month: string
 }
 
 // сумма плана категории = сумма её статей (если статей не осталось, сумма не меняется)
-function recomputeAmount(planId: string) {
-  return db
+function recomputeAmount(tx: Tx, planId: string) {
+  return tx
     .update(budgetPlan)
     .set({
       amount: sql`coalesce(nullif((select sum(${budgetPlanItem.amount}) from ${budgetPlanItem} where ${budgetPlanItem.planId} = ${planId}), 0), ${budgetPlan.amount})`,
@@ -59,8 +60,8 @@ function recomputeAmount(planId: string) {
 }
 
 // статья плана становится подсказкой «Что конкретно» у категории (без повторов, не больше 20 подсказок)
-function addSuggestion(categoryId: string, name: string) {
-  return db
+function addSuggestion(tx: Tx, categoryId: string, name: string) {
+  return tx
     .update(category)
     .set({ suggestions: sql`array_append(${category.suggestions}, ${name})` })
     .where(
@@ -177,13 +178,20 @@ export async function setPlanItem(input: unknown): Promise<Result> {
       )
       .limit(1);
 
-    const write = existing
-      ? db
+    await db.transaction(async (tx) => {
+      if (existing) {
+        await tx
           .update(budgetPlanItem)
           .set({ amount: data.amount })
-          .where(eq(budgetPlanItem.id, existing.id))
-      : db.insert(budgetPlanItem).values({ planId, name: data.name, amount: data.amount });
-    await db.batch([write, recomputeAmount(planId), addSuggestion(data.categoryId, data.name)]);
+          .where(eq(budgetPlanItem.id, existing.id));
+      } else {
+        await tx
+          .insert(budgetPlanItem)
+          .values({ planId, name: data.name, amount: data.amount });
+      }
+      await recomputeAmount(tx, planId);
+      await addSuggestion(tx, data.categoryId, data.name);
+    });
 
     revalidateBudgetPages();
     return { ok: true };
@@ -204,17 +212,17 @@ export async function removePlanItem(input: unknown): Promise<Result> {
     const planId = await findPlanId(data.householdId, data.categoryId, data.month);
     if (!planId) return { ok: true };
 
-    await db.batch([
-      db
+    await db.transaction(async (tx) => {
+      await tx
         .delete(budgetPlanItem)
         .where(
           and(
             eq(budgetPlanItem.planId, planId),
             sql`lower(${budgetPlanItem.name}) = lower(${data.name})`
           )
-        ),
-      recomputeAmount(planId),
-    ]);
+        );
+      await recomputeAmount(tx, planId);
+    });
 
     revalidateBudgetPages();
     return { ok: true };
@@ -256,7 +264,7 @@ export async function copyPlan(input: unknown): Promise<Result> {
       )
       select id from new_plans
     `);
-    if (copied.rows.length === 0)
+    if (copied.length === 0)
       return { ok: false, error: 'В прошлом месяце нет плана для копирования' };
 
     revalidateBudgetPages();

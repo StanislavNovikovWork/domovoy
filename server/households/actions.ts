@@ -51,24 +51,24 @@ export async function createHousehold(input: unknown): Promise<Result<{ id: stri
   try {
     const session = await requireSession();
     const id = crypto.randomUUID();
-    await db.batch([
-      db.insert(household).values({
+    await db.transaction(async (tx) => {
+      await tx.insert(household).values({
         id,
         name: parsed.data.name,
         kind: parsed.data.oneTime ? 'one_time' : 'periodic',
         createdBy: session.user.id,
-      }),
-      db
+      });
+      await tx
         .insert(householdMember)
-        .values({ householdId: id, userId: session.user.id, role: 'owner' }),
-      db
+        .values({ householdId: id, userId: session.user.id, role: 'owner' });
+      await tx
         .insert(category)
         .values(
           (parsed.data.oneTime ? DEFAULT_ONE_TIME_CATEGORIES : DEFAULT_CATEGORIES).map(
             (c, index) => ({ ...c, householdId: id, sortOrder: index })
           )
-        ),
-    ]);
+        );
+    });
 
     revalidatePath('/budgets', 'layout');
     return { ok: true, id };

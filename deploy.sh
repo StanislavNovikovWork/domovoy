@@ -19,7 +19,7 @@ scp -i "$KEY" -o IdentitiesOnly=yes compose.yaml "$HOST:$REMOTE_DIR/compose.yaml
 docker save cash-app:latest | gzip | "${SSH[@]}" "gunzip | docker load"
 
 echo "==> Перезапуск"
-"${SSH[@]}" "cd ~/$REMOTE_DIR && test -f .env.production || { echo 'Нет ~/$REMOTE_DIR/.env.production на сервере'; exit 1; } && docker compose up -d --force-recreate && docker image prune -f >/dev/null"
+"${SSH[@]}" "cd ~/$REMOTE_DIR && test -f .env.production && test -f .env.db || { echo 'Нет ~/$REMOTE_DIR/.env.production или .env.db на сервере'; exit 1; } && docker compose up -d --force-recreate && docker image prune -f >/dev/null"
 
 echo "==> Готово"
 "${SSH[@]}" "cd ~/$REMOTE_DIR && docker compose ps"

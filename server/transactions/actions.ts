@@ -145,9 +145,9 @@ export async function updateTransaction(input: unknown): Promise<Result> {
     if ('error' in prepared) return { ok: false, error: prepared.error };
     const { paidBy, shares } = prepared;
 
-    // обновление операции и пересборка долей одним batch (атомарно)
-    await db.batch([
-      db
+    // обновление операции и пересборка долей в одной транзакции
+    await db.transaction(async (tx) => {
+      await tx
         .update(transaction)
         .set({
           categoryId: data.categoryId,
@@ -157,21 +157,19 @@ export async function updateTransaction(input: unknown): Promise<Result> {
           paidByUserId: paidBy?.userId ?? null,
           paidByName: paidBy?.name ?? null,
         })
-        .where(eq(transaction.id, data.id)),
-      db.delete(transactionShare).where(eq(transactionShare.transactionId, data.id)),
-      ...(shares.length > 0
-        ? [
-            db.insert(transactionShare).values(
-              shares.map((s) => ({
-                transactionId: data.id,
-                userId: s.userId,
-                name: s.name,
-                amount: s.amount,
-              }))
-            ),
-          ]
-        : []),
-    ]);
+        .where(eq(transaction.id, data.id));
+      await tx.delete(transactionShare).where(eq(transactionShare.transactionId, data.id));
+      if (shares.length > 0) {
+        await tx.insert(transactionShare).values(
+          shares.map((s) => ({
+            transactionId: data.id,
+            userId: s.userId,
+            name: s.name,
+            amount: s.amount,
+          }))
+        );
+      }
+    });
 
     revalidateBudgetPages();
     return { ok: true };
