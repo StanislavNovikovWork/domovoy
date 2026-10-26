@@ -2,19 +2,10 @@
 
 import type { ReactNode } from 'react';
 import { IconPlus } from '@tabler/icons-react';
-import {
-  ActionIcon,
-  Box,
-  Group,
-  Paper,
-  SimpleGrid,
-  Stack,
-  Text,
-} from '@mantine/core';
+import { ActionIcon, Box, Group, Paper, SimpleGrid, Stack, Text } from '@mantine/core';
 import type { PlanSummary, TxType } from '@/shared/lib/budget';
 import { formatMoney } from '@/shared/lib/money';
-import { formatPeriodCaption, getMonthProgress, type Period } from '@/shared/lib/period';
-import { pluralRu } from '@/shared/lib/plural';
+import { formatPeriodCaption, type Period } from '@/shared/lib/period';
 
 const BORDER = '1px solid var(--mantine-color-default-border)';
 
@@ -25,8 +16,6 @@ type Props = {
   date: string;
   total: number; // за выбранный период и тип
   plan: PlanSummary | null; // null: нет плана или вкладка «Доходы»
-  planMonth: string;
-  today: string;
   // суммы расходов по участникам (разовый бюджет), список под общей суммой
   shareTotals?: { name: string; total: number }[];
   onAdd: () => void; // «+» в углу карточки, только на мобильных
@@ -69,25 +58,15 @@ export function SummaryCard({
   date,
   total,
   plan,
-  planMonth,
-  today,
   shareTotals,
   onAdd,
   filters,
 }: Props) {
-  const progress = plan && periodic ? getMonthProgress(planMonth, today) : null;
-  const planPercent =
-    plan && plan.planned > 0 ? Math.round((plan.spentInPlan / plan.planned) * 100) : 0;
   const overPlan = plan ? plan.remaining < 0 : false;
 
   // на мобильных: без рамки и боковых отступов, блок сливается со страницей
   return (
-    <Paper
-      radius="lg"
-      p={{ base: 0, sm: 'lg' }}
-      pos="relative"
-      bd={{ base: 'none', sm: BORDER }}
-    >
+    <Paper radius="lg" p={{ base: 0, sm: 'lg' }} pos="relative" bd={{ base: 'none', sm: BORDER }}>
       {!filters && (
         <ActionIcon
           pos="absolute"
@@ -102,13 +81,12 @@ export function SummaryCard({
         </ActionIcon>
       )}
       {filters && (
-        // справа у суммы и плана оставлено место, чтобы не накрывать их
         <>
-          {/* мобильные: «+» в правом нижнем углу карточки */}
+          {/* мобильные: «+» в правом верхнем углу карточки, на одной линии с переключателями */}
           <ActionIcon
             hiddenFrom="sm"
             pos="absolute"
-            bottom={0}
+            top={0}
             right={0}
             size="lg"
             radius="xl"
@@ -117,7 +95,7 @@ export function SummaryCard({
           >
             <IconPlus size={20} />
           </ActionIcon>
-          {/* десктоп: «+» у правого края карточки по центру высоты */}
+          {/* десктоп: «+» у правого края карточки по центру высоты; справа у суммы и плана оставлено место, чтобы не накрывать их */}
           <ActionIcon
             visibleFrom="sm"
             pos="absolute"
@@ -135,52 +113,58 @@ export function SummaryCard({
       )}
       <Stack gap="lg">
         {filters}
-        <SimpleGrid cols={{ base: 1, sm: plan ? 2 : 1 }} spacing="lg" pr={filters ? 48 : undefined}>
-          <Stack gap={2}>
-            {periodic && (
-              <Text size="sm" c="dimmed">
-                {type === 'expense' ? 'Потрачено' : 'Получено'} {formatPeriodCaption(period, date)}
+        {/* блок сумм: «Потрачено» и «Осталось по плану» в одну строку на всех экранах */}
+        <Box pos="relative">
+          <SimpleGrid
+            cols={plan ? 2 : 1}
+            spacing="lg"
+            pr={filters ? { base: 0, sm: 48 } : undefined}
+          >
+            <Stack gap={2}>
+              {periodic && (
+                <Text size="sm" c="dimmed">
+                  {type === 'expense' ? 'Потрачено' : 'Получено'}{' '}
+                  {formatPeriodCaption(period, date)}
+                </Text>
+              )}
+              <Text fz={32} fw={700} lh={1.1}>
+                {formatMoney(total)}
               </Text>
-            )}
-            <Text fz={32} fw={700} lh={1.1}>
-              {formatMoney(total)}
-            </Text>
-            {shareTotals && shareTotals.length > 0 && (
-              <Box
-                mt="xs"
-                style={{
-                  display: 'grid',
-                  gridTemplateRows: 'repeat(3, auto)',
-                  gridAutoFlow: 'column',
-                  gridAutoColumns: 'minmax(0, 1fr)',
-                  columnGap: 'var(--mantine-spacing-md)',
-                  rowGap: 2,
-                }}
-              >
-                {shareTotals.map((s) => (
-                  <Group key={s.name} justify="space-between" gap="xs" wrap="nowrap">
-                    <Text size="xs" truncate>
-                      {s.name}
-                    </Text>
-                    <Text size="xs" style={{ whiteSpace: 'nowrap' }}>
-                      {formatMoney(s.total)}
-                    </Text>
-                  </Group>
-                ))}
-              </Box>
-            )}
-          </Stack>
+              {shareTotals && shareTotals.length > 0 && (
+                <Box
+                  mt="xs"
+                  style={{
+                    display: 'grid',
+                    gridTemplateRows: 'repeat(3, auto)',
+                    gridAutoFlow: 'column',
+                    gridAutoColumns: 'minmax(0, 1fr)',
+                    columnGap: 'var(--mantine-spacing-md)',
+                    rowGap: 2,
+                  }}
+                >
+                  {shareTotals.map((s) => (
+                    <Group key={s.name} justify="space-between" gap="xs" wrap="nowrap">
+                      <Text size="xs" truncate>
+                        {s.name}
+                      </Text>
+                      <Text size="xs" style={{ whiteSpace: 'nowrap' }}>
+                        {formatMoney(s.total)}
+                      </Text>
+                    </Group>
+                  ))}
+                </Box>
+              )}
+            </Stack>
 
-          {plan && (
-            <>
+            {plan && (
               <Metric
                 label={overPlan ? 'Превышено по плану' : 'Осталось по плану'}
                 value={formatMoney(Math.abs(plan.remaining))}
                 red={overPlan}
               />
-            </>
-          )}
-        </SimpleGrid>
+            )}
+          </SimpleGrid>
+        </Box>
       </Stack>
     </Paper>
   );

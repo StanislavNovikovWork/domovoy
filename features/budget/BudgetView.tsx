@@ -2,16 +2,7 @@
 
 import { useMemo, useOptimistic, useState, useTransition, type ReactNode } from 'react';
 import { IconCategory, IconSettings } from '@tabler/icons-react';
-import {
-  ActionIcon,
-  Box,
-  Grid,
-  Menu,
-  Paper,
-  ScrollArea,
-  Stack,
-  Tabs,
-} from '@mantine/core';
+import { ActionIcon, Box, Grid, Menu, Paper, ScrollArea, Stack, Tabs } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { FOOTER_HEIGHT } from '@/features/app-shell';
 import { CategoriesModal } from '@/features/categories';
@@ -38,10 +29,7 @@ import {
   prevMonth,
   type Period,
 } from '@/shared/lib/period';
-import {
-  useRegisterSettingsItems,
-  type SettingsItem,
-} from '@/shared/ui/SettingsItems';
+import { useRegisterSettingsItems, type SettingsItem } from '@/shared/ui/SettingsItems';
 import {
   AddTransactionModal,
   type CategoryOption,
@@ -50,10 +38,10 @@ import {
 } from './AddTransactionModal';
 import { AllTransactionsModal } from './AllTransactionsModal';
 import { BudgetFilters } from './BudgetToolbar';
-import { PlanModal } from './PlanModal';
+import { MonthPlan } from './MonthPlan';
 import { OneTimeAllOperationsModal } from './OneTimeAllOperationsModal';
 import { OneTimeOperations } from './OneTimeOperations';
-import { MonthPlan } from './MonthPlan';
+import { PlanModal } from './PlanModal';
 import { OperationsByCategory, PendingPaymentsCard, RecentCard } from './SidePanel';
 import { SummaryCard } from './SummaryCard';
 
@@ -120,7 +108,9 @@ export function BudgetView({
         case 'update':
           return state
             .map((t) => (t.id === action.item.id ? action.item : t))
-            .sort((a, b) => (a.occurredOn < b.occurredOn ? 1 : a.occurredOn > b.occurredOn ? -1 : 0));
+            .sort((a, b) =>
+              a.occurredOn < b.occurredOn ? 1 : a.occurredOn > b.occurredOn ? -1 : 0
+            );
         case 'delete':
           return state.filter((t) => t.id !== action.id);
       }
@@ -209,7 +199,6 @@ export function BudgetView({
       .filter((x) => x.amount > 0)
       .map((x) => ({ ...x.t, amount: x.amount }));
   }, [items, periodic, scope, currentUserId]);
-
 
   // план всегда за месяц выбранной даты, независимо от периода сверху
   const planMonth = periodic ? monthStart(date) : ONE_TIME_MONTH;
@@ -328,7 +317,6 @@ export function BudgetView({
       </Box>
 
       <Stack gap="lg">
-
         {/* мобильная раскладка: «Последние» и «Категории» под табами в одном блоке;
             у разового бюджета блоки стоят плотнее */}
         <Stack
@@ -356,8 +344,6 @@ export function BudgetView({
             date={date}
             total={total}
             plan={planSummary}
-            planMonth={planMonth}
-            today={initialDate}
             shareTotals={shareTotals}
             onAdd={addModal.open}
             filters={filters}
@@ -400,8 +386,6 @@ export function BudgetView({
                 date={date}
                 total={total}
                 plan={planSummary}
-                planMonth={planMonth}
-                today={initialDate}
                 shareTotals={shareTotals}
                 onAdd={addModal.open}
                 filters={filters}

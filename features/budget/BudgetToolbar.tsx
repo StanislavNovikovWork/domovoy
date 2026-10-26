@@ -27,9 +27,10 @@ export function BudgetFilters({
 }: Props) {
   return (
     // десктоп: слева тип и период, справа навигация по периоду (у правого края карточки);
-    // мобильные: ряды переносятся и центрируются
+    // мобильные: переключатели слева (справа запас 48px под кнопку «+» в углу карточки),
+    // навигация по периоду отдельной строкой по центру
     <Flex gap="md" wrap="wrap" justify={{ base: 'center', sm: 'space-between' }} align="center">
-      <Group gap="md" justify="center">
+      <Group gap="md" w={{ base: '100%', sm: 'auto' }} pr={{ base: 48, sm: 0 }}>
         {!expenseOnly && (
           <SegmentedControl
             radius="md"
