@@ -118,7 +118,8 @@ export function MonthPlan({ householdId, month, rows, canCopy, onEdit, onPay }: 
   };
 
   return (
-    <Paper withBorder radius="lg" p="lg">
+    // на мобильных без рамки и отступов, блок сливается со страницей
+    <Paper radius="lg" p={{ base: 0, sm: 'lg' }} bd={{ base: 'none', sm: divider.borderTop }}>
       <Stack gap="sm">
         <Group justify="space-between" gap="sm" wrap="nowrap" align="flex-start">
           <Box style={{ minWidth: 0 }}>

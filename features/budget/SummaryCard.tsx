@@ -80,21 +80,19 @@ export function SummaryCard({
     plan && plan.planned > 0 ? Math.round((plan.spentInPlan / plan.planned) * 100) : 0;
   const overPlan = plan ? plan.remaining < 0 : false;
 
-  // разовый бюджет на мобильных: без рамки и боковых отступов, блок сливается со страницей
-  const flat = !periodic;
-
+  // на мобильных: без рамки и боковых отступов, блок сливается со страницей
   return (
     <Paper
       radius="lg"
-      p={flat ? { base: 0, sm: 'lg' } : 'lg'}
+      p={{ base: 0, sm: 'lg' }}
       pos="relative"
-      bd={flat ? { base: 'none', sm: BORDER } : BORDER}
+      bd={{ base: 'none', sm: BORDER }}
     >
       {!filters && (
         <ActionIcon
           pos="absolute"
-          top={flat ? { base: 0, sm: 16 } : 16}
-          right={flat ? { base: 0, sm: 16 } : 16}
+          top={{ base: 0, sm: 16 }}
+          right={{ base: 0, sm: 16 }}
           size="lg"
           radius="xl"
           aria-label="Добавить операцию"
@@ -110,8 +108,8 @@ export function SummaryCard({
           <ActionIcon
             hiddenFrom="sm"
             pos="absolute"
-            bottom={16}
-            right={16}
+            bottom={0}
+            right={0}
             size="lg"
             radius="xl"
             aria-label="Добавить операцию"
@@ -147,12 +145,6 @@ export function SummaryCard({
             <Text fz={32} fw={700} lh={1.1}>
               {formatMoney(total)}
             </Text>
-            {plan && (
-              <Text size="xs" c="dimmed">
-                По плану: {formatMoney(plan.spentInPlan)} из {formatMoney(plan.planned)} ·{' '}
-                {planPercent}%
-              </Text>
-            )}
             {shareTotals && shareTotals.length > 0 && (
               <Box
                 mt="xs"
@@ -185,11 +177,6 @@ export function SummaryCard({
                 label={overPlan ? 'Превышено по плану' : 'Осталось по плану'}
                 value={formatMoney(Math.abs(plan.remaining))}
                 red={overPlan}
-                hint={
-                  progress
-                    ? `${progress.daysLeft} ${pluralRu(progress.daysLeft, ['день', 'дня', 'дней'])} до конца месяца`
-                    : undefined
-                }
               />
             </>
           )}

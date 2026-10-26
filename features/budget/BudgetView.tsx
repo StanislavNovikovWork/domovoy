@@ -57,6 +57,8 @@ import { MonthPlan } from './MonthPlan';
 import { OperationsByCategory, PendingPaymentsCard, RecentCard } from './SidePanel';
 import { SummaryCard } from './SummaryCard';
 
+const CARD_BORDER = '1px solid var(--mantine-color-default-border)';
+
 type OptimisticAction =
   | { type: 'add'; item: TransactionItem }
   | { type: 'update'; item: TransactionItem }
@@ -269,9 +271,10 @@ export function BudgetView({
     />
   ) : undefined;
 
-  // периодический бюджет: «Последние операции» и «По категориям» вкладками, общий для мобильной и десктопной раскладки
+  // периодический бюджет: «Последние операции» и «По категориям» вкладками, общий для мобильной и десктопной раскладки;
+  // на мобильных без рамки и отступов, как блоки разового бюджета
   const periodicTabs = (
-    <Paper withBorder radius="lg" p="lg">
+    <Paper radius="lg" p={{ base: 0, sm: 'lg' }} bd={{ base: 'none', sm: CARD_BORDER }}>
       <Tabs defaultValue="recent">
         <Tabs.List grow>
           <Tabs.Tab value="recent">Последние операции</Tabs.Tab>
