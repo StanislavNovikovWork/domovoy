@@ -162,6 +162,8 @@ export function BudgetView({
   const [period, setPeriod] = useState<Period>('month');
   const [date, setDate] = useState(initialDate);
   const [addOpened, addModal] = useDisclosure(false);
+  // активный таб блока операций периодического бюджета (общий для мобильной и десктопной раскладки)
+  const [tab, setTab] = useState('recent');
   // мобильные, периодический бюджет: сводка сворачивается при прокрутке списка.
   // Гистерезис: сворачиваем после 48px, разворачиваем только у самого верха — иначе
   // изменение высоты сводки при сворачивании дёргало бы состояние туда-обратно
@@ -269,13 +271,19 @@ export function BudgetView({
   ) : undefined;
 
   // периодический бюджет: «Последние операции» и «По категориям» вкладками, общий для мобильной и десктопной раскладки;
-  // на мобильных без рамки и отступов, как блоки разового бюджета
-  const periodicTabs = (
+  // на мобильных без рамки и отступов, как блоки разового бюджета.
+  // withPlan: третий таб «План» (мобильные; на десктопе план стоит отдельной колонкой справа)
+  const hasPlan = periodic && type === 'expense';
+  const periodicTabs = (withPlan: boolean) => (
     <Paper radius="lg" p={{ base: 0, sm: 'lg' }} bd={{ base: 'none', sm: CARD_BORDER }}>
-      <Tabs defaultValue="recent">
+      <Tabs
+        value={withPlan && !hasPlan && tab === 'plan' ? 'recent' : tab}
+        onChange={(v) => setTab(v ?? 'recent')}
+      >
         <Tabs.List grow>
-          <Tabs.Tab value="recent">Последние операции</Tabs.Tab>
+          <Tabs.Tab value="recent">{withPlan ? 'Операции' : 'Последние операции'}</Tabs.Tab>
           <Tabs.Tab value="categories">По категориям</Tabs.Tab>
+          {withPlan && hasPlan && <Tabs.Tab value="plan">План</Tabs.Tab>}
         </Tabs.List>
         <Tabs.Panel value="recent" pt="md">
           {/* операции выбранного типа за выбранный период (день, неделя, месяц, год) */}
@@ -285,13 +293,18 @@ export function BudgetView({
           {/* те же операции за период, сгруппированные по категориям */}
           <OperationsByCategory items={items} />
         </Tabs.Panel>
+        {withPlan && hasPlan && (
+          <Tabs.Panel value="plan" pt="md">
+            {monthPlan(true)}
+          </Tabs.Panel>
+        )}
       </Tabs>
     </Paper>
   );
 
   // план затрат на месяц (только цели, без операций): у периодического бюджета, только для расходов
-  const monthPlan =
-    periodic && type === 'expense' ? (
+  const monthPlan = (bare: boolean) =>
+    hasPlan ? (
       <MonthPlan
         householdId={householdId}
         month={planMonth}
@@ -299,6 +312,7 @@ export function BudgetView({
         canCopy={hasPrevPlan}
         onEdit={() => openPlan(null)}
         onPay={pay}
+        bare={bare}
       />
     ) : null;
 
@@ -368,10 +382,7 @@ export function BudgetView({
               style={{ flex: 1, minHeight: 0 }}
               onScrollPositionChange={onListScroll}
             >
-              <Stack gap="lg" pb={`calc(${FOOTER_HEIGHT} + 160px)`}>
-                {periodicTabs}
-                {monthPlan}
-              </Stack>
+              <Box pb={`calc(${FOOTER_HEIGHT} + 160px)`}>{periodicTabs(true)}</Box>
             </ScrollArea>
           ) : (
             // разовый бюджет: без табов; прокручивается только эта область без видимой полосы,
@@ -407,7 +418,7 @@ export function BudgetView({
               />
 
               {periodic ? (
-                periodicTabs
+                periodicTabs(false)
               ) : (
                 // разовый бюджет: список операций под сводкой, блок категорий пока убран
                 <OneTimeOperations
@@ -421,10 +432,10 @@ export function BudgetView({
           </Grid.Col>
 
           {periodic
-            ? monthPlan && (
+            ? hasPlan && (
                 <Grid.Col span={{ base: 12, lg: 'auto' }}>
                   <Box maw={460} miw={400}>
-                    {monthPlan}
+                    {monthPlan(false)}
                   </Box>
                 </Grid.Col>
               )

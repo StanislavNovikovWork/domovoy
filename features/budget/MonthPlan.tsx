@@ -30,6 +30,8 @@ type Props = {
   onEdit: () => void;
   // открыть форму операции с предзаполнением; сумма в копейках
   onPay: (categoryId: string, name: string, amount: number) => void;
+  // без обводки и заголовка: внутри таба «План» на мобильных
+  bare?: boolean;
 };
 
 const divider = { borderTop: '1px solid var(--mantine-color-default-border)' } as const;
@@ -105,7 +107,7 @@ function PlanCategory({ row, onPay }: { row: PlanRow; onPay: Props['onPay'] }) {
 }
 
 // план затрат на месяц: только цели по категориям и статьям, без операций и фактических трат
-export function MonthPlan({ householdId, month, rows, canCopy, onEdit, onPay }: Props) {
+export function MonthPlan({ householdId, month, rows, canCopy, onEdit, onPay, bare }: Props) {
   const [pending, startTransition] = useTransition();
   const total = rows.reduce((acc, r) => acc + r.planned, 0);
 
@@ -117,16 +119,17 @@ export function MonthPlan({ householdId, month, rows, canCopy, onEdit, onPay }: 
     });
   };
 
-  return (
-    // на мобильных без рамки и отступов, блок сливается со страницей
-    <Paper radius="lg" p={{ base: 0, sm: 'lg' }} bd={{ base: 'none', sm: divider.borderTop }}>
+  const content = (
       <Stack gap="sm">
         <Group justify="space-between" gap="sm" wrap="nowrap" align="flex-start">
           <Box style={{ minWidth: 0 }}>
-            <Text fw={600} size="lg">
-              План затрат
-            </Text>
-            <Text size="xs" c="dimmed">
+            {/* внутри таба заголовок не нужен — им служит сам таб */}
+            {!bare && (
+              <Text fw={600} size="lg">
+                План затрат
+              </Text>
+            )}
+            <Text size={bare ? 'sm' : 'xs'} c="dimmed" lh={bare ? '30px' : undefined}>
               {formatPeriodLabel('month', month)}
               {rows.length > 0 && ` · всего ${formatMoney(total)}`}
             </Text>
@@ -163,6 +166,14 @@ export function MonthPlan({ householdId, month, rows, canCopy, onEdit, onPay }: 
           </Stack>
         )}
       </Stack>
+  );
+
+  // на мобильных без рамки и отступов, блок сливается со страницей
+  return bare ? (
+    content
+  ) : (
+    <Paper radius="lg" p={{ base: 0, sm: 'lg' }} bd={{ base: 'none', sm: divider.borderTop }}>
+      {content}
     </Paper>
   );
 }
