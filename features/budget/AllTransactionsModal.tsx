@@ -1,6 +1,8 @@
 'use client';
 
-import { Group, Modal, Stack, Text } from '@mantine/core';
+import { IconPencil, IconTrash } from '@tabler/icons-react';
+import { ActionIcon, Group, Modal, Stack, Text } from '@mantine/core';
+import { useMediaQuery } from '@mantine/hooks';
 import type { TransactionItem, TxType } from '@/shared/lib/budget';
 import { formatShortDate } from '@/shared/lib/period';
 import { capitalize } from '@/shared/lib/text';
@@ -12,15 +14,31 @@ type Props = {
   type: TxType;
   periodLabel: string;
   items: TransactionItem[]; // уже за выбранный период и тип, новые сверху
+  onEdit: (t: TransactionItem) => void;
+  // удаление выполняется оптимистично на уровне BudgetView: строка исчезает сразу
+  onDelete: (id: string) => void;
 };
 
-export function AllTransactionsModal({ opened, onClose, type, periodLabel, items }: Props) {
+// все операции периодического бюджета: редактирование и удаление
+export function AllTransactionsModal({
+  opened,
+  onClose,
+  type,
+  periodLabel,
+  items,
+  onEdit,
+  onDelete,
+}: Props) {
+  // на мобильных окно на весь экран, на десктопе обычная модалка
+  const isMobile = useMediaQuery('(max-width: 47.99375em)');
+
   return (
     <Modal
       opened={opened}
       onClose={onClose}
       title={`${type === 'expense' ? 'Расходы' : 'Доходы'}, ${periodLabel}`}
-      size="md"
+      size="lg"
+      fullScreen={!!isMobile}
     >
       {items.length === 0 ? (
         <Text c="dimmed" size="sm" ta="center" py="md">
@@ -54,6 +72,26 @@ export function AllTransactionsModal({ opened, onClose, type, periodLabel, items
               >
                 {signedMoney(t)}
               </Text>
+              <Group gap={2} wrap="nowrap">
+                <ActionIcon
+                  variant="subtle"
+                  color="gray"
+                  size="sm"
+                  aria-label="Редактировать"
+                  onClick={() => onEdit(t)}
+                >
+                  <IconPencil size={14} />
+                </ActionIcon>
+                <ActionIcon
+                  variant="subtle"
+                  color="red"
+                  size="sm"
+                  aria-label="Удалить"
+                  onClick={() => onDelete(t.id)}
+                >
+                  <IconTrash size={14} />
+                </ActionIcon>
+              </Group>
             </Group>
           ))}
         </Stack>

@@ -1,8 +1,8 @@
 'use client';
 
 import { useMemo, useOptimistic, useState, useTransition, type ReactNode } from 'react';
-import { IconCategory, IconSettings } from '@tabler/icons-react';
-import { ActionIcon, Box, Grid, Menu, Paper, ScrollArea, Stack, Tabs } from '@mantine/core';
+import { IconCategory, IconPencil, IconSettings } from '@tabler/icons-react';
+import { ActionIcon, Box, Button, Divider, Grid, Group, Menu, Paper, ScrollArea, Stack } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { FOOTER_HEIGHT } from '@/features/app-shell';
 import { CategoriesModal } from '@/features/categories';
@@ -270,37 +270,57 @@ export function BudgetView({
     />
   ) : undefined;
 
-  // периодический бюджет: «Последние операции» и «По категориям» вкладками, общий для мобильной и десктопной раскладки;
-  // на мобильных без рамки и отступов, как блоки разового бюджета.
+  // периодический бюджет: «Последние операции» и «По категориям» кнопками-табами, как
+  // «Все расходы / Мои расходы» в разовом бюджете; общий для мобильной и десктопной раскладки.
+  // На мобильных без рамки и отступов, как блоки разового бюджета.
   // withPlan: третий таб «План» (мобильные; на десктопе план стоит отдельной колонкой справа)
   const hasPlan = periodic && type === 'expense';
-  const periodicTabs = (withPlan: boolean) => (
+  // если вкладка «План» скрылась (переключились на доходы), показываем операции
+  const activeTab = hasPlan ? tab : tab === 'plan' ? 'recent' : tab;
+  const periodicTabs = (withPlan: boolean) => {
+    const tabsList: { value: 'recent' | 'categories' | 'plan'; label: string }[] = [
+      { value: 'recent', label: withPlan ? 'Операции' : 'Последние операции' },
+      { value: 'categories', label: 'По категориям' },
+      ...(withPlan && hasPlan ? [{ value: 'plan' as const, label: 'План' }] : []),
+    ];
+    return (
     <Paper radius="lg" p={{ base: 0, sm: 'lg' }} bd={{ base: 'none', sm: CARD_BORDER }}>
-      <Tabs
-        value={withPlan && !hasPlan && tab === 'plan' ? 'recent' : tab}
-        onChange={(v) => setTab(v ?? 'recent')}
-      >
-        <Tabs.List grow>
-          <Tabs.Tab value="recent">{withPlan ? 'Операции' : 'Последние операции'}</Tabs.Tab>
-          <Tabs.Tab value="categories">По категориям</Tabs.Tab>
-          {withPlan && hasPlan && <Tabs.Tab value="plan">План</Tabs.Tab>}
-        </Tabs.List>
-        <Tabs.Panel value="recent" pt="md">
-          {/* операции выбранного типа за выбранный период (день, неделя, месяц, год) */}
-          <RecentCard bare items={items} />
-        </Tabs.Panel>
-        <Tabs.Panel value="categories" pt="md">
-          {/* те же операции за период, сгруппированные по категориям */}
-          <OperationsByCategory items={items} />
-        </Tabs.Panel>
-        {withPlan && hasPlan && (
-          <Tabs.Panel value="plan" pt="md">
-            {monthPlan(true)}
-          </Tabs.Panel>
-        )}
-      </Tabs>
+      <Group justify="space-between" wrap="nowrap">
+        <Group gap="xs" wrap="nowrap">
+          {tabsList.map((t) => (
+            <Button
+              key={t.value}
+              size="compact-xs"
+              radius="xl"
+              variant={activeTab === t.value ? 'filled' : 'light'}
+              color={activeTab === t.value ? undefined : 'gray'}
+              onClick={() => setTab(t.value)}
+            >
+              {t.label}
+            </Button>
+          ))}
+        </Group>
+        {/* карандаш открывает «Все операции» с редактированием */}
+        <ActionIcon
+          variant="subtle"
+          color="gray"
+          aria-label="Редактировать операции"
+          onClick={allModal.open}
+        >
+          <IconPencil size={18} />
+        </ActionIcon>
+      </Group>
+      <Divider mt={2} />
+      <Box>
+        {/* операции выбранного типа за выбранный период (день, неделя, месяц, год) */}
+        {activeTab === 'recent' && <RecentCard bare items={items} />}
+        {/* те же операции за период, сгруппированные по категориям */}
+        {activeTab === 'categories' && <OperationsByCategory items={items} />}
+        {activeTab === 'plan' && withPlan && hasPlan && <Box pt={12}>{monthPlan(true)}</Box>}
+      </Box>
     </Paper>
-  );
+    );
+  };
 
   // план затрат на месяц (только цели, без операций): у периодического бюджета, только для расходов
   const monthPlan = (bare: boolean) =>
@@ -473,6 +493,8 @@ export function BudgetView({
           type={type}
           periodLabel={formatPeriodLabel(period, date)}
           items={items}
+          onEdit={setEditing}
+          onDelete={removeTransaction}
         />
       ) : (
         <OneTimeAllOperationsModal
