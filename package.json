@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "concurrently -k -n tunnel,next -c gray,blue \"yarn db:tunnel\" \"next dev\"",
     "dev:next": "next dev",
-    "db:tunnel": "ssh -i ${DEPLOY_KEY:-$HOME/.ssh/cash_vps} -o IdentitiesOnly=yes -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 -N -L 5432:127.0.0.1:5432 ${DEPLOY_HOST:-deploy@194.226.99.207}",
+    "db:tunnel": "while true; do ssh -i ${DEPLOY_KEY:-$HOME/.ssh/cash_vps} -o IdentitiesOnly=yes -o ExitOnForwardFailure=yes -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -N -L 5432:127.0.0.1:5432 ${DEPLOY_HOST:-deploy@194.226.99.207}; echo 'tunnel down, reconnecting...'; sleep 2; done",
     "build": "next build",
     "analyze": "ANALYZE=true next build",
     "start": "next start",

@@ -1,7 +1,7 @@
 'use client';
 
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
-import { ActionIcon, Group, SegmentedControl, Text } from '@mantine/core';
+import { ActionIcon, Flex, Group, SegmentedControl, Text } from '@mantine/core';
 import type { TxType } from '@/shared/lib/budget';
 import { PERIOD_OPTIONS, formatPeriodLabel, shiftDate, type Period } from '@/shared/lib/period';
 
@@ -26,9 +26,10 @@ export function BudgetFilters({
   onDateChange,
 }: Props) {
   return (
-    // слева тип и период, справа навигация по периоду (у правого края карточки)
-    <Group gap="md" justify="space-between">
-      <Group gap="md">
+    // десктоп: слева тип и период, справа навигация по периоду (у правого края карточки);
+    // мобильные: ряды переносятся и центрируются
+    <Flex gap="md" wrap="wrap" justify={{ base: 'center', sm: 'space-between' }} align="center">
+      <Group gap="md" justify="center">
         {!expenseOnly && (
           <SegmentedControl
             radius="md"
@@ -68,6 +69,6 @@ export function BudgetFilters({
           <IconChevronRight size={18} />
         </ActionIcon>
       </Group>
-    </Group>
+    </Flex>
   );
 }
