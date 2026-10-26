@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useMemo, useState, useTransition } from 'react';
 import { IconPlus, IconTrash } from '@tabler/icons-react';
 import {
   ActionIcon,
@@ -91,7 +91,6 @@ export function PlanModal({
           rows={rows}
           categories={categories}
           initialCategoryId={initialCategoryId}
-          onClose={onClose}
         />
       </AnimatedHeight>
     </Modal>
@@ -104,29 +103,27 @@ function Content({
   rows,
   categories,
   initialCategoryId,
-  onClose,
-}: Omit<Props, 'opened' | 'periodic'>) {
+}: Omit<Props, 'opened' | 'periodic' | 'onClose'>) {
   const { pending, run } = useAction();
   const [categoryId, setCategoryId] = useState<string | null>(initialCategoryId ?? null);
-  const [amount, setAmount] = useState<number | string>('');
 
   const planned = new Set(rows.map((r) => r.categoryId));
   const available = categories.filter((c) => c.type === 'expense' && !planned.has(c.id));
+  // в форме строки без сортировки по сумме: новые категории сверху
+  const sortedRows = useMemo(
+    () => [...rows].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    [rows]
+  );
 
   const add = () => {
     if (!categoryId) {
       notifications.show({ message: 'Выберите категорию', color: 'red' });
       return;
     }
-    // сумма необязательна: категорию можно добавить пустой и сразу расписать статьи
-    const kopecks = typeof amount === 'number' && amount > 0 ? Math.round(amount * 100) : 0;
+    // категория добавляется без суммы; новая строка сразу предложит расписать статьи
     run(
-      () => setPlan({ householdId, categoryId, month, amount: kopecks }),
-      () => {
-        setCategoryId(null);
-        setAmount('');
-        if (kopecks > 0) onClose();
-      }
+      () => setPlan({ householdId, categoryId, month, amount: 0 }),
+      () => setCategoryId(null)
     );
   };
 
@@ -146,19 +143,6 @@ function Content({
               style={{ flex: 1 }}
               comboboxProps={{ withinPortal: true }}
             />
-            <NumberInput
-              placeholder="Сумма"
-              w={130}
-              value={amount}
-              onChange={setAmount}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  add();
-                }
-              }}
-              {...numberProps}
-            />
             <Button onClick={add} loading={pending}>
               Добавить
             </Button>
@@ -173,7 +157,7 @@ function Content({
         </Text>
       )}
 
-      {rows.map((r) => (
+      {sortedRows.map((r) => (
         <RowEditor key={r.categoryId} row={r} householdId={householdId} month={month} />
       ))}
     </Stack>
@@ -303,7 +287,7 @@ function RowEditor({
         {adding ? (
           <Group gap="xs" wrap="nowrap" align="flex-start">
             <TextInput
-              placeholder="Например, Мобильная связь"
+              placeholder="Статья"
               size="xs"
               maxLength={40}
               value={itemName}
@@ -314,7 +298,7 @@ function RowEditor({
             <NumberInput
               placeholder="0"
               size="xs"
-              w={130}
+              w={80}
               value={itemAmount}
               onChange={setItemAmount}
               onKeyDown={(e) => {

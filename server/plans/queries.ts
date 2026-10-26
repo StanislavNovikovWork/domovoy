@@ -13,6 +13,7 @@ export async function listPlans(householdId: string): Promise<PlanItem[]> {
         categoryId: budgetPlan.categoryId,
         month: budgetPlan.month,
         amount: budgetPlan.amount,
+        createdAt: budgetPlan.createdAt,
       })
       .from(budgetPlan)
       .where(eq(budgetPlan.householdId, householdId)),
@@ -37,6 +38,7 @@ export async function listPlans(householdId: string): Promise<PlanItem[]> {
     categoryId: p.categoryId,
     month: p.month,
     amount: p.amount,
+    createdAt: p.createdAt,
     items: byPlan.get(p.id) ?? [],
   }));
 }

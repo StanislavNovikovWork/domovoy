@@ -61,6 +61,7 @@ export type PlanItem = {
   categoryId: string;
   month: string; // YYYY-MM-01
   amount: number; // копейки; при наличии статей равна их сумме
+  createdAt: Date;
   items: PlanSubItem[];
 };
 
@@ -79,6 +80,8 @@ export type PlanRow = {
   color: string;
   planned: number;
   spent: number;
+  // когда категория добавлена в план; в форме редактирования новые сверху
+  createdAt: Date;
   items: PlanRowItem[];
   // операции категории за месяц, не попавшие ни в одну статью (новые сверху, как в списке операций)
   otherTransactions: TransactionItem[];
@@ -132,6 +135,7 @@ export function buildPlanRows(
       color: c.color,
       planned: p.amount,
       spent: total,
+      createdAt: p.createdAt,
       items,
       otherTransactions: categoryTransactions.filter((t) => !itemNames.has(normalizeNote(t.note))),
     });
