@@ -406,20 +406,6 @@ export function BudgetView({
             collapsed={periodic && summaryCollapsed}
           />
 
-          {/* мобильные: панель периода выезжает под сводкой по кнопке фильтра */}
-          {periodic && (
-            <Box hiddenFrom="sm">
-              <Collapse expanded={periodFiltersOpened}>
-                <PeriodFilters
-                  period={period}
-                  date={date}
-                  onPeriodChange={setPeriod}
-                  onDateChange={setDate}
-                />
-              </Collapse>
-            </Box>
-          )}
-
           {/* у периодического бюджета список операций идёт сразу под сводкой, платежи ниже */}
           {!periodic && pendingPayments.length > 0 && (
             <PendingPaymentsCard payments={pendingPayments} onPay={pay} />
@@ -434,6 +420,21 @@ export function BudgetView({
               style={{ flex: 1, minHeight: 0 }}
               onScrollPositionChange={onListScroll}
             >
+              {/* мобильные: панель периода выезжает под сводкой по кнопке фильтра.
+                  Внутри прокрутки, не элемент стека с gap — иначе закрытая панель
+                  (высота 0) добавляла бы двойной отступ */}
+              <Box hiddenFrom="sm">
+                <Collapse expanded={periodFiltersOpened}>
+                  <Box pb="lg">
+                    <PeriodFilters
+                      period={period}
+                      date={date}
+                      onPeriodChange={setPeriod}
+                      onDateChange={setDate}
+                    />
+                  </Box>
+                </Collapse>
+              </Box>
               <Box pb={`calc(${FOOTER_HEIGHT} + 160px)`}>{periodicTabs(true)}</Box>
             </ScrollArea>
           ) : (
