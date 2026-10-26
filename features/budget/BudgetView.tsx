@@ -2,7 +2,19 @@
 
 import { useMemo, useOptimistic, useState, useTransition, type ReactNode } from 'react';
 import { IconCategory, IconPencil, IconSettings } from '@tabler/icons-react';
-import { ActionIcon, Box, Button, Divider, Grid, Group, Menu, Paper, ScrollArea, Stack } from '@mantine/core';
+import {
+  ActionIcon,
+  Box,
+  Button,
+  Collapse,
+  Divider,
+  Grid,
+  Group,
+  Menu,
+  Paper,
+  ScrollArea,
+  Stack,
+} from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { FOOTER_HEIGHT } from '@/features/app-shell';
 import { CategoriesModal } from '@/features/categories';
@@ -37,7 +49,7 @@ import {
   type ShareParticipant,
 } from './AddTransactionModal';
 import { AllTransactionsModal } from './AllTransactionsModal';
-import { BudgetFilters } from './BudgetToolbar';
+import { BudgetFilters, PeriodFilters } from './BudgetToolbar';
 import { MonthPlan } from './MonthPlan';
 import { OneTimeAllOperationsModal } from './OneTimeAllOperationsModal';
 import { OneTimeOperations } from './OneTimeOperations';
@@ -257,6 +269,10 @@ export function BudgetView({
   ];
   useRegisterSettingsItems(settingsItems);
 
+  // мобильные, периодический бюджет: табы периода и навигация по нему
+  // прячутся за иконкой фильтра и выезжают панелью под сводкой
+  const [periodFiltersOpened, setPeriodFiltersOpened] = useState(false);
+
   // фильтры периодического бюджета показываются внутри карточки сводки
   const filters = periodic ? (
     <BudgetFilters
@@ -267,6 +283,8 @@ export function BudgetView({
       onTypeChange={setType}
       onPeriodChange={setPeriod}
       onDateChange={setDate}
+      periodFiltersOpened={periodFiltersOpened}
+      onTogglePeriodFilters={() => setPeriodFiltersOpened((v) => !v)}
     />
   ) : undefined;
 
@@ -387,6 +405,20 @@ export function BudgetView({
             filters={filters}
             collapsed={periodic && summaryCollapsed}
           />
+
+          {/* мобильные: панель периода выезжает под сводкой по кнопке фильтра */}
+          {periodic && (
+            <Box hiddenFrom="sm">
+              <Collapse expanded={periodFiltersOpened}>
+                <PeriodFilters
+                  period={period}
+                  date={date}
+                  onPeriodChange={setPeriod}
+                  onDateChange={setDate}
+                />
+              </Collapse>
+            </Box>
+          )}
 
           {/* у периодического бюджета список операций идёт сразу под сводкой, платежи ниже */}
           {!periodic && pendingPayments.length > 0 && (
