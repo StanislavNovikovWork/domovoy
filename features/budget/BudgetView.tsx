@@ -162,6 +162,14 @@ export function BudgetView({
   const [period, setPeriod] = useState<Period>('month');
   const [date, setDate] = useState(initialDate);
   const [addOpened, addModal] = useDisclosure(false);
+  // мобильные, периодический бюджет: сводка сворачивается при прокрутке списка.
+  // Гистерезис: сворачиваем после 48px, разворачиваем только у самого верха — иначе
+  // изменение высоты сводки при сворачивании дёргало бы состояние туда-обратно
+  const [summaryCollapsed, setSummaryCollapsed] = useState(false);
+  const onListScroll = ({ y }: { y: number }) => {
+    if (y > 48 && !summaryCollapsed) setSummaryCollapsed(true);
+    else if (y <= 4 && summaryCollapsed) setSummaryCollapsed(false);
+  };
   // операция, открытая на редактирование (окно «Все операции» разового бюджета)
   const [editing, setEditing] = useState<TransactionItem | null>(null);
   const [catsOpened, catsModal] = useDisclosure(false);
@@ -322,18 +330,14 @@ export function BudgetView({
         <Stack
           gap={periodic ? 'lg' : 'sm'}
           hiddenFrom="lg"
-          // разовый бюджет: страница не скроллится, итоги сверху неподвижны, прокручивается только список операций
-          style={
-            periodic
-              ? undefined
-              : {
-                  // svh, не dvh: иначе высота прыгает каждый раз, когда при скролле
-                  // прячется/появляется адресная строка браузера.
-                  // вычитаем только верхний отступ: низ уходит под нижнее меню
-                  height:
-                    'calc(100svh - var(--app-shell-header-offset, 0rem) - var(--mantine-spacing-md))',
-                }
-          }
+          // страница не скроллится: шапка и сводка сверху неподвижны, прокручивается только список операций
+          style={{
+            // svh, не dvh: иначе высота прыгает каждый раз, когда при скролле
+            // прячется/появляется адресная строка браузера.
+            // вычитаем только верхний отступ: низ уходит под нижнее меню
+            height:
+              'calc(100svh - var(--app-shell-header-offset, 0rem) - var(--mantine-spacing-md))',
+          }}
         >
           {mobileTop && <Box hiddenFrom="sm">{mobileTop}</Box>}
 
@@ -347,6 +351,7 @@ export function BudgetView({
             shareTotals={shareTotals}
             onAdd={addModal.open}
             filters={filters}
+            collapsed={periodic && summaryCollapsed}
           />
 
           {/* у периодического бюджета список операций идёт сразу под сводкой, платежи ниже */}
@@ -355,7 +360,19 @@ export function BudgetView({
           )}
 
           {periodic ? (
-            periodicTabs
+            // периодический бюджет: табы и план прокручиваются вместе, сводка над ними сворачивается.
+            // Запас снизу больше высоты свёрнутой части сводки, чтобы короткий список
+            // всё равно можно было прокрутить и свернуть сводку
+            <ScrollArea
+              type="never"
+              style={{ flex: 1, minHeight: 0 }}
+              onScrollPositionChange={onListScroll}
+            >
+              <Stack gap="lg" pb={`calc(${FOOTER_HEIGHT} + 160px)`}>
+                {periodicTabs}
+                {monthPlan}
+              </Stack>
+            </ScrollArea>
           ) : (
             // разовый бюджет: без табов; прокручивается только эта область без видимой полосы,
             // остальное закреплено; запас снизу, чтобы список доскролливался выше нижнего меню
@@ -370,8 +387,6 @@ export function BudgetView({
               </Box>
             </ScrollArea>
           )}
-
-          {monthPlan}
         </Stack>
 
         {/* десктоп: сводка и список операций слева, справа план (периодический) или ожидаемые платежи (разовый) */}

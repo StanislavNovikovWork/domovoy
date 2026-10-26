@@ -2,12 +2,17 @@
 
 import type { ReactNode } from 'react';
 import { IconPlus } from '@tabler/icons-react';
-import { ActionIcon, Box, Group, Paper, SimpleGrid, Stack, Text } from '@mantine/core';
+import { ActionIcon, Box, Collapse, Group, Paper, SimpleGrid, Stack, Text } from '@mantine/core';
 import type { PlanSummary, TxType } from '@/shared/lib/budget';
 import { formatMoney } from '@/shared/lib/money';
 import { formatPeriodCaption, type Period } from '@/shared/lib/period';
 
 const BORDER = '1px solid var(--mantine-color-default-border)';
+
+// анимация сворачивания сводки: одна длительность и кривая для всех частей, чтобы двигались синхронно
+const COLLAPSE_MS = 350;
+const COLLAPSE_EASING = 'cubic-bezier(0.4, 0, 0.2, 1)';
+const COLLAPSE_TRANSITION = `${COLLAPSE_MS}ms ${COLLAPSE_EASING}`;
 
 type Props = {
   periodic: boolean;
@@ -21,6 +26,8 @@ type Props = {
   onAdd: () => void; // «+» в углу карточки, только на мобильных
   // фильтры (расходы/доходы, период, навигация) внутри карточки; «+» тогда стоит рядом с суммой на всех экранах
   filters?: ReactNode;
+  // мобильные: при прокрутке списка фильтры и «+» сворачиваются, остаются только суммы
+  collapsed?: boolean;
 };
 
 function Metric({
@@ -61,6 +68,7 @@ export function SummaryCard({
   shareTotals,
   onAdd,
   filters,
+  collapsed = false,
 }: Props) {
   const overPlan = plan ? plan.remaining < 0 : false;
 
@@ -82,7 +90,8 @@ export function SummaryCard({
       )}
       {filters && (
         <>
-          {/* мобильные: «+» в правом верхнем углу карточки, на одной линии с переключателями */}
+          {/* мобильные: «+» в правом верхнем углу карточки, на одной линии с переключателями;
+              в свёрнутом состоянии прячется вместе с фильтрами */}
           <ActionIcon
             hiddenFrom="sm"
             pos="absolute"
@@ -92,6 +101,12 @@ export function SummaryCard({
             radius="xl"
             aria-label="Добавить операцию"
             onClick={onAdd}
+            tabIndex={collapsed ? -1 : undefined}
+            style={{
+              opacity: collapsed ? 0 : 1,
+              pointerEvents: collapsed ? 'none' : undefined,
+              transition: `opacity ${COLLAPSE_TRANSITION}`,
+            }}
           >
             <IconPlus size={20} />
           </ActionIcon>
@@ -111,8 +126,17 @@ export function SummaryCard({
           </ActionIcon>
         </>
       )}
-      <Stack gap="lg">
-        {filters}
+      <Stack gap={collapsed ? 0 : 'lg'} style={{ transition: `gap ${COLLAPSE_TRANSITION}` }}>
+        {/* фильтры сворачиваются с анимацией при прокрутке списка (на десктопе collapsed всегда false) */}
+        {filters && (
+          <Collapse
+            expanded={!collapsed}
+            transitionDuration={COLLAPSE_MS}
+            transitionTimingFunction={COLLAPSE_EASING}
+          >
+            {filters}
+          </Collapse>
+        )}
         {/* блок сумм: «Потрачено» и «Осталось по плану» в одну строку на всех экранах */}
         <Box pos="relative">
           <SimpleGrid
@@ -127,7 +151,12 @@ export function SummaryCard({
                   {formatPeriodCaption(period, date)}
                 </Text>
               )}
-              <Text fz={32} fw={700} lh={1.1}>
+              <Text
+                fz={collapsed ? 24 : 32}
+                fw={700}
+                lh={1.1}
+                style={{ transition: `font-size ${COLLAPSE_TRANSITION}` }}
+              >
                 {formatMoney(total)}
               </Text>
               {shareTotals && shareTotals.length > 0 && (
