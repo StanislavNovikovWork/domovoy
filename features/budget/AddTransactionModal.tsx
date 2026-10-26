@@ -441,7 +441,7 @@ function TransactionForm({
                             <CategoryBadge
                               icon={c.icon}
                               color={c.color}
-                              size={56}
+                              size={28}
                               state={
                                 selected ? 'selected' : form.values.categoryId ? 'muted' : 'default'
                               }
