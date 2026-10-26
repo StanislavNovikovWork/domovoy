@@ -52,6 +52,67 @@ export function groupByCategory(items: TransactionItem[]): CategoryTotal[] {
   return [...map.values()].sort((a, b) => b.total - a.total);
 }
 
+export type SettlementRow = {
+  name: string;
+  paid: number; // копейки, сколько человек заплатил за всех
+  spent: number; // копейки, его фактическая доля расходов
+  balance: number; // paid - spent: >0 — ему должны, <0 — он должен
+};
+
+export type Transfer = { from: string; to: string; amount: number };
+
+// Расчёт в разовом бюджете: у каждого участника баланс = заплатил − потратил.
+// Доля человека в операции — его share.amount; если доли не покрывают сумму целиком
+// (или их нет), остаток считаем тратой того, кто платил.
+export function computeSettlement(items: TransactionItem[]): SettlementRow[] {
+  const rows = new Map<string, SettlementRow>();
+  const row = (name: string) => {
+    let r = rows.get(name);
+    if (!r) {
+      r = { name, paid: 0, spent: 0, balance: 0 };
+      rows.set(name, r);
+    }
+    return r;
+  };
+  for (const t of items) {
+    const payer = row(t.paidByName ?? '—');
+    payer.paid += t.amount;
+    let shared = 0;
+    for (const s of t.shares ?? []) {
+      row(s.name).spent += s.amount;
+      shared += s.amount;
+    }
+    if (t.amount > shared) payer.spent += t.amount - shared;
+  }
+  for (const r of rows.values()) r.balance = r.paid - r.spent;
+  return [...rows.values()].sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+}
+
+// Кто кому сколько переводит, чтобы балансы сошлись к нулю:
+// жадно сводим самого крупного должника с самым крупным кредитором.
+export function settleDebts(rows: SettlementRow[]): Transfer[] {
+  const debtors = rows
+    .filter((r) => r.balance < 0)
+    .map((r) => ({ name: r.name, left: -r.balance }));
+  const creditors = rows
+    .filter((r) => r.balance > 0)
+    .map((r) => ({ name: r.name, left: r.balance }));
+  debtors.sort((a, b) => b.left - a.left);
+  creditors.sort((a, b) => b.left - a.left);
+  const out: Transfer[] = [];
+  let i = 0,
+    j = 0;
+  while (i < debtors.length && j < creditors.length) {
+    const v = Math.min(debtors[i].left, creditors[j].left);
+    out.push({ from: debtors[i].name, to: creditors[j].name, amount: v });
+    debtors[i].left -= v;
+    creditors[j].left -= v;
+    if (debtors[i].left === 0) i++;
+    if (creditors[j].left === 0) j++;
+  }
+  return out;
+}
+
 export type PlanSubItem = {
   name: string;
   amount: number; // копейки

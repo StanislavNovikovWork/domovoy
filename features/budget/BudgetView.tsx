@@ -200,10 +200,10 @@ export function BudgetView({
     [transactions, type, period, date, periodic]
   );
 
-  // «Все расходы / Мои расходы» в списке операций разового бюджета (только мобильная раскладка)
-  const [scope, setScope] = useState<'all' | 'mine'>('all');
+  // «Все расходы / Мои расходы / Итог» в списке операций разового бюджета
+  const [scope, setScope] = useState<'all' | 'mine' | 'total'>('all');
   const visibleItems = useMemo(() => {
-    if (periodic || scope === 'all' || !currentUserId) return items;
+    if (periodic || scope !== 'mine' || !currentUserId) return items;
     return items
       .map((t) => ({ t, amount: mySpend(t, currentUserId) }))
       .filter((x) => x.amount > 0)

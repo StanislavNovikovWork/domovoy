@@ -84,6 +84,7 @@ export function SummaryCard({
           radius="xl"
           aria-label="Добавить операцию"
           onClick={onAdd}
+          style={{ zIndex: 2 }}
         >
           <IconPlus size={20} />
         </ActionIcon>
@@ -103,6 +104,7 @@ export function SummaryCard({
             onClick={onAdd}
             tabIndex={collapsed ? -1 : undefined}
             style={{
+              zIndex: 2,
               opacity: collapsed ? 0 : 1,
               pointerEvents: collapsed ? 'none' : undefined,
               transition: `opacity ${COLLAPSE_TRANSITION}`,
@@ -120,7 +122,7 @@ export function SummaryCard({
             radius="xl"
             aria-label="Добавить операцию"
             onClick={onAdd}
-            style={{ transform: 'translateY(-50%)' }}
+            style={{ transform: 'translateY(-50%)', zIndex: 2 }}
           >
             <IconPlus size={20} />
           </ActionIcon>
@@ -142,7 +144,7 @@ export function SummaryCard({
           <SimpleGrid
             cols={plan ? 2 : 1}
             spacing="lg"
-            pr={filters ? { base: 0, sm: 48 } : undefined}
+            pr={filters ? { base: 0, sm: 48 } : 48}
           >
             <Stack gap={2}>
               {periodic && (
