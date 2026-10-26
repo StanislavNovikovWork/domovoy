@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "concurrently -k -n tunnel,next -c gray,blue \"yarn db:tunnel\" \"next dev\"",
+    "dev:next": "next dev",
+    "db:tunnel": "ssh -i ${DEPLOY_KEY:-$HOME/.ssh/cash_vps} -o IdentitiesOnly=yes -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 -N -L 5432:127.0.0.1:5432 ${DEPLOY_HOST:-deploy@194.226.99.207}",
     "build": "next build",
     "analyze": "ANALYZE=true next build",
     "start": "next start",
@@ -49,6 +51,7 @@
     "@types/node": "^26.0.0",
     "@types/react": "19.3.0",
     "babel-loader": "^10.0.0",
+    "concurrently": "^10.0.6",
     "dotenv": "^18.0.5",
     "drizzle-kit": "^0.31.11",
     "jest": "^30.2.0",

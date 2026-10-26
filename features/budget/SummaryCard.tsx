@@ -104,19 +104,36 @@ export function SummaryCard({
         </ActionIcon>
       )}
       {filters && (
-        // «+» у правого края карточки по центру высоты; справа у суммы и плана оставлено место, чтобы не накрывать их
-        <ActionIcon
-          pos="absolute"
-          top="50%"
-          right={16}
-          size="lg"
-          radius="xl"
-          aria-label="Добавить операцию"
-          onClick={onAdd}
-          style={{ transform: 'translateY(-50%)' }}
-        >
-          <IconPlus size={20} />
-        </ActionIcon>
+        // справа у суммы и плана оставлено место, чтобы не накрывать их
+        <>
+          {/* мобильные: «+» в правом нижнем углу карточки */}
+          <ActionIcon
+            hiddenFrom="sm"
+            pos="absolute"
+            bottom={16}
+            right={16}
+            size="lg"
+            radius="xl"
+            aria-label="Добавить операцию"
+            onClick={onAdd}
+          >
+            <IconPlus size={20} />
+          </ActionIcon>
+          {/* десктоп: «+» у правого края карточки по центру высоты */}
+          <ActionIcon
+            visibleFrom="sm"
+            pos="absolute"
+            top="50%"
+            right={16}
+            size="lg"
+            radius="xl"
+            aria-label="Добавить операцию"
+            onClick={onAdd}
+            style={{ transform: 'translateY(-50%)' }}
+          >
+            <IconPlus size={20} />
+          </ActionIcon>
+        </>
       )}
       <Stack gap="lg">
         {filters}
