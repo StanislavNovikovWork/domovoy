@@ -2,8 +2,8 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Cash',
-    short_name: 'Cash',
+    name: 'Nest',
+    short_name: 'Nest',
     description: 'Общие и разовые бюджеты',
     lang: 'ru',
     start_url: '/',

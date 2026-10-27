@@ -9,10 +9,10 @@ import { ColorSchemeScriptOnce } from '@/shared/ui/ColorSchemeScriptOnce';
 import { theme } from '../theme';
 
 export const metadata = {
-  title: { default: 'Cash', template: '%s · Cash' },
+  title: { default: 'Nest', template: '%s · Nest' },
   description: 'Общие и разовые бюджеты',
   // iOS: запуск с экрана «Домой» без интерфейса браузера
-  appleWebApp: { capable: true, title: 'Cash', statusBarStyle: 'default' as const },
+  appleWebApp: { capable: true, title: 'Nest', statusBarStyle: 'default' as const },
 };
 
 // цвет адресной строки и системной панели в установленном приложении
