@@ -1,4 +1,5 @@
 import { ProfileView } from '@/features/profile/ProfileView';
+import { listChangelog } from '@/server/changelog/queries';
 import { requirePageSession } from '@/server/session';
 
 export const metadata = {
@@ -7,5 +8,6 @@ export const metadata = {
 
 export default async function ProfilePage() {
   const { user } = await requirePageSession('/profile');
-  return <ProfileView user={{ name: user.name, email: user.email }} />;
+  const changelog = await listChangelog();
+  return <ProfileView user={{ name: user.name, email: user.email }} changelog={changelog} />;
 }

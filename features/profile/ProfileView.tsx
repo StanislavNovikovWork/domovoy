@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { IconLogout, IconMoon } from '@tabler/icons-react';
 import {
+  Anchor,
   Avatar,
   Button,
   Group,
@@ -15,12 +16,15 @@ import {
   useComputedColorScheme,
   useMantineColorScheme,
 } from '@mantine/core';
+import type { ChangelogEntry } from '@/server/changelog/queries';
 import { authClient } from '@/shared/lib/auth-client';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
+import { ChangelogModal } from './ChangelogModal';
 
-type Props = { user: { name: string; email: string } };
+type Props = { user: { name: string; email: string }; changelog: ChangelogEntry[] };
 
-export function ProfileView({ user }: Props) {
+export function ProfileView({ user, changelog }: Props) {
+  const [changelogOpened, setChangelogOpened] = useState(false);
   const router = useRouter();
   const { setColorScheme } = useMantineColorScheme();
   // getInitialValueInEffect: на сервере схема неизвестна, иначе расхождение при гидрации
@@ -91,7 +95,21 @@ export function ProfileView({ user }: Props) {
       >
         Выйти
       </Button>
+
+      <Group justify="center" gap="xs">
+        <Text size="xs" c="dimmed">
+          Версия {process.env.NEXT_PUBLIC_APP_VERSION}
+        </Text>
+        <Anchor component="button" type="button" size="xs" onClick={() => setChangelogOpened(true)}>
+          Список изменений
+        </Anchor>
+      </Group>
     </Stack>
+    <ChangelogModal
+      opened={changelogOpened}
+      onClose={() => setChangelogOpened(false)}
+      entries={changelog}
+    />
     </>
   );
 }
