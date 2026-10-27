@@ -131,15 +131,24 @@ export async function updateTransaction(input: unknown): Promise<Result> {
   const data = parsed.data;
 
   try {
-    const { session } = await requireHouseholdAccess(data.householdId);
+    const { session, member } = await requireHouseholdAccess(data.householdId);
 
     // операция должна принадлежать этому бюджету
     const [existing] = await db
-      .select({ id: transaction.id })
+      .select({ id: transaction.id, createdBy: transaction.createdBy, kind: household.kind })
       .from(transaction)
+      .innerJoin(household, eq(household.id, transaction.householdId))
       .where(and(eq(transaction.id, data.id), eq(transaction.householdId, data.householdId)))
       .limit(1);
     if (!existing) return { ok: false, error: 'Операция не найдена' };
+
+    // в разовом бюджете участник правит только свои операции, владелец — любые
+    if (
+      existing.kind === 'one_time' &&
+      member.role !== 'owner' &&
+      existing.createdBy !== session.user.id
+    )
+      return { ok: false, error: 'Можно редактировать только свои операции' };
 
     const prepared = await prepare(data, session);
     if ('error' in prepared) return { ok: false, error: prepared.error };
@@ -185,7 +194,18 @@ export async function deleteTransaction(input: unknown): Promise<Result> {
   const data = parsed.data;
 
   try {
-    await requireHouseholdAccess(data.householdId);
+    const { session, member } = await requireHouseholdAccess(data.householdId);
+
+    // в разовом бюджете участник удаляет только свои операции, владелец — любые
+    const [existing] = await db
+      .select({ createdBy: transaction.createdBy, kind: household.kind })
+      .from(transaction)
+      .innerJoin(household, eq(household.id, transaction.householdId))
+      .where(and(eq(transaction.id, data.id), eq(transaction.householdId, data.householdId)))
+      .limit(1);
+    if (!existing) return { ok: false, error: 'Операция не найдена' };
+    if (existing.kind === 'one_time' && member.role !== 'owner' && existing.createdBy !== session.user.id)
+      return { ok: false, error: 'Можно удалять только свои операции' };
 
     const deleted = await db
       .delete(transaction)

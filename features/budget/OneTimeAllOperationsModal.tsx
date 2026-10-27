@@ -15,10 +15,13 @@ type Props = {
   onEdit: (t: TransactionItem) => void;
   // удаление выполняется оптимистично на уровне BudgetView: строка исчезает сразу
   onDelete: (id: string) => void;
+  // в разовом бюджете участник правит только свои операции, владелец — любые
+  currentUserId?: string;
+  role?: 'owner' | 'member';
 };
 
 // все операции разового бюджета: редактирование и удаление
-export function OneTimeAllOperationsModal({ opened, onClose, items, onEdit, onDelete }: Props) {
+export function OneTimeAllOperationsModal({ opened, onClose, items, onEdit, onDelete, currentUserId, role }: Props) {
   // на мобильных окно на весь экран, на десктопе обычная модалка
   const isMobile = useMediaQuery('(max-width: 47.99375em)');
   // операция, удаление которой подтверждается в окне
@@ -48,6 +51,8 @@ export function OneTimeAllOperationsModal({ opened, onClose, items, onEdit, onDe
         bare
         items={items}
         renderActions={(t) => (
+          // участник видит кнопки только у своих операций, владелец — у всех
+          role === 'member' && t.createdBy !== currentUserId ? null : (
           <Group gap={2} wrap="nowrap">
             <ActionIcon
               variant="subtle"
@@ -68,7 +73,7 @@ export function OneTimeAllOperationsModal({ opened, onClose, items, onEdit, onDe
               <IconTrash size={14} />
             </ActionIcon>
           </Group>
-        )}
+        ))}
       />
     </Modal>
     </>

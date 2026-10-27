@@ -12,6 +12,7 @@ export async function listAllTransactions(householdId: string) {
       note: transaction.note,
       paidByUserId: transaction.paidByUserId,
       paidByName: transaction.paidByName,
+      createdBy: transaction.createdBy,
       categoryId: category.id,
       categoryName: category.name,
       categoryType: category.type,

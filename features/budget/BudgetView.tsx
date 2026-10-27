@@ -87,6 +87,8 @@ type Props = {
   guestNames?: string[];
   /** текущий пользователь: плательщик по умолчанию в разовом бюджете */
   currentUserId?: string;
+  /** роль текущего пользователя: в разовом бюджете участник правит только свои операции */
+  role?: 'owner' | 'member';
   /** дополнительные пункты настроек (шестерёнка в шапке и шторка «Настройки» на мобильных), например «Участники» */
   extraSettings?: SettingsItem[];
   /** верх страницы только для мобильных (там нет шапки), например кнопка «назад» */
@@ -103,6 +105,7 @@ export function BudgetView({
   members,
   guestNames,
   currentUserId,
+  role,
   extraSettings,
   mobileTop,
 }: Props) {
@@ -536,6 +539,8 @@ export function BudgetView({
           items={typeTransactions}
           onEdit={setEditing}
           onDelete={removeTransaction}
+          currentUserId={currentUserId}
+          role={role}
         />
       )}
 

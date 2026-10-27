@@ -47,6 +47,7 @@ export function FamilyBudget({
         members={members.map((m) => ({ userId: m.userId, name: m.name }))}
         guestNames={guests.map((g) => g.name)}
         currentUserId={currentUserId}
+        role={role}
         extraSettings={[
           {
             key: 'members',

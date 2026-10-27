@@ -8,6 +8,7 @@ export type TransactionItem = {
   paidByUserId?: string | null; // кто платил: член бюджета (разовые бюджеты)
   paidByName?: string | null; // кто платил (разовые бюджеты)
   shares?: { userId: string | null; name: string; amount: number }[]; // доли участников (разовые бюджеты)
+  createdBy?: string | null; // кто внёс операцию; в разовом бюджете участник правит только свои
   categoryId: string;
   categoryName: string;
   categoryType: TxType;

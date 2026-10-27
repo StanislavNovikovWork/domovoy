@@ -238,9 +238,6 @@ export function MembersModal({
                       </Text>
                     )}
                   </Text>
-                  <Text size="xs" c="dimmed">
-                    {m.email}
-                  </Text>
                 </div>
               </Group>
               <Group gap="xs" wrap="nowrap">
