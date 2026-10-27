@@ -1,9 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import { IconPencil, IconTrash } from '@tabler/icons-react';
 import { ActionIcon, Group, Modal } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import type { TransactionItem } from '@/shared/lib/budget';
+import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { OneTimeOperations } from './OneTimeOperations';
 
 type Props = {
@@ -19,8 +21,22 @@ type Props = {
 export function OneTimeAllOperationsModal({ opened, onClose, items, onEdit, onDelete }: Props) {
   // на мобильных окно на весь экран, на десктопе обычная модалка
   const isMobile = useMediaQuery('(max-width: 47.99375em)');
+  // операция, удаление которой подтверждается в окне
+  const [confirmDelete, setConfirmDelete] = useState<TransactionItem | null>(null);
 
   return (
+    <>
+    <ConfirmModal
+      opened={!!confirmDelete}
+      onClose={() => setConfirmDelete(null)}
+      title="Удалить операцию?"
+      text="Операция будет удалена. Это нельзя отменить."
+      onConfirm={() => {
+        const t = confirmDelete;
+        setConfirmDelete(null);
+        if (t) onDelete(t.id);
+      }}
+    />
     <Modal
       opened={opened}
       onClose={onClose}
@@ -47,7 +63,7 @@ export function OneTimeAllOperationsModal({ opened, onClose, items, onEdit, onDe
               color="red"
               size="sm"
               aria-label="Удалить"
-              onClick={() => onDelete(t.id)}
+              onClick={() => setConfirmDelete(t)}
             >
               <IconTrash size={14} />
             </ActionIcon>
@@ -55,5 +71,6 @@ export function OneTimeAllOperationsModal({ opened, onClose, items, onEdit, onDe
         )}
       />
     </Modal>
+    </>
   );
 }

@@ -39,6 +39,7 @@ import type {
   HouseholdMemberItem,
   InviteItem,
 } from '@/server/households/queries';
+import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { useMobileModal } from '@/shared/ui/useMobileModal';
 
 type Props = {
@@ -100,6 +101,12 @@ export function MembersModal({
   };
 
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // участник, которого подтверждают на удаление (аккаунт или гость)
+  const [confirmMember, setConfirmMember] = useState<{
+    guest: boolean;
+    id: string;
+    name: string;
+  } | null>(null);
 
   // вызывается после подтверждения в окне Mantine
   const remove = () => {
@@ -198,6 +205,22 @@ export function MembersModal({
       </Stack>
     </Modal>
 
+    <ConfirmModal
+      opened={!!confirmMember}
+      onClose={() => setConfirmMember(null)}
+      title="Удалить участника?"
+      text={`${confirmMember?.name} будет удалён из бюджета.`}
+      onConfirm={() => {
+        const c = confirmMember;
+        setConfirmMember(null);
+        if (!c) return;
+        if (c.guest)
+          run(`guest:${c.id}`, () => removeGuest({ householdId, guestId: c.id }), 'Участник удалён');
+        else
+          run(`member:${c.id}`, () => removeMember({ householdId, userId: c.id }), 'Участник удалён');
+      }}
+    />
+
     <Modal opened={opened} onClose={onClose} title="Участники" size="md" {...mobileModal}>
       <Stack>
         <Stack gap="xs">
@@ -231,11 +254,7 @@ export function MembersModal({
                       color="red"
                       disabled={pendingKey === `member:${m.userId}`}
                       onClick={() =>
-                        run(
-                          `member:${m.userId}`,
-                          () => removeMember({ householdId, userId: m.userId }),
-                          'Участник удалён'
-                        )
+                        setConfirmMember({ guest: false, id: m.userId, name: m.name })
                       }
                     >
                       <IconUserMinus size={16} />
@@ -264,11 +283,7 @@ export function MembersModal({
                       color="red"
                       disabled={pendingKey === `guest:${g.id}`}
                       onClick={() =>
-                        run(
-                          `guest:${g.id}`,
-                          () => removeGuest({ householdId, guestId: g.id }),
-                          'Участник удалён'
-                        )
+                        setConfirmMember({ guest: true, id: g.id, name: g.name })
                       }
                     >
                       <IconUserMinus size={16} />

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { IconLogout, IconMoon } from '@tabler/icons-react';
 import {
@@ -15,6 +16,7 @@ import {
   useMantineColorScheme,
 } from '@mantine/core';
 import { authClient } from '@/shared/lib/auth-client';
+import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 
 type Props = { user: { name: string; email: string } };
 
@@ -36,8 +38,18 @@ export function ProfileView({ user }: Props) {
   };
 
   const initials = (user.name || user.email).slice(0, 2).toUpperCase();
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
 
   return (
+    <>
+    <ConfirmModal
+      opened={confirmSignOut}
+      onClose={() => setConfirmSignOut(false)}
+      title="Выйти из профиля?"
+      text="Сессия завершится на этом устройстве."
+      confirmLabel="Выйти"
+      onConfirm={handleSignOut}
+    />
     <Stack gap="lg" maw={480}>
       <Title order={2}>Профиль</Title>
 
@@ -75,10 +87,11 @@ export function ProfileView({ user }: Props) {
         variant="light"
         color="red"
         leftSection={<IconLogout size={16} />}
-        onClick={handleSignOut}
+        onClick={() => setConfirmSignOut(true)}
       >
         Выйти
       </Button>
     </Stack>
+    </>
   );
 }

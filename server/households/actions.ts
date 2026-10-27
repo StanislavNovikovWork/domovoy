@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { and, eq, gt, isNull } from 'drizzle-orm';
+import { and, eq, gt, isNull, ne, sql } from 'drizzle-orm';
 import 'server-only';
 import { db } from '@/server/db';
 import {
@@ -29,9 +29,27 @@ import {
   revokeInviteSchema,
 } from '@/shared/schemas/household';
 
-type Result<T = object> = ({ ok: true } & T) | { ok: false; error: string };
+type Result<T = object> = ({ ok: true } & T) | { ok: false; error: string; field?: string };
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const DUPLICATE_NAME = 'Бюджет с таким названием уже есть';
+
+// у пользователя не должно быть двух бюджетов с одинаковым названием (без учёта регистра)
+async function hasDuplicateName(userId: string, name: string, excludeId?: string) {
+  const [dup] = await db
+    .select({ id: household.id })
+    .from(household)
+    .innerJoin(householdMember, eq(householdMember.householdId, household.id))
+    .where(
+      and(
+        eq(householdMember.userId, userId),
+        sql`lower(${household.name}) = lower(${name})`,
+        ...(excludeId ? [ne(household.id, excludeId)] : [])
+      )
+    )
+    .limit(1);
+  return !!dup;
+}
 
 function generateToken() {
   return Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString('base64url');
@@ -50,6 +68,9 @@ export async function createHousehold(input: unknown): Promise<Result<{ id: stri
 
   try {
     const session = await requireSession();
+    if (await hasDuplicateName(session.user.id, parsed.data.name)) {
+      return { ok: false, error: DUPLICATE_NAME, field: 'name' };
+    }
     const id = crypto.randomUUID();
     await db.transaction(async (tx) => {
       await tx.insert(household).values({
@@ -245,7 +266,10 @@ export async function renameHousehold(input: unknown): Promise<Result> {
   if (!parsed.success) return { ok: false, error: 'Введите название' };
 
   try {
-    await requireOwner(parsed.data.householdId);
+    const { session } = await requireOwner(parsed.data.householdId);
+    if (await hasDuplicateName(session.user.id, parsed.data.name, parsed.data.householdId)) {
+      return { ok: false, error: DUPLICATE_NAME, field: 'name' };
+    }
     await db
       .update(household)
       .set({ name: parsed.data.name })

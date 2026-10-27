@@ -56,6 +56,9 @@ export function BudgetsList({ budgets }: { budgets: HouseholdListItem[] }) {
       if (result.ok) {
         notifications.show({ message: 'Бюджет создан', color: 'teal' });
         router.push(`/budgets/${result.id}`);
+      } else if (result.field) {
+        // ошибки конкретного поля (дубль названия) показываем как валидация инпута
+        form.setFieldError(result.field, result.error);
       } else {
         notifications.show({ message: result.error, color: 'red' });
       }
