@@ -1,6 +1,7 @@
 'use client';
 
 import { AppShell, Box } from '@mantine/core';
+import { PullToRefresh } from '@/shared/ui/PullToRefresh';
 import { SettingsItemsProvider } from '@/shared/ui/SettingsItems';
 import { AppNavbar } from './AppNavbar';
 import { BottomNav } from './BottomNav';
@@ -18,6 +19,7 @@ export const FOOTER_HEIGHT = 'calc(72px + env(safe-area-inset-bottom, 0px))';
 export function AppShellLayout({ user, children }: Props) {
   return (
     <SettingsItemsProvider>
+      <PullToRefresh />
       <AppShell
         navbar={{ width: 240, breakpoint: 'sm', collapsed: { mobile: true } }}
         // offset: false — мейн заезжает под нижнее меню до края экрана, без пустой полосы
@@ -34,7 +36,8 @@ export function AppShellLayout({ user, children }: Props) {
           </AppShell.Section>
         </AppShell.Navbar>
 
-        <AppShell.Main>
+        {/* на мобильных без нижнего отступа: иначе страница на высоту экрана плюс padding и чуть скроллится */}
+        <AppShell.Main pb={{ base: 0, sm: 'md' }}>
           <Box>{children}</Box>
         </AppShell.Main>
 

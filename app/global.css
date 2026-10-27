@@ -6,6 +6,12 @@
   display: none;
 }
 
+/* без «резинки» и нативного pull-to-refresh: обновление делает PullToRefresh */
+html,
+body {
+  overscroll-behavior-y: none;
+}
+
 /* iOS зумирует страницу при фокусе на поле, если его шрифт меньше 16px.
    Mantine задаёт шрифт полей классом и переменной --input-fz, поэтому нужен !important */
 @media (max-width: 48em) {
