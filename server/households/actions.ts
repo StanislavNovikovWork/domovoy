@@ -170,34 +170,10 @@ export async function acceptInvite(input: unknown): Promise<Result<{ id: string 
       .limit(1);
     if (existing) return { ok: false, error: 'Вы уже в этом бюджете' };
 
-    // помечаем использованным условно: если успел кто-то другой, строк не вернётся
-    const claimed = await db
-      .update(householdInvite)
-      .set({ usedBy: userId, usedAt: new Date() })
-      .where(
-        and(
-          eq(householdInvite.id, invite.id),
-          isNull(householdInvite.usedAt),
-          isNull(householdInvite.revokedAt),
-          gt(householdInvite.expiresAt, new Date())
-        )
-      )
-      .returning({ id: householdInvite.id });
-    if (claimed.length === 0)
-      return { ok: false, error: 'Ссылка недействительна, попросите новую' };
-
-    try {
-      await db
-        .insert(householdMember)
-        .values({ householdId: invite.householdId, userId, role: 'member' });
-    } catch (error) {
-      // откатываем пометку, чтобы ссылка осталась рабочей
-      await db
-        .update(householdInvite)
-        .set({ usedBy: null, usedAt: null })
-        .where(eq(householdInvite.id, invite.id));
-      throw error;
-    }
+    // ссылка многоразовая: не помечаем её использованной, действует пока не отозвана/не истекла
+    await db
+      .insert(householdMember)
+      .values({ householdId: invite.householdId, userId, role: 'member' });
 
     revalidatePath('/budgets', 'layout');
     return { ok: true, id: invite.householdId };

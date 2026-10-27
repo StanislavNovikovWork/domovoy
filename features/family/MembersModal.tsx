@@ -335,7 +335,7 @@ export function MembersModal({
             {newLink && (
               <TextInput
                 label="Ссылка готова, отправьте её близкому"
-                description="Одноразовая, действует 7 дней"
+                description="Действует 7 дней"
                 value={newLink}
                 readOnly
                 onFocus={(e) => e.currentTarget.select()}
