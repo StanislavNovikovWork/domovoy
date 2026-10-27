@@ -6,9 +6,9 @@ import { IconLogout, IconMoon } from '@tabler/icons-react';
 import {
   Anchor,
   Avatar,
+  Box,
   Button,
   Group,
-  Indicator,
   Paper,
   Stack,
   Switch,
@@ -125,11 +125,26 @@ export function ProfileView({ user, changelog, hasNewChangelog }: Props) {
         <Text size="xs" c="dimmed">
           Версия {process.env.NEXT_PUBLIC_APP_VERSION}
         </Text>
-        <Indicator color="red" size={8} offset={-4} position="middle-end" disabled={!showNewMark}>
-          <Anchor component="button" type="button" size="xs" onClick={openChangelog}>
-            Список изменений
-          </Anchor>
-        </Indicator>
+        <Anchor
+          component="button"
+          type="button"
+          size="xs"
+          lh={1.55}
+          onClick={openChangelog}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+        >
+          Список изменений
+          {showNewMark && (
+            <Box
+              component="span"
+              w={8}
+              h={8}
+              bg="red"
+              aria-label="Есть новые изменения"
+              style={{ borderRadius: '50%' }}
+            />
+          )}
+        </Anchor>
       </Group>
     </Stack>
     <ChangelogModal
