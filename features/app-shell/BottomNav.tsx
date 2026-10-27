@@ -68,10 +68,10 @@ export function BottomNav({ profileBadge = false }: { profileBadge?: boolean }) 
     <>
       <nav style={{ display: 'flex', height: '100%' }} aria-label="Основное меню">
         <Item
-          href="/budgets"
-          label="Бюджеты"
+          href="/"
+          label="Главная"
           icon={<IconUsers size={22} />}
-          active={pathname.startsWith('/budgets')}
+          active={pathname === '/' || pathname.startsWith('/budgets')}
         />
         <Item
           href="/profile"

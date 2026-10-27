@@ -61,7 +61,7 @@ export function FamilyBudget({
           <Box pos="relative" h={36}>
             <ActionIcon
               component={Link}
-              href="/budgets"
+              href="/"
               variant="default"
               size="lg"
               radius="xl"

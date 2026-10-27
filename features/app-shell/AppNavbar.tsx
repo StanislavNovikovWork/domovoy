@@ -5,7 +5,10 @@ import { usePathname } from 'next/navigation';
 import { IconUsers } from '@tabler/icons-react';
 import { NavLink } from '@mantine/core';
 
-const LINKS = [{ href: '/budgets', label: 'Мои бюджеты', icon: IconUsers }];
+const LINKS = [{ href: '/', label: 'Главная', icon: IconUsers }];
+
+// главная и страницы бюджетов (/budgets/...) — один раздел
+const isActive = (pathname: string) => pathname === '/' || pathname.startsWith('/budgets');
 
 export function AppNavbar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
@@ -19,7 +22,7 @@ export function AppNavbar({ onNavigate }: { onNavigate?: () => void }) {
           href={href}
           label={label}
           leftSection={<Icon size={18} />}
-          active={pathname.startsWith(href)}
+          active={isActive(pathname)}
           onClick={onNavigate}
           style={{ borderRadius: 'var(--mantine-radius-md)' }}
         />

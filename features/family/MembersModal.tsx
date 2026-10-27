@@ -115,7 +115,7 @@ export function MembersModal({
       const result = await deleteHousehold({ householdId });
       if (result.ok) {
         notifications.show({ message: 'Бюджет удалён', color: 'teal' });
-        router.push('/budgets');
+        router.push('/');
         router.refresh();
       } else {
         notifications.show({ message: result.error, color: 'red' });

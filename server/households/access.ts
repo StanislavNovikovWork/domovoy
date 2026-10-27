@@ -21,5 +21,5 @@ export async function requireHouseholdAccess(householdId: string) {
 
 // Операции и категории меняют страницу бюджета и список бюджетов
 export function revalidateBudgetPages() {
-  revalidatePath('/budgets', 'layout');
+  revalidatePath('/', 'layout');
 }

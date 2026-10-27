@@ -91,7 +91,7 @@ export async function createHousehold(input: unknown): Promise<Result<{ id: stri
         );
     });
 
-    revalidatePath('/budgets', 'layout');
+    revalidatePath('/', 'layout');
     return { ok: true, id };
   } catch (error) {
     console.error('createHousehold failed', error);
@@ -114,7 +114,7 @@ export async function createInvite(input: unknown): Promise<Result<{ token: stri
       expiresAt: new Date(Date.now() + INVITE_TTL_MS),
     });
 
-    revalidatePath('/budgets', 'layout');
+    revalidatePath('/', 'layout');
     return { ok: true, token };
   } catch (error) {
     console.error('createInvite failed', error);
@@ -140,7 +140,7 @@ export async function revokeInvite(input: unknown): Promise<Result> {
         )
       );
 
-    revalidatePath('/budgets', 'layout');
+    revalidatePath('/', 'layout');
     return { ok: true };
   } catch (error) {
     console.error('revokeInvite failed', error);
@@ -175,7 +175,7 @@ export async function acceptInvite(input: unknown): Promise<Result<{ id: string 
       .insert(householdMember)
       .values({ householdId: invite.householdId, userId, role: 'member' });
 
-    revalidatePath('/budgets', 'layout');
+    revalidatePath('/', 'layout');
     return { ok: true, id: invite.householdId };
   } catch (error) {
     console.error('acceptInvite failed', error);
@@ -202,7 +202,7 @@ export async function removeMember(input: unknown): Promise<Result> {
         )
       );
 
-    revalidatePath('/budgets', 'layout');
+    revalidatePath('/', 'layout');
     return { ok: true };
   } catch (error) {
     console.error('removeMember failed', error);
@@ -229,7 +229,7 @@ export async function leaveHousehold(input: unknown): Promise<Result> {
         )
       );
 
-    revalidatePath('/budgets', 'layout');
+    revalidatePath('/', 'layout');
     return { ok: true };
   } catch (error) {
     console.error('leaveHousehold failed', error);
@@ -251,7 +251,7 @@ export async function renameHousehold(input: unknown): Promise<Result> {
       .set({ name: parsed.data.name })
       .where(eq(household.id, parsed.data.householdId));
 
-    revalidatePath('/budgets', 'layout');
+    revalidatePath('/', 'layout');
     return { ok: true };
   } catch (error) {
     console.error('renameHousehold failed', error);
@@ -271,7 +271,7 @@ export async function addGuest(input: unknown): Promise<Result> {
       .values({ householdId: parsed.data.householdId, name: parsed.data.name })
       .onConflictDoNothing();
 
-    revalidatePath('/budgets', 'layout');
+    revalidatePath('/', 'layout');
     return { ok: true };
   } catch (error) {
     console.error('addGuest failed', error);
@@ -294,7 +294,7 @@ export async function removeGuest(input: unknown): Promise<Result> {
         )
       );
 
-    revalidatePath('/budgets', 'layout');
+    revalidatePath('/', 'layout');
     return { ok: true };
   } catch (error) {
     console.error('removeGuest failed', error);
@@ -310,7 +310,7 @@ export async function deleteHousehold(input: unknown): Promise<Result> {
     await requireOwner(parsed.data.householdId);
     await db.delete(household).where(eq(household.id, parsed.data.householdId));
 
-    revalidatePath('/budgets', 'layout');
+    revalidatePath('/', 'layout');
     return { ok: true };
   } catch (error) {
     console.error('deleteHousehold failed', error);

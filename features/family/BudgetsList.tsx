@@ -3,11 +3,10 @@
 import { useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { IconPlus, IconUsers } from '@tabler/icons-react';
+import { IconCrown, IconPlus, IconUsers } from '@tabler/icons-react';
 import {
-  ActionIcon,
-  Badge,
   Button,
+  Box,
   Card,
   Checkbox,
   Container,
@@ -17,7 +16,6 @@ import {
   Stack,
   Text,
   TextInput,
-  Title,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useDisclosure } from '@mantine/hooks';
@@ -25,14 +23,6 @@ import { notifications } from '@mantine/notifications';
 import { createHousehold } from '@/server/households/actions';
 import type { HouseholdListItem } from '@/server/households/queries';
 import { useMobileModal } from '@/shared/ui/useMobileModal';
-
-const pluralMembers = (n: number) => {
-  const mod10 = n % 10;
-  const mod100 = n % 100;
-  if (mod10 === 1 && mod100 !== 11) return `${n} участник`;
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${n} участника`;
-  return `${n} участников`;
-};
 
 export function BudgetsList({ budgets }: { budgets: HouseholdListItem[] }) {
   const router = useRouter();
@@ -68,13 +58,6 @@ export function BudgetsList({ budgets }: { budgets: HouseholdListItem[] }) {
   return (
     <Container size="md" p={0} mx={0}>
       <Stack gap="lg">
-        <Group justify="space-between">
-          <Title order={2}>Мои бюджеты</Title>
-          <ActionIcon size="lg" aria-label="Создать бюджет" onClick={modal.open}>
-            <IconPlus size={20} />
-          </ActionIcon>
-        </Group>
-
         <Modal opened={opened} onClose={close} title="Новый бюджет" {...mobileModal}>
           <form onSubmit={handleSubmit}>
             <Stack>
@@ -97,31 +80,65 @@ export function BudgetsList({ budgets }: { budgets: HouseholdListItem[] }) {
           </form>
         </Modal>
 
-        {budgets.length === 0 ? (
+        {budgets.length === 0 && (
           <Text c="dimmed">
             Здесь пока пусто. Создайте бюджет под любую цель или проект и пригласите в него других
             людей. Если вас уже пригласили, откройте ссылку из приглашения.
           </Text>
-        ) : (
-          <SimpleGrid cols={{ base: 1, sm: 2 }}>
-            {budgets.map((b) => (
-              <Card key={b.id} withBorder radius="md" component={Link} href={`/budgets/${b.id}`}>
-                <Group justify="space-between" wrap="nowrap">
-                  <Text fw={600} truncate>
-                    {b.name}
-                  </Text>
-                  <Badge variant="light" color={b.role === 'owner' ? 'teal' : 'gray'}>
-                    {b.role === 'owner' ? 'Владелец' : 'Участник'}
-                  </Badge>
-                </Group>
-                <Group gap={6} mt="xs" c="dimmed">
-                  <IconUsers size={16} />
-                  <Text size="sm">{pluralMembers(b.membersCount)}</Text>
-                </Group>
-              </Card>
-            ))}
-          </SimpleGrid>
         )}
+
+        {/* два бюджета в ряд на любом экране */}
+        <SimpleGrid cols={2}>
+          {budgets.map((b) => (
+            <Card
+              key={b.id}
+              withBorder
+              radius="md"
+              component={Link}
+              href={`/budgets/${b.id}`}
+              mih={140}
+            >
+              {b.role === 'owner' && (
+                <IconCrown
+                  size={18}
+                  aria-label="Вы владелец"
+                  style={{
+                    position: 'absolute',
+                    top: 'var(--mantine-spacing-md)',
+                    right: 'var(--mantine-spacing-md)',
+                    color: 'var(--mantine-color-yellow-6)',
+                  }}
+                />
+              )}
+              <Stack h="100%" justify="space-between" gap="xs">
+                <Box h={18} />
+                <Text fw={600} ta="center" lineClamp={3} px="xs">
+                  {b.name}
+                </Text>
+                <Group gap={6} c="dimmed" wrap="nowrap" aria-label="Участников">
+                  <IconUsers size={16} />
+                  <Text size="sm">{b.membersCount}</Text>
+                </Group>
+              </Stack>
+            </Card>
+          ))}
+
+          <Card
+            withBorder
+            radius="md"
+            component="button"
+            type="button"
+            mih={140}
+            onClick={modal.open}
+            aria-label="Создать бюджет"
+            style={{ borderStyle: 'dashed', cursor: 'pointer', background: 'transparent' }}
+          >
+            <Stack gap={4} align="center" justify="center" h="100%" c="dimmed">
+              <IconPlus size={28} />
+              <Text size="sm">Новый бюджет</Text>
+            </Stack>
+          </Card>
+        </SimpleGrid>
       </Stack>
     </Container>
   );

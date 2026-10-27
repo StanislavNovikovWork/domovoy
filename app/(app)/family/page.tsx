@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 
-// старый адрес: общие бюджеты переехали на /budgets
+// старый адрес: список бюджетов теперь на главной
 export default function FamilyPage() {
-  redirect('/budgets');
+  redirect('/');
 }
