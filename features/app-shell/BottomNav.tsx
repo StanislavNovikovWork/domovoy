@@ -4,7 +4,7 @@ import { useEffect, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { IconChevronRight, IconSettings, IconUser, IconUsers } from '@tabler/icons-react';
-import { ActionIcon, Modal, NavLink, Stack, Text, UnstyledButton } from '@mantine/core';
+import { ActionIcon, Indicator, Modal, NavLink, Stack, Text, UnstyledButton } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { useSettingsItems } from '@/shared/ui/SettingsItems';
 
@@ -53,7 +53,7 @@ function Item({
 }
 
 // нижнее меню на мобильных: бюджеты, настройки и профиль
-export function BottomNav() {
+export function BottomNav({ profileBadge = false }: { profileBadge?: boolean }) {
   const pathname = usePathname();
   const [settingsOpened, settings] = useDisclosure(false);
   const items = useSettingsItems();
@@ -76,7 +76,11 @@ export function BottomNav() {
         <Item
           href="/profile"
           label="Профиль"
-          icon={<IconUser size={22} />}
+          icon={
+            <Indicator color="red" size={9} offset={2} disabled={!profileBadge} aria-hidden>
+              <IconUser size={22} />
+            </Indicator>
+          }
           active={pathname.startsWith('/profile')}
         />
       </nav>

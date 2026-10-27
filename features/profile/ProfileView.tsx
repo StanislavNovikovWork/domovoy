@@ -8,6 +8,7 @@ import {
   Avatar,
   Button,
   Group,
+  Indicator,
   Paper,
   Stack,
   Switch,
@@ -16,16 +17,31 @@ import {
   useComputedColorScheme,
   useMantineColorScheme,
 } from '@mantine/core';
+import { markChangelogSeen } from '@/server/changelog/actions';
 import type { ChangelogEntry } from '@/server/changelog/queries';
 import { FOOTER_HEIGHT } from '@/features/app-shell';
 import { authClient } from '@/shared/lib/auth-client';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { ChangelogModal } from './ChangelogModal';
 
-type Props = { user: { name: string; email: string }; changelog: ChangelogEntry[] };
+type Props = {
+  user: { name: string; email: string };
+  changelog: ChangelogEntry[];
+  hasNewChangelog: boolean;
+};
 
-export function ProfileView({ user, changelog }: Props) {
+export function ProfileView({ user, changelog, hasNewChangelog }: Props) {
   const [changelogOpened, setChangelogOpened] = useState(false);
+  // пометка гаснет сразу при открытии; на сервере отметка сохраняется в фоне
+  const [changelogSeen, setChangelogSeen] = useState(false);
+  const showNewMark = hasNewChangelog && !changelogSeen;
+
+  const openChangelog = () => {
+    setChangelogOpened(true);
+    if (!showNewMark) return;
+    setChangelogSeen(true);
+    markChangelogSeen().then(() => router.refresh());
+  };
   const router = useRouter();
   const { setColorScheme } = useMantineColorScheme();
   // getInitialValueInEffect: на сервере схема неизвестна, иначе расхождение при гидрации
@@ -109,9 +125,11 @@ export function ProfileView({ user, changelog }: Props) {
         <Text size="xs" c="dimmed">
           Версия {process.env.NEXT_PUBLIC_APP_VERSION}
         </Text>
-        <Anchor component="button" type="button" size="xs" onClick={() => setChangelogOpened(true)}>
-          Список изменений
-        </Anchor>
+        <Indicator color="red" size={8} offset={-4} position="middle-end" disabled={!showNewMark}>
+          <Anchor component="button" type="button" size="xs" onClick={openChangelog}>
+            Список изменений
+          </Anchor>
+        </Indicator>
       </Group>
     </Stack>
     <ChangelogModal

@@ -7,7 +7,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!session) return null;
 
   return (
-    <AppShellLayout user={{ name: session.user.name, email: session.user.email }}>
+    <AppShellLayout
+      user={{ name: session.user.name, email: session.user.email }}
+      hasNewChangelog={session.user.changelogSeenVersion !== process.env.NEXT_PUBLIC_APP_VERSION}
+    >
       {children}
     </AppShellLayout>
   );

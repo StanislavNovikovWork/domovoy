@@ -9,6 +9,8 @@ import { UserMenu } from './UserMenu';
 
 type Props = {
   user: { name: string; email: string };
+  /** вышла новая версия, список изменений которой пользователь ещё не открывал: красная точка на «Профиль» */
+  hasNewChangelog: boolean;
   children: React.ReactNode;
 };
 
@@ -16,7 +18,7 @@ type Props = {
 export const FOOTER_HEIGHT = 'calc(72px + env(safe-area-inset-bottom, 0px))';
 
 // десктоп: только боковая панель (профиль внизу); мобильные: навигация в нижнем меню. Шапки нет
-export function AppShellLayout({ user, children }: Props) {
+export function AppShellLayout({ user, hasNewChangelog, children }: Props) {
   return (
     <SettingsItemsProvider>
       <PullToRefresh />
@@ -45,7 +47,7 @@ export function AppShellLayout({ user, children }: Props) {
           hiddenFrom="sm"
           pb="calc(env(safe-area-inset-bottom, 0px) + 12px)"
         >
-          <BottomNav />
+          <BottomNav profileBadge={hasNewChangelog} />
         </AppShell.Footer>
       </AppShell>
     </SettingsItemsProvider>

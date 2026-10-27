@@ -120,6 +120,13 @@
       "when": 1793101491114,
       "tag": "0016_app_changelog",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1793103214122,
+      "tag": "0017_user_changelog_seen",
+      "breakpoints": true
     }
   ]
 }
