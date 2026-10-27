@@ -32,14 +32,15 @@ export function LoginForm({ next = '/' }: { next?: string }) {
 
     if (error) {
       setLoading(false);
-      notifications.show({
-        color: 'red',
-        title: 'Не удалось войти',
-        message:
-          error.code === 'INVALID_EMAIL_OR_PASSWORD'
-            ? 'Неверный email или пароль'
-            : (error.message ?? 'Что-то пошло не так, попробуйте ещё раз'),
-      });
+      if (error.code === 'INVALID_EMAIL_OR_PASSWORD') {
+        form.setFieldError('password', 'Неверный email или пароль');
+      } else {
+        notifications.show({
+          color: 'red',
+          title: 'Не удалось войти',
+          message: error.message ?? 'Что-то пошло не так, попробуйте ещё раз',
+        });
+      }
       return;
     }
 
