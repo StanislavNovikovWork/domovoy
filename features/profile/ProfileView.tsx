@@ -17,6 +17,7 @@ import {
   useMantineColorScheme,
 } from '@mantine/core';
 import type { ChangelogEntry } from '@/server/changelog/queries';
+import { FOOTER_HEIGHT } from '@/features/app-shell';
 import { authClient } from '@/shared/lib/auth-client';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { ChangelogModal } from './ChangelogModal';
@@ -54,7 +55,15 @@ export function ProfileView({ user, changelog }: Props) {
       confirmLabel="Выйти"
       onConfirm={handleSignOut}
     />
-    <Stack gap="lg" maw={480}>
+    {/* высота экрана минус отступы мейна и нижнее меню (на мобильных): версия уходит в самый низ */}
+    <Stack
+      gap="lg"
+      maw={480}
+      mih={{
+        base: `calc(100dvh - var(--mantine-spacing-md) - ${FOOTER_HEIGHT})`,
+        sm: 'calc(100dvh - 2 * var(--mantine-spacing-md))',
+      }}
+    >
       <Title order={2}>Профиль</Title>
 
       <Paper
@@ -96,7 +105,7 @@ export function ProfileView({ user, changelog }: Props) {
         Выйти
       </Button>
 
-      <Group justify="center" gap="xs">
+      <Group justify="center" gap="xs" mt="auto" pb="xl">
         <Text size="xs" c="dimmed">
           Версия {process.env.NEXT_PUBLIC_APP_VERSION}
         </Text>

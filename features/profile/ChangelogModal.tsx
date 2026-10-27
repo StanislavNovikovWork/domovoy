@@ -1,6 +1,6 @@
 'use client';
 
-import { List, Modal, Stack, Text, Title } from '@mantine/core';
+import { Accordion, List, Modal, Text } from '@mantine/core';
 import type { ChangelogEntry } from '@/server/changelog/queries';
 
 type Props = {
@@ -16,28 +16,33 @@ const formatDate = (iso: string) =>
     year: 'numeric',
   });
 
-// список изменений приложения на весь экран: версия, дата и короткие пункты
+// список изменений приложения на весь экран: версии сворачиваются, свежая раскрыта
 export function ChangelogModal({ opened, onClose, entries }: Props) {
   return (
     <Modal opened={opened} onClose={onClose} title="Список изменений" fullScreen>
-      <Stack gap="xl" maw={640} mx="auto">
-        {entries.length === 0 && <Text c="dimmed">Пока нет записей.</Text>}
-        {entries.map((e) => (
-          <Stack key={e.version} gap="xs">
-            <div>
-              <Title order={4}>Версия {e.version}</Title>
-              <Text size="sm" c="dimmed">
-                {formatDate(e.releasedOn)}
-              </Text>
-            </div>
-            <List size="sm" spacing={4}>
-              {e.items.map((item) => (
-                <List.Item key={item}>{item}</List.Item>
-              ))}
-            </List>
-          </Stack>
-        ))}
-      </Stack>
+      {entries.length === 0 ? (
+        <Text c="dimmed">Пока нет записей.</Text>
+      ) : (
+        <Accordion defaultValue={entries[0].version} maw={640} mx="auto">
+          {entries.map((e) => (
+            <Accordion.Item key={e.version} value={e.version}>
+              <Accordion.Control>
+                <Text fw={600}>Версия {e.version}</Text>
+                <Text size="sm" c="dimmed">
+                  {formatDate(e.releasedOn)}
+                </Text>
+              </Accordion.Control>
+              <Accordion.Panel>
+                <List size="sm" spacing={4}>
+                  {e.items.map((item) => (
+                    <List.Item key={item}>{item}</List.Item>
+                  ))}
+                </List>
+              </Accordion.Panel>
+            </Accordion.Item>
+          ))}
+        </Accordion>
+      )}
     </Modal>
   );
 }
