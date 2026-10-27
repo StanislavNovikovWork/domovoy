@@ -18,7 +18,13 @@ export const metadata = {
 };
 
 // цвет адресной строки и системной панели в установленном приложении
-export const viewport = { themeColor: '#2457e6' };
+// совпадает с фоном страницы (Mantine: белый и dark.7), чтобы статус-бар Android сливался с приложением
+export const viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#242424' },
+  ],
+};
 
 export default function RootLayout({ children }: { children: any }) {
   return (
