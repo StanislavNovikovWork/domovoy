@@ -20,6 +20,7 @@ import {
 import { useForm } from '@mantine/form';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
+import { BOTTOM_INSET } from '@/features/app-shell';
 import { createHousehold } from '@/server/households/actions';
 import type { HouseholdListItem } from '@/server/households/queries';
 import { useMobileModal } from '@/shared/ui/useMobileModal';
@@ -56,7 +57,7 @@ export function BudgetsList({ budgets }: { budgets: HouseholdListItem[] }) {
   });
 
   return (
-    <Container size="md" p={0} mx={0}>
+    <Container size="md" p={0} mx={0} pb={BOTTOM_INSET}>
       <Stack gap="lg">
         <Modal opened={opened} onClose={close} title="Новый бюджет" {...mobileModal}>
           <form onSubmit={handleSubmit}>

@@ -16,7 +16,7 @@ import {
   Stack,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { FOOTER_HEIGHT } from '@/features/app-shell';
+import { BackButton, BOTTOM_INSET } from '@/features/app-shell';
 import { CategoriesModal } from '@/features/categories';
 import {
   createTransaction,
@@ -91,6 +91,8 @@ type Props = {
   role?: 'owner' | 'member';
   /** дополнительные пункты настроек (шестерёнка в шапке и шторка «Настройки» на мобильных), например «Участники» */
   extraSettings?: SettingsItem[];
+  /** куда ведёт «назад» в левом верхнем углу на десктопе (на мобильных она внутри mobileTop) */
+  backHref?: string;
   /** верх страницы только для мобильных (там нет шапки), например кнопка «назад» */
   mobileTop?: ReactNode;
 };
@@ -107,6 +109,7 @@ export function BudgetView({
   currentUserId,
   role,
   extraSettings,
+  backHref,
   mobileTop,
 }: Props) {
   // оптимистичный список: операция появляется, изменяется или исчезает сразу, запрос идёт в фоне.
@@ -362,6 +365,11 @@ export function BudgetView({
       {/* десктоп: кнопка настроек в правом верхнем углу экрана, поверх контента и не сдвигает его вниз.
           Отрицательные отступы -4px ставят её в 12px от краёв экрана (поле страницы 16px).
           На мобильных настройки открываются кнопкой в углу из нижнего меню */}
+      {backHref && (
+        <Box visibleFrom="sm" pos="absolute" top={-4} left={-4} style={{ zIndex: 10 }}>
+          <BackButton href={backHref} label="К пространству" />
+        </Box>
+      )}
       <Box visibleFrom="sm" pos="absolute" top={-4} right={-4} style={{ zIndex: 10 }}>
         <Menu position="bottom-end" shadow="md" width={200}>
           <Menu.Target>
@@ -438,13 +446,13 @@ export function BudgetView({
                   </Box>
                 </Collapse>
               </Box>
-              <Box pb={`calc(${FOOTER_HEIGHT} + 160px)`}>{periodicTabs(true)}</Box>
+              <Box pb={`calc(${BOTTOM_INSET} + 160px)`}>{periodicTabs(true)}</Box>
             </ScrollArea>
           ) : (
             // разовый бюджет: без табов; прокручивается только эта область без видимой полосы,
             // остальное закреплено; запас снизу, чтобы список доскролливался выше нижнего меню
             <ScrollArea type="never" style={{ flex: 1, minHeight: 0 }}>
-              <Box pb={FOOTER_HEIGHT}>
+              <Box pb={BOTTOM_INSET}>
                 <OneTimeOperations
                   items={visibleItems}
                   onShowAll={allModal.open}
@@ -457,7 +465,7 @@ export function BudgetView({
         </Stack>
 
         {/* десктоп: сводка и список операций слева, справа план (периодический) или ожидаемые платежи (разовый) */}
-        <Grid gap="lg" visibleFrom="lg">
+        <Grid gap="lg" visibleFrom="lg" pb={BOTTOM_INSET}>
           <Grid.Col span={{ base: 12, lg: periodic ? 'content' : 8 }}>
             {/* периодический бюджет: левая часть шириной 720px, план затрат встаёт рядом с ней */}
             <Stack gap="lg" style={periodic ? { width: 720, maxWidth: '100%' } : undefined}>

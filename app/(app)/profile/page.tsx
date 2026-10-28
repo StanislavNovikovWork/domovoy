@@ -1,4 +1,5 @@
 import { ProfileView } from '@/features/profile/ProfileView';
+import { hasUnseenChangelog } from '@/server/changelog/seen';
 import { listChangelog } from '@/server/changelog/queries';
 import { requirePageSession } from '@/server/session';
 
@@ -13,7 +14,7 @@ export default async function ProfilePage() {
     <ProfileView
       user={{ name: user.name, email: user.email }}
       changelog={changelog}
-      hasNewChangelog={user.changelogSeenVersion !== process.env.NEXT_PUBLIC_APP_VERSION}
+      hasNewChangelog={hasUnseenChangelog(user)}
     />
   );
 }

@@ -1,59 +1,14 @@
 'use client';
 
-import { useEffect, type ReactNode } from 'react';
-import Link from 'next/link';
+import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import { IconChevronRight, IconSettings, IconUser, IconUsers } from '@tabler/icons-react';
-import { ActionIcon, Indicator, Modal, NavLink, Stack, Text, UnstyledButton } from '@mantine/core';
+import { IconChevronRight, IconSettings } from '@tabler/icons-react';
+import { ActionIcon, Modal, NavLink, Stack } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { useSettingsItems } from '@/shared/ui/SettingsItems';
 
-function Item({
-  label,
-  icon,
-  active,
-  href,
-  onClick,
-}: {
-  label: string;
-  icon: ReactNode;
-  active?: boolean;
-  href?: string;
-  onClick?: () => void;
-}) {
-  const style = {
-    flex: 1,
-    height: '100%',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
-    color: active ? 'var(--mantine-primary-color-filled)' : 'var(--mantine-color-dimmed)',
-  } as const;
-
-  const content = (
-    <>
-      {icon}
-      <Text size="xs" fw={active ? 600 : 400} c="inherit" lh={1.2}>
-        {label}
-      </Text>
-    </>
-  );
-
-  return href ? (
-    <UnstyledButton component={Link} href={href} aria-current={active ? 'page' : undefined} style={style}>
-      {content}
-    </UnstyledButton>
-  ) : (
-    <UnstyledButton onClick={onClick} style={style}>
-      {content}
-    </UnstyledButton>
-  );
-}
-
-// нижнее меню на мобильных: бюджеты, настройки и профиль
-export function BottomNav({ profileBadge = false }: { profileBadge?: boolean }) {
+// мобильные: кнопка настроек раздела в правом верхнем углу и полноэкранное окно с пунктами
+export function MobileSettings() {
   const pathname = usePathname();
   const [settingsOpened, settings] = useDisclosure(false);
   const items = useSettingsItems();
@@ -66,28 +21,10 @@ export function BottomNav({ profileBadge = false }: { profileBadge?: boolean }) 
 
   return (
     <>
-      <nav style={{ display: 'flex', height: '100%' }} aria-label="Основное меню">
-        <Item
-          href="/"
-          label="Главная"
-          icon={<IconUsers size={22} />}
-          active={pathname === '/' || pathname.startsWith('/budgets')}
-        />
-        <Item
-          href="/profile"
-          label="Профиль"
-          icon={
-            <Indicator color="red" size={9} offset={2} disabled={!profileBadge} aria-hidden>
-              <IconUser size={22} />
-            </Indicator>
-          }
-          active={pathname.startsWith('/profile')}
-        />
-      </nav>
-
       {/* настройки бюджета — фиксированная кнопка в правом верхнем углу экрана */}
       {items.length > 0 && (
         <ActionIcon
+          hiddenFrom="sm"
           variant="default"
           size="lg"
           radius="xl"

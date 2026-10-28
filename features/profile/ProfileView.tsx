@@ -13,13 +13,12 @@ import {
   Stack,
   Switch,
   Text,
-  Title,
   useComputedColorScheme,
   useMantineColorScheme,
 } from '@mantine/core';
 import { markChangelogSeen } from '@/server/changelog/actions';
 import type { ChangelogEntry } from '@/server/changelog/queries';
-import { FOOTER_HEIGHT } from '@/features/app-shell';
+import { BOTTOM_INSET, PageTopBar } from '@/features/app-shell';
 import { authClient } from '@/shared/lib/auth-client';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { ChangelogModal } from './ChangelogModal';
@@ -71,16 +70,14 @@ export function ProfileView({ user, changelog, hasNewChangelog }: Props) {
       confirmLabel="Выйти"
       onConfirm={handleSignOut}
     />
-    {/* высота экрана минус отступы мейна и нижнее меню (на мобильных): версия уходит в самый низ */}
+    {/* высота экрана минус верхний отступ мейна: версия уходит в самый низ */}
     <Stack
       gap="lg"
       maw={480}
-      mih={{
-        base: `calc(100dvh - var(--mantine-spacing-md) - ${FOOTER_HEIGHT})`,
-        sm: 'calc(100dvh - 2 * var(--mantine-spacing-md))',
-      }}
+      mih="calc(100dvh - var(--mantine-spacing-md))"
+      pb={BOTTOM_INSET}
     >
-      <Title order={2}>Профиль</Title>
+      <PageTopBar backHref="/" backLabel="На главную" title="Профиль" />
 
       <Paper
         radius="lg"

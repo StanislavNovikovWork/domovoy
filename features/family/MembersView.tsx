@@ -40,11 +40,8 @@ import type {
   InviteItem,
 } from '@/server/households/queries';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
-import { useMobileModal } from '@/shared/ui/useMobileModal';
 
 type Props = {
-  opened: boolean;
-  onClose: () => void;
   householdId: string;
   name: string;
   currentUserId: string;
@@ -56,9 +53,7 @@ type Props = {
 
 const ROLE_LABEL = { owner: 'Владелец', member: 'Участник' } as const;
 
-export function MembersModal({
-  opened,
-  onClose,
+export function MembersView({
   householdId,
   name,
   currentUserId,
@@ -68,7 +63,6 @@ export function MembersModal({
   invites,
 }: Props) {
   const router = useRouter();
-  const mobileModal = useMobileModal();
   // ключ выполняемого действия: загрузка показывается только на нажатой кнопке
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const track = async (key: string, fn: () => Promise<void>) => {
@@ -156,7 +150,7 @@ export function MembersModal({
       const result = await leaveHousehold({ householdId });
       if (result.ok) {
         notifications.show({ message: 'Вы вышли из бюджета', color: 'teal' });
-        onClose();
+        router.push('/');
         router.refresh();
       } else {
         notifications.show({ message: result.error, color: 'red' });
@@ -221,8 +215,7 @@ export function MembersModal({
       }}
     />
 
-    <Modal opened={opened} onClose={onClose} title="Участники" size="md" {...mobileModal}>
-      <Stack>
+    <Stack maw={480}>
         <Stack gap="xs">
           {members.map((m) => (
             <Group key={m.userId} justify="space-between" wrap="nowrap">
@@ -428,7 +421,7 @@ export function MembersModal({
               </Button>
             </Group>
             <Button
-              variant="subtle"
+              variant="light"
               color="red"
               onClick={() => setConfirmDelete(true)}
               loading={pendingKey === 'delete'}
@@ -439,12 +432,11 @@ export function MembersModal({
         )}
 
         {!isOwner && (
-          <Button variant="subtle" color="red" onClick={leave} loading={pendingKey === 'leave'}>
+          <Button variant="light" color="red" onClick={leave} loading={pendingKey === 'leave'}>
             Выйти из бюджета
           </Button>
         )}
-      </Stack>
-    </Modal>
+    </Stack>
     </>
   );
 }

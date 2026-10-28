@@ -6,12 +6,5 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // редиректит на /login сама страница через requirePageSession — она знает свой путь для next
   if (!session) return null;
 
-  return (
-    <AppShellLayout
-      user={{ name: session.user.name, email: session.user.email }}
-      hasNewChangelog={session.user.changelogSeenVersion !== process.env.NEXT_PUBLIC_APP_VERSION}
-    >
-      {children}
-    </AppShellLayout>
-  );
+  return <AppShellLayout>{children}</AppShellLayout>;
 }
