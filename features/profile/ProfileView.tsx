@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { IconLogout, IconMoon } from '@tabler/icons-react';
 import {
@@ -43,8 +43,12 @@ export function ProfileView({ user, changelog, hasNewChangelog }: Props) {
   };
   const router = useRouter();
   const { setColorScheme } = useMantineColorScheme();
-  // getInitialValueInEffect: на сервере схема неизвестна, иначе расхождение при гидрации
-  const dark = useComputedColorScheme('light', { getInitialValueInEffect: true }) === 'dark';
+  // на сервере схема неизвестна: реальное состояние показываем только после монтирования,
+  // иначе HTML сервера (checked=false) расходится с первым рендером клиента
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const dark =
+    useComputedColorScheme('light', { getInitialValueInEffect: true }) === 'dark' && mounted;
 
   const handleSignOut = async () => {
     await authClient.signOut({
@@ -70,7 +74,7 @@ export function ProfileView({ user, changelog, hasNewChangelog }: Props) {
       confirmLabel="Выйти"
       onConfirm={handleSignOut}
     />
-    {/* высота экрана минус верхний отступ мейна: версия уходит в самый низ */}
+    {/* высота экрана минус верхний отступ мейна: кнопка выхода уходит в самый низ */}
     <Stack
       gap="lg"
       maw={480}
@@ -109,16 +113,7 @@ export function ProfileView({ user, changelog, hasNewChangelog }: Props) {
         />
       </Group>
 
-      <Button
-        variant="light"
-        color="red"
-        leftSection={<IconLogout size={16} />}
-        onClick={() => setConfirmSignOut(true)}
-      >
-        Выйти
-      </Button>
-
-      <Group justify="center" gap="xs" mt="auto" pb="xl">
+      <Group justify="center" gap="xs" mt="auto">
         <Text size="xs" c="dimmed">
           Версия {process.env.NEXT_PUBLIC_APP_VERSION}
         </Text>
@@ -143,6 +138,16 @@ export function ProfileView({ user, changelog, hasNewChangelog }: Props) {
           )}
         </Anchor>
       </Group>
+
+      <Button
+        variant="light"
+        color="red"
+        leftSection={<IconLogout size={16} />}
+        mb="md"
+        onClick={() => setConfirmSignOut(true)}
+      >
+        Выйти
+      </Button>
     </Stack>
     <ChangelogModal
       opened={changelogOpened}

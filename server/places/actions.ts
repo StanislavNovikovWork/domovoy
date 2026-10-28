@@ -5,7 +5,7 @@ import 'server-only';
 import { db } from '@/server/db';
 import { place, placeLike } from '@/server/db/schema';
 import { requireHouseholdAccess, revalidateBudgetPages } from '@/server/households/access';
-import { createPlaceSchema, placeIdSchema } from '@/shared/schemas/place';
+import { createPlaceSchema, placeIdSchema, updatePlaceSchema } from '@/shared/schemas/place';
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -66,6 +66,37 @@ export async function togglePlaceLike(input: unknown): Promise<Result> {
   } catch (error) {
     console.error('togglePlaceLike failed', error);
     return { ok: false, error: 'Не удалось поставить лайк' };
+  }
+}
+
+// изменить место может автор или владелец пространства
+export async function updatePlace(input: unknown): Promise<Result> {
+  const parsed = updatePlaceSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: 'Введите название места' };
+  const data = parsed.data;
+
+  try {
+    const { session, member } = await requireHouseholdAccess(data.householdId);
+    const [found] = await db
+      .select({ createdBy: place.createdBy })
+      .from(place)
+      .where(and(eq(place.id, data.id), eq(place.householdId, data.householdId)))
+      .limit(1);
+    if (!found) return { ok: false, error: 'Место не найдено' };
+    if (member.role !== 'owner' && found.createdBy !== session.user.id) {
+      return { ok: false, error: 'Можно изменять только свои места' };
+    }
+
+    await db
+      .update(place)
+      .set({ name: data.name, kind: data.kind, location: data.location || null, comment: data.comment || null })
+      .where(eq(place.id, data.id));
+
+    revalidateBudgetPages();
+    return { ok: true };
+  } catch (error) {
+    console.error('updatePlace failed', error);
+    return { ok: false, error: 'Не удалось изменить место' };
   }
 }
 

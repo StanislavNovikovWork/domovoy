@@ -6,6 +6,7 @@ import {
   IconHeart,
   IconHeartFilled,
   IconMapPin,
+  IconPencil,
   IconPlus,
   IconToolsKitchen2,
   IconTrash,
@@ -25,7 +26,7 @@ import {
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { PageTopBar } from '@/features/app-shell';
-import { createPlace, deletePlace, togglePlaceLike } from '@/server/places/actions';
+import { createPlace, deletePlace, togglePlaceLike, updatePlace } from '@/server/places/actions';
 import type { PlaceItem } from '@/server/places/queries';
 import { PLACE_KINDS, type PlaceKind } from '@/shared/config/place-kinds';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
@@ -40,6 +41,7 @@ type Props = {
 
 type Action =
   | { type: 'add'; item: PlaceItem }
+  | { type: 'update'; item: PlaceItem }
   | { type: 'toggle'; id: string }
   | { type: 'remove'; id: string };
 
@@ -52,8 +54,8 @@ function KindIcon({ kind }: { kind: string }) {
   return <IconMapPin size={22} />;
 }
 
-// ссылка из карт открывается по клику; обычный текст показывается как есть
-const isUrl = (value: string) => /^https?:\/\//i.test(value);
+// ссылку можно вставить вместе с адресом: вытаскиваем её из строки, остальное не показываем
+const extractUrl = (value: string) => value.match(/https?:\/\/\S+/i)?.[0] ?? null;
 
 // больше лайков выше; при равенстве порядок сохраняется (новые идут первыми)
 const byLikes = (items: PlaceItem[]) => [...items].sort((a, b) => b.likes - a.likes);
@@ -63,6 +65,7 @@ export function PlacesView({ householdId, currentUserId, role, places }: Props) 
   const [, startTransition] = useTransition();
   const [filter, setFilter] = useState<'all' | PlaceKind>('all');
   const [addOpened, setAddOpened] = useState(false);
+  const [editing, setEditing] = useState<PlaceItem | null>(null);
   const [name, setName] = useState('');
   const [location, setLocation] = useState('');
   const [comment, setComment] = useState('');
@@ -74,6 +77,8 @@ export function PlacesView({ householdId, currentUserId, role, places }: Props) 
     switch (action.type) {
       case 'add':
         return byLikes([action.item, ...state]);
+      case 'update':
+        return byLikes(state.map((p) => (p.id === action.item.id ? { ...p, ...action.item } : p)));
       case 'toggle':
         return byLikes(
           state.map((p) =>
@@ -90,6 +95,7 @@ export function PlacesView({ householdId, currentUserId, role, places }: Props) 
   const visible = filter === 'all' ? items : items.filter((p) => p.kind === filter);
 
   const openAdd = () => {
+    setEditing(null);
     setName('');
     setLocation('');
     setComment('');
@@ -97,27 +103,37 @@ export function PlacesView({ householdId, currentUserId, role, places }: Props) 
     setAddOpened(true);
   };
 
+  const openEdit = (p: PlaceItem) => {
+    setEditing(p);
+    setName(p.name);
+    setLocation(p.location ?? '');
+    setComment(p.comment ?? '');
+    setKind(kindOf(p.kind).value);
+    setAddOpened(true);
+  };
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = name.trim();
     if (!trimmed) return;
-    const id = crypto.randomUUID();
+    const place = editing;
+    const id = place?.id ?? crypto.randomUUID();
     setAddOpened(false);
     startTransition(async () => {
-      apply({
-        type: 'add',
-        item: {
-          id,
-          name: trimmed,
-          kind,
-          location: location.trim() || null,
-          comment: comment.trim() || null,
-          createdBy: currentUserId,
-          likes: 0,
-          likedByMe: false,
-        },
-      });
-      const result = await createPlace({ id, householdId, name: trimmed, kind, location, comment });
+      const item: PlaceItem = {
+        id,
+        name: trimmed,
+        kind,
+        location: location.trim() || null,
+        comment: comment.trim() || null,
+        createdBy: place?.createdBy ?? currentUserId,
+        likes: place?.likes ?? 0,
+        likedByMe: place?.likedByMe ?? false,
+      };
+      apply({ type: place ? 'update' : 'add', item });
+      const result = place
+        ? await updatePlace({ id, householdId, name: trimmed, kind, location, comment })
+        : await createPlace({ id, householdId, name: trimmed, kind, location, comment });
       if (!result.ok) notifications.show({ message: result.error, color: 'red' });
     });
   };
@@ -190,7 +206,7 @@ export function PlacesView({ householdId, currentUserId, role, places }: Props) 
         <Stack gap="xs">
           {visible.map((p) => {
             const k = kindOf(p.kind);
-            const canDelete = role === 'owner' || p.createdBy === currentUserId;
+            const canEdit = role === 'owner' || p.createdBy === currentUserId;
             return (
               <Card key={p.id} withBorder radius="md" p="sm">
                 <Group justify="space-between" wrap="nowrap" gap="sm">
@@ -198,17 +214,25 @@ export function PlacesView({ householdId, currentUserId, role, places }: Props) 
                     <Text fw={600} lineClamp={2}>
                       {p.name}
                     </Text>
-                    {p.location && (
-                      <Anchor
-                        size="sm"
-                        truncate
-                        {...(isUrl(p.location)
-                          ? { href: p.location, target: '_blank', rel: 'noopener noreferrer' }
-                          : { component: 'span', c: 'dimmed' })}
-                      >
-                        {isUrl(p.location) ? 'Открыть на карте' : p.location}
-                      </Anchor>
-                    )}
+                    {p.location &&
+                      (() => {
+                        const url = extractUrl(p.location);
+                        return url ? (
+                          <Anchor
+                            size="sm"
+                            truncate
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            Открыть на карте
+                          </Anchor>
+                        ) : (
+                          <Text size="sm" c="dimmed" truncate>
+                            {p.location}
+                          </Text>
+                        );
+                      })()}
                     {p.comment && (
                       <Text size="sm" c="dimmed" style={{ whiteSpace: 'pre-wrap' }}>
                         {p.comment}
@@ -227,27 +251,40 @@ export function PlacesView({ householdId, currentUserId, role, places }: Props) 
                       <KindIcon kind={p.kind} />
                     </Box>
                     <Group gap={4} wrap="nowrap">
-                    {canDelete && (
-                      <ActionIcon
-                        variant="subtle"
-                        color="gray"
-                        aria-label="Удалить место"
-                        onClick={() => setConfirmDelete(p)}
-                      >
-                        <IconTrash size={16} />
-                      </ActionIcon>
+                    {canEdit && (
+                      <>
+                        <ActionIcon
+                          variant="subtle"
+                          color="gray"
+                          aria-label="Изменить место"
+                          onClick={() => openEdit(p)}
+                        >
+                          <IconPencil size={16} />
+                        </ActionIcon>
+                        <ActionIcon
+                          variant="subtle"
+                          color="gray"
+                          aria-label="Удалить место"
+                          onClick={() => setConfirmDelete(p)}
+                        >
+                          <IconTrash size={16} />
+                        </ActionIcon>
+                      </>
                     )}
-                    <Button
-                      variant={p.likedByMe ? 'light' : 'subtle'}
-                      color={p.likedByMe ? 'red' : 'gray'}
-                      size="compact-md"
-                      aria-label={p.likedByMe ? 'Убрать лайк' : 'Лайкнуть'}
-                      aria-pressed={p.likedByMe}
-                      leftSection={p.likedByMe ? <IconHeartFilled size={18} /> : <IconHeart size={18} />}
-                      onClick={() => toggleLike(p.id)}
-                    >
-                      {p.likes}
-                    </Button>
+                    <Group gap={2} wrap="nowrap">
+                      <ActionIcon
+                        variant="transparent"
+                        c={p.likedByMe ? 'red' : 'gray'}
+                        aria-label={p.likedByMe ? 'Убрать лайк' : 'Лайкнуть'}
+                        aria-pressed={p.likedByMe}
+                        onClick={() => toggleLike(p.id)}
+                      >
+                        {p.likedByMe ? <IconHeartFilled size={18} /> : <IconHeart size={18} />}
+                      </ActionIcon>
+                      <Text size="sm" c="dimmed">
+                        {p.likes}
+                      </Text>
+                    </Group>
                     </Group>
                   </Stack>
                 </Group>
@@ -257,7 +294,12 @@ export function PlacesView({ householdId, currentUserId, role, places }: Props) 
         </Stack>
       )}
 
-      <Modal opened={addOpened} onClose={() => setAddOpened(false)} title="Новое место" {...mobileModal}>
+      <Modal
+        opened={addOpened}
+        onClose={() => setAddOpened(false)}
+        title={editing ? 'Изменить место' : 'Новое место'}
+        {...mobileModal}
+      >
         <form onSubmit={submit}>
           <Stack>
             <TextInput
@@ -270,7 +312,7 @@ export function PlacesView({ householdId, currentUserId, role, places }: Props) 
             />
             <TextInput
               label="Локация"
-              placeholder="Ссылка из карт"
+              placeholder="Адрес и ссылка из карт"
               maxLength={500}
               value={location}
               onChange={(e) => setLocation(e.currentTarget.value)}
@@ -306,7 +348,7 @@ export function PlacesView({ householdId, currentUserId, role, places }: Props) 
               </Group>
             </div>
             <Button type="submit" disabled={!name.trim()}>
-              Добавить
+              {editing ? 'Сохранить' : 'Добавить'}
             </Button>
           </Stack>
         </form>

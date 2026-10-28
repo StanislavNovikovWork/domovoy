@@ -16,3 +16,7 @@ export const placeIdSchema = z.object({
   householdId: z.uuid(),
   id: z.uuid(),
 });
+
+export const updatePlaceSchema = createPlaceSchema.extend({
+  id: z.uuid(),
+});

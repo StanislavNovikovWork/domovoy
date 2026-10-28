@@ -60,7 +60,14 @@ export function SpaceHome({ householdId, name, hasNewChangelog }: Props) {
               // название слева сверху, цветная иконка справа снизу
               const body = (
                 <Stack h="100%" justify="space-between" gap="xs">
-                  <Text fw={600}>{t.label}</Text>
+                  <Stack gap={0}>
+                    <Text fw={600}>{t.label}</Text>
+                    {!t.href && (
+                      <Text size="xs" c="dimmed">
+                        В разработке
+                      </Text>
+                    )}
+                  </Stack>
                   <Group justify="flex-end">
                     {/* оттенок светлее в тёмной теме, иначе цвета тонут в фоне */}
                     <Box
