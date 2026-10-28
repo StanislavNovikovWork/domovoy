@@ -52,8 +52,17 @@ export function SpaceHome({ householdId, name, hasNewChangelog }: Props) {
 
   return (
     <Stack gap="lg" pb={BOTTOM_INSET}>
-      <HomeProfileBar hasNewChangelog={hasNewChangelog} title={name} />
-      <Container size="md" p={0} mx={0} w="100%">
+      {/* на десктопе верхняя строка не нужна: навигация и профиль в боковом меню */}
+      <Box hiddenFrom="md">
+        <HomeProfileBar hasNewChangelog={hasNewChangelog} title={name} />
+      </Box>
+      {/* на десктопе вместо плиток — боковое меню и пустой «Рабочий стол» под виджеты */}
+      <Box visibleFrom="md">
+        <Text size="xl" fw={700}>
+          Рабочий стол
+        </Text>
+      </Box>
+      <Container size="md" p={0} mx={0} w="100%" hiddenFrom="md">
         <Stack gap="lg">
           <SimpleGrid cols={2}>
             {tiles.map((t) => {

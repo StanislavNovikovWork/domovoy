@@ -20,7 +20,7 @@ export function PageTopBar({ backHref, backLabel, title, right }: Props) {
       <Text fw={600} ta="center" truncate style={{ flex: 1 }}>
         {title}
       </Text>
-      {right ?? <Box w={34} h={34} />}
+      {right ?? <Box w={34} h={34} display={{ base: 'block', md: 'none' }} />}
     </Group>
   );
 }
