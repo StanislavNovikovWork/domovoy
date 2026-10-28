@@ -259,13 +259,13 @@ export async function renameHousehold(input: unknown): Promise<Result> {
   }
 }
 
-// участник без аккаунта: любой член бюджета может вписать имя; повтор имени не создаёт дубль
+// участник без аккаунта: имя вписывает только владелец; повтор имени не создаёт дубль
 export async function addGuest(input: unknown): Promise<Result> {
   const parsed = addGuestSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: 'Введите имя' };
 
   try {
-    await requireHouseholdAccess(parsed.data.householdId);
+    await requireOwner(parsed.data.householdId);
     await db
       .insert(householdGuest)
       .values({ householdId: parsed.data.householdId, name: parsed.data.name })

@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import {
+  IconMapPin,
   IconNotes,
   IconPhoto,
   IconTargetArrow,
@@ -36,6 +37,13 @@ export function SpaceHome({ householdId, name, hasNewChangelog }: Props) {
       icon: <IconUsers size={30} />,
       color: 'blue',
       href: `/budgets/${householdId}/members`,
+    },
+    {
+      key: 'places',
+      label: 'Куда сходить',
+      icon: <IconMapPin size={30} />,
+      color: 'cyan',
+      href: `/budgets/${householdId}/places`,
     },
     { key: 'gallery', label: 'Галерея', icon: <IconPhoto size={30} />, color: 'grape' },
     { key: 'plan', label: 'План', icon: <IconTargetArrow size={30} />, color: 'orange' },

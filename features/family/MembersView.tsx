@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import {
   IconCheck,
   IconCopy,
+  IconCrown,
   IconLink,
   IconPlus,
   IconTrash,
@@ -50,8 +51,6 @@ type Props = {
   guests: HouseholdGuestItem[];
   invites: InviteItem[];
 };
-
-const ROLE_LABEL = { owner: 'Владелец', member: 'Участник' } as const;
 
 export function MembersView({
   householdId,
@@ -215,7 +214,7 @@ export function MembersView({
       }}
     />
 
-    <Stack maw={480}>
+    <Stack maw={480} pb="md" style={{ flex: 1 }}>
         <Stack gap="xs">
           {members.map((m) => (
             <Group key={m.userId} justify="space-between" wrap="nowrap">
@@ -234,9 +233,13 @@ export function MembersView({
                 </div>
               </Group>
               <Group gap="xs" wrap="nowrap">
-                <Badge variant="light" color={m.role === 'owner' ? 'teal' : 'gray'}>
-                  {ROLE_LABEL[m.role]}
-                </Badge>
+                {m.role === 'owner' && (
+                  <IconCrown
+                    size={18}
+                    aria-label="Владелец"
+                    style={{ color: 'var(--mantine-color-yellow-6)' }}
+                  />
+                )}
                 {isOwner && m.role !== 'owner' && (
                   <Tooltip label="Удалить из бюджета">
                     <ActionIcon
@@ -285,6 +288,7 @@ export function MembersView({
           ))}
         </Stack>
 
+        {isOwner && (
         <Group gap="xs" wrap="nowrap">
           <TextInput
             size="sm"
@@ -310,6 +314,7 @@ export function MembersView({
             <IconPlus size={16} />
           </ActionIcon>
         </Group>
+        )}
 
         {isOwner && (
           <>
@@ -421,6 +426,7 @@ export function MembersView({
               </Button>
             </Group>
             <Button
+              mt="auto"
               variant="light"
               color="red"
               onClick={() => setConfirmDelete(true)}
@@ -432,7 +438,7 @@ export function MembersView({
         )}
 
         {!isOwner && (
-          <Button variant="light" color="red" onClick={leave} loading={pendingKey === 'leave'}>
+          <Button mt="auto" variant="light" color="red" onClick={leave} loading={pendingKey === 'leave'}>
             Выйти из бюджета
           </Button>
         )}

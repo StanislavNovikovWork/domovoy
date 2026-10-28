@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { z } from 'zod';
-import { PageTopBar } from '@/features/app-shell';
+import { BOTTOM_INSET, PageTopBar } from '@/features/app-shell';
 import { MembersView } from '@/features/family';
 import {
   getUserHousehold,
@@ -33,7 +33,7 @@ export default async function MembersPage({ params }: Props) {
   ]);
 
   return (
-    <Stack gap="lg">
+    <Stack gap="lg" mih="calc(100dvh - var(--mantine-spacing-md))" pb={BOTTOM_INSET}>
       <PageTopBar
         backHref={`/budgets/${budget.id}`}
         backLabel="К пространству"
