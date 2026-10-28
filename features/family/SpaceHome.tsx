@@ -46,7 +46,13 @@ export function SpaceHome({ householdId, name, hasNewChangelog }: Props) {
       href: `/budgets/${householdId}/places`,
     },
     { key: 'gallery', label: 'Галерея', icon: <IconPhoto size={30} />, color: 'grape' },
-    { key: 'plan', label: 'План', icon: <IconTargetArrow size={30} />, color: 'orange' },
+    {
+      key: 'plan',
+      label: 'План затрат',
+      icon: <IconTargetArrow size={30} />,
+      color: 'orange',
+      href: `/budgets/${householdId}/plan`,
+    },
     { key: 'notes', label: 'Заметки', icon: <IconNotes size={30} />, color: 'pink' },
   ];
 

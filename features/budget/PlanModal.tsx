@@ -87,6 +87,7 @@ export function PlanModal({
       <AnimatedHeight>
         <Content
           householdId={householdId}
+          periodic={periodic}
           month={month}
           rows={rows}
           categories={categories}
@@ -99,11 +100,12 @@ export function PlanModal({
 
 function Content({
   householdId,
+  periodic,
   month,
   rows,
   categories,
   initialCategoryId,
-}: Omit<Props, 'opened' | 'periodic' | 'onClose'>) {
+}: Omit<Props, 'opened' | 'onClose'>) {
   const { pending, run } = useAction();
   const [categoryId, setCategoryId] = useState<string | null>(initialCategoryId ?? null);
 
@@ -152,8 +154,9 @@ function Content({
 
       {rows.length === 0 && (
         <Text c="dimmed" size="sm">
-          Добавьте категории и задайте, сколько планируете на них потратить. Внутри категории можно
-          расписать статьи, например «Связь»: мобильная связь, VPN, интернет.
+          {periodic
+            ? 'Добавьте категории и задайте, сколько планируете на них потратить. Внутри категории можно расписать статьи, например «Связь»: мобильная связь, VPN, интернет.'
+            : 'Добавьте категории и задайте, сколько планируете на них потратить.'}
         </Text>
       )}
 

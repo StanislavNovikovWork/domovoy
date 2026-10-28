@@ -212,6 +212,7 @@ function CategoryForm({ householdId, type, category, onDone }: FormProps) {
                 <CategoryBadge
                   icon={icon}
                   color={form.values.color}
+                  size={34}
                   state={form.values.icon === icon ? 'selected' : 'muted'}
                 />
               </UnstyledButton>

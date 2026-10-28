@@ -35,7 +35,7 @@ export function SpaceShell({ householdId, hasNewChangelog, children }: Props) {
     { label: 'Участники', icon: <IconUsers size={18} />, href: `${base}/members` },
     { label: 'Куда сходить', icon: <IconMapPin size={18} />, href: `${base}/places` },
     { label: 'Галерея', icon: <IconPhoto size={18} /> },
-    { label: 'План', icon: <IconTargetArrow size={18} /> },
+    { label: 'План затрат', icon: <IconTargetArrow size={18} />, href: `${base}/plan` },
     { label: 'Заметки', icon: <IconNotes size={18} /> },
   ];
 

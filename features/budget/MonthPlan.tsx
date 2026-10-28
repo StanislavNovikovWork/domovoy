@@ -1,7 +1,7 @@
 'use client';
 
 import { useTransition } from 'react';
-import { IconAdjustments, IconCheck, IconChevronDown } from '@tabler/icons-react';
+import { IconAdjustments, IconCheck, IconChevronDown, IconPlus } from '@tabler/icons-react';
 import {
   Box,
   Button,
@@ -28,10 +28,17 @@ type Props = {
   rows: PlanRow[];
   canCopy: boolean; // в прошлом месяце есть план
   onEdit: () => void;
-  // открыть форму операции с предзаполнением; сумма в копейках
-  onPay: (categoryId: string, name: string, amount: number) => void;
+  // открыть форму операции с предзаполнением; сумма в копейках.
+  // Без него статьи показываются простым списком, без кружков оплаты (разовый бюджет)
+  onPay?: (categoryId: string, name: string, amount: number) => void;
+  /** false: кнопок настройки нет — у разового бюджета план меняет только владелец */
+  canEdit?: boolean;
+  /** задано: рядом с «Создать план» кнопка «Настроить категории» (страница «План затрат») */
+  onEditCategories?: () => void;
   // без обводки и заголовка: внутри таба «План» на мобильных
   bare?: boolean;
+  /** true (по умолчанию): план на месяц, подпись с периодом; false у разового бюджета */
+  periodic?: boolean;
 };
 
 const divider = { borderTop: '1px solid var(--mantine-color-default-border)' } as const;
@@ -83,13 +90,18 @@ function PlanCategory({ row, onPay }: { row: PlanRow; onPay: Props['onPay'] }) {
                   <ThemeIcon radius="xl" size={16} color="teal" style={{ flexShrink: 0 }}>
                     <IconCheck size={10} />
                   </ThemeIcon>
-                ) : (
+                ) : onPay ? (
                   <PayCircle
                     size={16}
                     partial={i.spent > 0}
                     label={`Добавить операцию: ${i.name}`}
                     onClick={() => onPay(row.categoryId, i.name, i.planned - i.spent)}
                   />
+                ) : (
+                  // без оплаты (разовый бюджет): просто точка-маркер в списке
+                  <Box w={16} style={{ flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
+                    <Box w={5} h={5} bg="gray.4" style={{ borderRadius: '50%' }} />
+                  </Box>
                 )}
                 <Text size="sm" truncate style={{ flex: 1, minWidth: 0 }}>
                   {i.name}
@@ -107,7 +119,18 @@ function PlanCategory({ row, onPay }: { row: PlanRow; onPay: Props['onPay'] }) {
 }
 
 // план затрат на месяц: только цели по категориям и статьям, без операций и фактических трат
-export function MonthPlan({ householdId, month, rows, canCopy, onEdit, onPay, bare }: Props) {
+export function MonthPlan({
+  householdId,
+  month,
+  rows,
+  canCopy,
+  onEdit,
+  onPay,
+  bare,
+  periodic = true,
+  canEdit = true,
+  onEditCategories,
+}: Props) {
   const [pending, startTransition] = useTransition();
   const total = rows.reduce((acc, r) => acc + r.planned, 0);
 
@@ -130,25 +153,37 @@ export function MonthPlan({ householdId, month, rows, canCopy, onEdit, onPay, ba
               </Text>
             )}
             <Text size={bare ? 'sm' : 'xs'} c="dimmed" lh={bare ? '30px' : undefined}>
-              {formatPeriodLabel('month', month)}
-              {rows.length > 0 && ` · всего ${formatMoney(total)}`}
+              {periodic && formatPeriodLabel('month', month)}
             </Text>
           </Box>
-          <Button
-            variant="default"
-            size="xs"
-            leftSection={<IconAdjustments size={14} />}
-            onClick={onEdit}
-            style={{ flexShrink: 0 }}
-          >
-            Настроить
-          </Button>
+          {canEdit && (
+            <Group gap={6} wrap="nowrap" justify="space-between" style={{ flex: 1 }}>
+              {onEditCategories && (
+                <Button
+                  variant="default"
+                  size="xs"
+                  leftSection={<IconAdjustments size={14} />}
+                  onClick={onEditCategories}
+                >
+                  Настроить категории
+                </Button>
+              )}
+              <Button
+                variant="default"
+                size="xs"
+                leftSection={onEditCategories ? <IconPlus size={14} /> : <IconAdjustments size={14} />}
+                onClick={onEdit}
+              >
+                {onEditCategories ? 'Создать план' : 'Настроить'}
+              </Button>
+            </Group>
+          )}
         </Group>
 
         {rows.length === 0 ? (
           <Stack gap="xs" align="flex-start">
             <Text size="sm" c="dimmed">
-              На этот месяц плана ещё нет
+              {periodic ? 'На этот месяц плана ещё нет' : 'Плана пока нет'}
             </Text>
             {canCopy && (
               <Button variant="light" size="xs" onClick={copyFromPrev} loading={pending}>
@@ -158,6 +193,15 @@ export function MonthPlan({ householdId, month, rows, canCopy, onEdit, onPay, ba
           </Stack>
         ) : (
           <Stack gap={0}>
+            {/* итог плана над списком: подпись слева, сумма справа */}
+            <Group justify="space-between" wrap="nowrap">
+              <Text size="sm" c="dimmed">
+                Всего
+              </Text>
+              <Text size="sm" fw={600}>
+                {formatMoney(total)}
+              </Text>
+            </Group>
             {rows.map((r, index) => (
               <Box key={r.categoryId} style={index > 0 ? divider : undefined}>
                 <PlanCategory row={r} onPay={onPay} />

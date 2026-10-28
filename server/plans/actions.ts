@@ -5,6 +5,7 @@ import 'server-only';
 import { db } from '@/server/db';
 import { budgetPlan, budgetPlanItem, category } from '@/server/db/schema';
 import { requireHouseholdAccess, revalidateBudgetPages } from '@/server/households/access';
+import { ONE_TIME_MONTH } from '@/shared/lib/period';
 import {
   copyPlanSchema,
   removePlanItemSchema,
@@ -15,6 +16,13 @@ import {
 
 type Result = { ok: true } | { ok: false; error: string };
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+// у разового бюджета (месяц-заглушка ONE_TIME_MONTH) план меняет только владелец
+function planLockedForMember(member: { role: string }, month: string) {
+  return month === ONE_TIME_MONTH && member.role !== 'owner';
+}
+
+const PLAN_OWNER_ONLY = 'План затрат меняет только владелец';
 
 // планировать можно только активные расходные категории этого бюджета
 async function isPlannableCategory(householdId: string, categoryId: string) {
@@ -79,7 +87,8 @@ export async function setPlan(input: unknown): Promise<Result> {
   const data = parsed.data;
 
   try {
-    await requireHouseholdAccess(data.householdId);
+    const { member } = await requireHouseholdAccess(data.householdId);
+    if (planLockedForMember(member, data.month)) return { ok: false, error: PLAN_OWNER_ONLY };
     if (!(await isPlannableCategory(data.householdId, data.categoryId))) {
       return { ok: false, error: 'Категория не найдена' };
     }
@@ -120,7 +129,8 @@ export async function removePlan(input: unknown): Promise<Result> {
   const data = parsed.data;
 
   try {
-    await requireHouseholdAccess(data.householdId);
+    const { member } = await requireHouseholdAccess(data.householdId);
+    if (planLockedForMember(member, data.month)) return { ok: false, error: PLAN_OWNER_ONLY };
 
     // статьи удаляются каскадом
     await db
@@ -148,7 +158,8 @@ export async function setPlanItem(input: unknown): Promise<Result> {
   const data = parsed.data;
 
   try {
-    await requireHouseholdAccess(data.householdId);
+    const { member } = await requireHouseholdAccess(data.householdId);
+    if (planLockedForMember(member, data.month)) return { ok: false, error: PLAN_OWNER_ONLY };
     if (!(await isPlannableCategory(data.householdId, data.categoryId))) {
       return { ok: false, error: 'Категория не найдена' };
     }
@@ -207,7 +218,8 @@ export async function removePlanItem(input: unknown): Promise<Result> {
   const data = parsed.data;
 
   try {
-    await requireHouseholdAccess(data.householdId);
+    const { member } = await requireHouseholdAccess(data.householdId);
+    if (planLockedForMember(member, data.month)) return { ok: false, error: PLAN_OWNER_ONLY };
 
     const planId = await findPlanId(data.householdId, data.categoryId, data.month);
     if (!planId) return { ok: true };
@@ -239,7 +251,8 @@ export async function copyPlan(input: unknown): Promise<Result> {
   const data = parsed.data;
 
   try {
-    await requireHouseholdAccess(data.householdId);
+    const { member } = await requireHouseholdAccess(data.householdId);
+    if (planLockedForMember(member, data.toMonth)) return { ok: false, error: PLAN_OWNER_ONLY };
 
     // одним запросом: новые планы (только активные категории) и их статьи
     const copied = await db.execute(sql`

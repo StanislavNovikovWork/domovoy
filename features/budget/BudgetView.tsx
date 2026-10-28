@@ -26,7 +26,6 @@ import {
 import {
   buildPlanRows,
   filterTransactions,
-  listPendingPayments,
   summarizePlan,
   type PlanItem,
   type TransactionItem,
@@ -54,7 +53,7 @@ import { MonthPlan } from './MonthPlan';
 import { OneTimeAllOperationsModal } from './OneTimeAllOperationsModal';
 import { OneTimeOperations } from './OneTimeOperations';
 import { PlanModal } from './PlanModal';
-import { OperationsByCategory, PendingPaymentsCard, RecentCard } from './SidePanel';
+import { OperationsByCategory, RecentCard } from './SidePanel';
 import { SummaryCard } from './SummaryCard';
 
 const CARD_BORDER = '1px solid var(--mantine-color-default-border)';
@@ -242,17 +241,13 @@ export function BudgetView({
   }, [plans, categories, planMonth, periodic]);
 
   const total = useMemo(() => visibleItems.reduce((acc, t) => acc + t.amount, 0), [visibleItems]);
-  // блоки плана есть только у расходов
+  // блоки плана есть только у расходов периодического бюджета
   const planSummary = useMemo(
-    () => (type === 'expense' && planRows.length > 0 ? summarizePlan(planRows) : null),
-    [type, planRows]
+    () =>
+      periodic && type === 'expense' && planRows.length > 0 ? summarizePlan(planRows) : null,
+    [periodic, type, planRows]
   );
 
-  // ожидаемые платежи разового бюджета (всегда за месяц плана)
-  const pendingPayments = useMemo(
-    () => (type === 'expense' ? listPendingPayments(planRows) : []),
-    [type, planRows]
-  );
   const typeTransactions = useMemo(
     () => transactions.filter((t) => t.categoryType === type),
     [transactions, type]
@@ -417,11 +412,6 @@ export function BudgetView({
             collapsed={periodic && summaryCollapsed}
           />
 
-          {/* у периодического бюджета список операций идёт сразу под сводкой, платежи ниже */}
-          {!periodic && pendingPayments.length > 0 && (
-            <PendingPaymentsCard payments={pendingPayments} onPay={pay} />
-          )}
-
           {periodic ? (
             // периодический бюджет: табы и план прокручиваются вместе, сводка над ними сворачивается.
             // Запас снизу больше высоты свёрнутой части сводки, чтобы короткий список
@@ -503,11 +493,7 @@ export function BudgetView({
                   </Box>
                 </Grid.Col>
               )
-            : pendingPayments.length > 0 && (
-                <Grid.Col span={{ base: 12, lg: 4 }}>
-                  <PendingPaymentsCard payments={pendingPayments} onPay={pay} />
-                </Grid.Col>
-              )}
+            : null}
         </Grid>
       </Stack>
 
