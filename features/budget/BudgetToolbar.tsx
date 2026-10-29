@@ -22,9 +22,15 @@ type Props = {
 export function BudgetFilters({ period, date, onPeriodChange, onDateChange }: Props) {
   return (
     <Stack gap="md">
+      {/* компактный таббар слева: без внутреннего паддинга и растяжения на всю ширину */}
       <SegmentedControl
-        fullWidth
-        radius="md"
+        size="sm"
+        radius="xl"
+        p={0}
+        w="fit-content"
+        withItemsBorders={false}
+        // каждый таб на 10px шире: +5px бокового паддинга с двух сторон
+        styles={{ label: { paddingInline: 'calc(var(--mantine-spacing-md) + 5px)' } }}
         value={period}
         onChange={(v) => onPeriodChange(v as Period)}
         data={PERIOD_TABS}
