@@ -252,6 +252,21 @@ export function BudgetView({
     return filterTransactions(transactions, selected, prev).reduce((acc, t) => acc + t.amount, 0);
   }, [periodic, selected, period, date, transactions]);
 
+  // соседние слайды свайпера: доли категорий выбранного типа за прошлый и следующий периоды
+  const neighborSlices = useMemo(() => {
+    if (!periodic || !selected) {
+      return undefined;
+    }
+    const mk = (d: string) =>
+      groupTransactions(
+        filterTransactions(transactions, selected, getPeriodRange(period, d))
+      ).map((g) => ({ name: g.name, value: g.total, color: `${g.color}.6`, icon: g.icon }));
+    return {
+      prev: mk(shiftDate(period, date, -1)),
+      next: mk(shiftDate(period, date, 1)),
+    };
+  }, [periodic, selected, period, date, transactions]);
+
   // «Все расходы / Мои расходы / Итог» в списке операций разового бюджета
   const [scope, setScope] = useState<'all' | 'mine' | 'total'>('all');
   const visibleItems = useMemo(() => {
@@ -296,7 +311,7 @@ export function BudgetView({
 
   // фильтры периодического бюджета показываются внутри карточки сводки
   const filters = periodic ? (
-    <BudgetFilters period={period} date={date} onPeriodChange={setPeriod} onDateChange={setDate} />
+    <BudgetFilters period={period} onPeriodChange={setPeriod} />
   ) : undefined;
 
   // периодический бюджет: «Последние операции» и «По категориям» кнопками-табами, как
@@ -417,6 +432,8 @@ export function BudgetView({
             onSelectType={setSelected}
             expense={expenseTile}
             income={incomeTile}
+            slides={neighborSlices}
+            onShiftDate={(dir) => setDate(shiftDate(period, date, dir))}
             prevTotal={prevTotal}
             total={total}
             shareTotals={shareTotals}
@@ -465,6 +482,8 @@ export function BudgetView({
                 onSelectType={setSelected}
                 expense={expenseTile}
                 income={incomeTile}
+                slides={neighborSlices}
+                onShiftDate={(dir) => setDate(shiftDate(period, date, dir))}
                 prevTotal={prevTotal}
                 total={total}
                 shareTotals={shareTotals}

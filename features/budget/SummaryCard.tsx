@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { IconPlus, IconX } from '@tabler/icons-react';
+import { Carousel } from '@mantine/carousel';
 import { DonutChart } from '@mantine/charts';
+import type { EmblaCarouselType } from 'embla-carousel';
 import {
   ActionIcon,
   Badge,
@@ -102,6 +104,68 @@ function sliceIcons(renderSlices: ChartSlice[]) {
   });
 }
 
+// кольцо по категориям с кепками на стыках и иконками — один слайд свайпера
+function ChartRing({ slices }: { slices: ChartSlice[] }) {
+  // сектора в обратном порядке: порядок отрисовки задаёт каскад наезда баров
+  const renderSlices = [...slices].reverse();
+  return (
+    <Box pos="relative">
+      <DonutChart
+        data={renderSlices}
+        size={CHART_SIZE}
+        thickness={CHART_THICKNESS}
+        // отрицательный отступ: сектора чуть заезжают друг на друга, без зазоров
+        paddingAngle={CHART_PAD}
+        startAngle={CHART_END}
+        endAngle={CHART_START}
+        // закруглённые концы баров: радиус = половина толщины кольца
+        pieProps={{ cornerRadius: CHART_THICKNESS / 2 }}
+        // без обводки у секторов
+        strokeWidth={0}
+        // метки внутри секторов свои (иконки), withLabels бы добавил +40px высоты под внешние
+        withLabels={false}
+        // клик по сектору ничего не показывает: без тултипа и слоя доступности recharts
+        withTooltip={false}
+        accessibilityLayer={false}
+      />
+      {/* стыки: поверх каждого дуга-«кепка» цветом наезжающего бара */}
+      {slices !== EMPTY_CHART && slices.length > 1 && (
+        <svg
+          width={CHART_SIZE}
+          height={CHART_SIZE}
+          viewBox={`0 0 ${CHART_SIZE} ${CHART_SIZE}`}
+          style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
+        >
+          {sectorStarts(renderSlices).map((a, i) => (
+            <path
+              key={a}
+              d={arcPath(a - CAP_BEFORE, a + CAP_AFTER)}
+              fill="none"
+              stroke={cssColor(renderSlices[i].color)}
+              strokeWidth={CHART_THICKNESS}
+              strokeLinecap="round"
+            />
+          ))}
+        </svg>
+      )}
+      {sliceIcons(renderSlices).map((p, i) => (
+        <CategoryIcon
+          key={i}
+          name={p.icon}
+          size={SLICE_ICON}
+          color="#fff"
+          style={{
+            position: 'absolute',
+            left: p.x - SLICE_ICON / 2,
+            top: p.y - SLICE_ICON / 2,
+            pointerEvents: 'none',
+          }}
+        />
+      ))}
+    </Box>
+  );
+}
+
 // данные плитки типа в обзоре: итог и доли категорий
 export type TypeTile = { total: number; slices: ChartSlice[] };
 
@@ -168,6 +232,9 @@ type Props = {
   // итоги и доли категорий по типам за выбранный период (обзор и детали)
   expense?: TypeTile;
   income?: TypeTile;
+  // доли категорий соседних периодов для свайпера деталей: свайп листает дату
+  slides?: { prev: ChartSlice[]; next: ChartSlice[] };
+  onShiftDate?: (dir: 1 | -1) => void;
   // сумма выбранного типа за предыдущий такой же период: бейдж сравнения в деталях
   prevTotal?: number;
   total: number; // за выбранный период и тип
@@ -188,6 +255,8 @@ export function SummaryCard({
   onSelectType,
   expense,
   income,
+  slides,
+  onShiftDate,
   prevTotal,
   total,
   shareTotals,
@@ -197,8 +266,6 @@ export function SummaryCard({
 }: Props) {
   const detailSlices = selected === 'income' ? income?.slices : expense?.slices;
   const slices = detailSlices?.length ? detailSlices : EMPTY_CHART;
-  // сектора в обратном порядке: порядок отрисовки задаёт каскад наезда баров
-  const renderSlices = [...slices].reverse();
 
   // чарт живёт, пока блок деталей открыт, и ещё всю анимацию закрытия —
   // уезжает вместе с ней, а не пропадает мгновенно. В закрытом Collapse
@@ -213,6 +280,63 @@ export function SummaryCard({
     const t = setTimeout(() => setChartMounted(false), COLLAPSE_MS - 50);
     return () => clearTimeout(t);
   }, [chartOpen]);
+
+  const [embla, setEmbla] = useState<EmblaCarouselType | null>(null);
+
+  // свайп по крайним слайдам листает дату: влево — прошлый период, вправо — следующий
+  useEffect(() => {
+    if (!embla || !onShiftDate) {
+      return;
+    }
+    const onSelect = (api: EmblaCarouselType) => {
+      const i = api.selectedScrollSnap();
+      if (i === 0) {
+        onShiftDate(-1);
+      } else if (i === 2) {
+        onShiftDate(1);
+      }
+    };
+    embla.on('select', onSelect);
+    return () => {
+      embla.off('select', onSelect);
+    };
+  }, [embla, onShiftDate]);
+
+  // карусель всегда на центральном слайде: после инициализации и reInit —
+  // мгновенно (она монтируется внутри анимируемого Collapse и может стартовать на краю)
+  useEffect(() => {
+    if (!embla) {
+      return;
+    }
+    const recenter = () => embla.scrollTo(1, true);
+    recenter();
+    embla.on('init', recenter);
+    embla.on('reInit', recenter);
+    return () => {
+      embla.off('init', recenter);
+      embla.off('reInit', recenter);
+    };
+  }, [embla]);
+
+  // после смены даты — плавный откат на центральный слайд:
+  // крайний, до которого доскроллили, уже показывает тот же период
+  const lastDate = useRef(date);
+  useEffect(() => {
+    if (!embla || lastDate.current === date) {
+      return;
+    }
+    lastDate.current = date;
+    embla.scrollTo(1);
+  }, [embla, date]);
+
+  // embla перемеряет размеры слайдов после анимации раскрытия блока
+  useEffect(() => {
+    if (!chartMounted || !embla) {
+      return;
+    }
+    const t = setTimeout(() => embla.reInit(), COLLAPSE_MS);
+    return () => clearTimeout(t);
+  }, [chartMounted, embla]);
 
   // на мобильных: без рамки и боковых отступов, блок сливается со страницей
   return (
@@ -343,67 +467,35 @@ export function SummaryCard({
                         <IconX size={18} />
                       </ActionIcon>
                     </Group>
-                    <Center>
-                      {/* иконки категорий — HTML-оверлей поверх кольца: позиции считаем сами,
-                          не завися от конвейера меток recharts */}
-                      <Box pos="relative">
-                        {chartMounted && (
-                          <DonutChart
-                            data={renderSlices}
-                            size={CHART_SIZE}
-                            thickness={CHART_THICKNESS}
-                            // отрицательный отступ: сектора чуть заезжают друг на друга, без зазоров
-                            paddingAngle={CHART_PAD}
-                            startAngle={CHART_END}
-                            endAngle={CHART_START}
-                            // закруглённые концы баров: радиус = половина толщины кольца
-                            pieProps={{ cornerRadius: CHART_THICKNESS / 2 }}
-                            // без обводки у секторов
-                            strokeWidth={0}
-                            // метки внутри секторов свои (иконки), withLabels бы добавил +40px высоты под внешние
-                            withLabels={false}
-                            // клик по сектору ничего не показывает: без тултипа и слоя доступности recharts
-                            withTooltip={false}
-                            accessibilityLayer={false}
-                          />
+                    {/* свайпер периодов: центр — выбранный, по краям видны соседние;
+                        свайп влево/вправо листает дату. На мобильных выходит в край экрана
+                        (компенсирует боковые отступы страницы), чтобы крайние кольца прилипали */}
+                    {chartMounted && (
+                      <Carousel
+                        mx={{ base: 'calc(var(--mantine-spacing-md) * -1)', sm: 0 }}
+                        slideSize="62%"
+                        slideGap="sm"
+                        withControls={false}
+                        withIndicators={false}
+                        initialSlide={1}
+                        getEmblaApi={setEmbla}
+                        // reinit при изменении контейнера: карусель монтируется внутри
+                        // анимируемого Collapse, иначе слайды меряются в неверный момент
+                        emblaOptions={{ align: 'center', watchResize: true }}
+                      >
+                        {[slides?.prev, slices, slides?.next]
+                          // у пустого периода серое кольцо, чтобы слайд был виден
+                          .map((s) => (s?.length ? s : EMPTY_CHART))
+                          .map((s, i) => (
+                            <Carousel.Slide key={i}>
+                              <Center>
+                                <ChartRing slices={s} />
+                              </Center>
+                            </Carousel.Slide>
+                          )
                         )}
-                        {/* стыки: поверх каждого дуга-«кепка» цветом наезжающего бара */}
-                        {chartMounted && slices !== EMPTY_CHART && slices.length > 1 && (
-                          <svg
-                            width={CHART_SIZE}
-                            height={CHART_SIZE}
-                            viewBox={`0 0 ${CHART_SIZE} ${CHART_SIZE}`}
-                            style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
-                          >
-                            {sectorStarts(renderSlices).map((a, i) => (
-                              <path
-                                key={a}
-                                d={arcPath(a - CAP_BEFORE, a + CAP_AFTER)}
-                                fill="none"
-                                stroke={cssColor(renderSlices[i].color)}
-                                strokeWidth={CHART_THICKNESS}
-                                strokeLinecap="round"
-                              />
-                            ))}
-                          </svg>
-                        )}
-                        {chartMounted &&
-                          sliceIcons(renderSlices).map((p, i) => (
-                            <CategoryIcon
-                              key={i}
-                              name={p.icon}
-                              size={SLICE_ICON}
-                              color="#fff"
-                              style={{
-                                position: 'absolute',
-                                left: p.x - SLICE_ICON / 2,
-                                top: p.y - SLICE_ICON / 2,
-                                pointerEvents: 'none',
-                              }}
-                            />
-                          ))}
-                      </Box>
-                    </Center>
+                      </Carousel>
+                    )}
                   </Stack>
                   {filters}
                 </Stack>
