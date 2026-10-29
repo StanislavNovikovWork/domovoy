@@ -140,8 +140,13 @@ export function formatPeriodCaption(period: Period, date: string): string {
   switch (period) {
     case 'day':
       return 'за день';
-    case 'week':
-      return 'за неделю';
+    case 'week': {
+      // «5 окт. – 11 окт.»: диапазон дат недели
+      const s = weekStart(d);
+      const e = addDays(s, 6);
+      const f = (x: Date) => x.toLocaleDateString(LOCALE, { day: 'numeric', month: 'short' });
+      return `${f(s)} – ${f(e)}`;
+    }
     case 'month':
       return `за ${d.toLocaleDateString(LOCALE, { month: 'long' })}`;
     case 'year':

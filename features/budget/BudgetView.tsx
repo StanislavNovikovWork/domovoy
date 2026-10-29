@@ -243,28 +243,16 @@ export function BudgetView({
   const expenseTile = useMemo(() => tile('expense'), [tile]);
   const incomeTile = useMemo(() => tile('income'), [tile]);
 
-  // сумма выбранного типа за предыдущий такой же период: бейдж сравнения в деталях
-  const prevTotal = useMemo(() => {
+  // слайды свайпера: доли категорий выбранного типа за 7 периодов вокруг текущего
+  const chartSlides = useMemo(() => {
     if (!periodic || !selected) {
       return undefined;
     }
-    const prev = getPeriodRange(period, shiftDate(period, date, -1));
-    return filterTransactions(transactions, selected, prev).reduce((acc, t) => acc + t.amount, 0);
-  }, [periodic, selected, period, date, transactions]);
-
-  // соседние слайды свайпера: доли категорий выбранного типа за прошлый и следующий периоды
-  const neighborSlices = useMemo(() => {
-    if (!periodic || !selected) {
-      return undefined;
-    }
-    const mk = (d: string) =>
+    return [-3, -2, -1, 0, 1, 2, 3].map((off) =>
       groupTransactions(
-        filterTransactions(transactions, selected, getPeriodRange(period, d))
-      ).map((g) => ({ name: g.name, value: g.total, color: `${g.color}.6`, icon: g.icon }));
-    return {
-      prev: mk(shiftDate(period, date, -1)),
-      next: mk(shiftDate(period, date, 1)),
-    };
+        filterTransactions(transactions, selected, getPeriodRange(period, shiftDate(period, date, off)))
+      ).map((g) => ({ name: g.name, value: g.total, color: `${g.color}.6`, icon: g.icon }))
+    );
   }, [periodic, selected, period, date, transactions]);
 
   // «Все расходы / Мои расходы / Итог» в списке операций разового бюджета
@@ -311,7 +299,14 @@ export function BudgetView({
 
   // фильтры периодического бюджета показываются внутри карточки сводки
   const filters = periodic ? (
-    <BudgetFilters period={period} onPeriodChange={setPeriod} />
+    <BudgetFilters
+      period={period}
+      onPeriodChange={(p) => {
+        setPeriod(p);
+        // при смене периода всегда возвращаемся на текущую дату
+        setDate(initialDate);
+      }}
+    />
   ) : undefined;
 
   // периодический бюджет: «Последние операции» и «По категориям» кнопками-табами, как
@@ -432,9 +427,8 @@ export function BudgetView({
             onSelectType={setSelected}
             expense={expenseTile}
             income={incomeTile}
-            slides={neighborSlices}
+            slides={chartSlides}
             onShiftDate={(dir) => setDate(shiftDate(period, date, dir))}
-            prevTotal={prevTotal}
             total={total}
             shareTotals={shareTotals}
             onAdd={addModal.open}
@@ -482,9 +476,8 @@ export function BudgetView({
                 onSelectType={setSelected}
                 expense={expenseTile}
                 income={incomeTile}
-                slides={neighborSlices}
+                slides={chartSlides}
                 onShiftDate={(dir) => setDate(shiftDate(period, date, dir))}
-                prevTotal={prevTotal}
                 total={total}
                 shareTotals={shareTotals}
                 onAdd={addModal.open}

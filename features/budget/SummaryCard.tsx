@@ -1,13 +1,12 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { IconPlus, IconX } from '@tabler/icons-react';
 import { Carousel } from '@mantine/carousel';
 import { DonutChart } from '@mantine/charts';
 import type { EmblaCarouselType } from 'embla-carousel';
 import {
   ActionIcon,
-  Badge,
   Box,
   Center,
   Collapse,
@@ -58,6 +57,10 @@ const CHART_PAD = -12;
 // «кепка» поверх стыка: дуга цветом наезжающего бара с тенью на перекрытый
 const CAP_BEFORE = 4;
 const CAP_AFTER = 14;
+
+// свайпер: 7 слайдов, центральный — выбранный период; запас в обе стороны,
+// чтобы серии свайпов не упирались в край и не было паузы на пере-якорь
+const CENTER_SLIDE = 3;
 
 // дуга по медианному радиусу кольца между двумя углами (развёртка рендера: углы растут против часовой)
 function arcPath(fromDeg: number, toDeg: number): string {
@@ -232,11 +235,11 @@ type Props = {
   // итоги и доли категорий по типам за выбранный период (обзор и детали)
   expense?: TypeTile;
   income?: TypeTile;
-  // доли категорий соседних периодов для свайпера деталей: свайп листает дату
-  slides?: { prev: ChartSlice[]; next: ChartSlice[] };
-  onShiftDate?: (dir: 1 | -1) => void;
+  // доли категорий по периодам для свайпера деталей: массив из 7 слайдов,
+  // центральный (CENTER_SLIDE) — выбранный период; свайп листает дату
+  slides?: ChartSlice[][];
+  onShiftDate?: (dir: number) => void;
   // сумма выбранного типа за предыдущий такой же период: бейдж сравнения в деталях
-  prevTotal?: number;
   total: number; // за выбранный период и тип
   // суммы расходов по участникам (разовый бюджет), список под общей суммой
   shareTotals?: { name: string; total: number }[];
@@ -257,15 +260,13 @@ export function SummaryCard({
   income,
   slides,
   onShiftDate,
-  prevTotal,
   total,
   shareTotals,
   onAdd,
   filters,
   collapsed = false,
 }: Props) {
-  const detailSlices = selected === 'income' ? income?.slices : expense?.slices;
-  const slices = detailSlices?.length ? detailSlices : EMPTY_CHART;
+
 
   // чарт живёт, пока блок деталей открыт, и ещё всю анимацию закрытия —
   // уезжает вместе с ней, а не пропадает мгновенно. В закрытом Collapse
@@ -283,22 +284,22 @@ export function SummaryCard({
 
   const [embla, setEmbla] = useState<EmblaCarouselType | null>(null);
 
-  // свайп по крайним слайдам листает дату: влево — прошлый период, вправо — следующий
+  // свайп по крайним слайдам листает дату: влево — прошлый период, вправо — следующий.
+  // Сдвигаем только после докатки (settle): чарт доезжает в центр по направлению свайпа,
+  // а не прыгает и не меняет содержимое под пальцем в середине анимации
   useEffect(() => {
     if (!embla || !onShiftDate) {
       return;
     }
-    const onSelect = (api: EmblaCarouselType) => {
-      const i = api.selectedScrollSnap();
-      if (i === 0) {
-        onShiftDate(-1);
-      } else if (i === 2) {
-        onShiftDate(1);
+    const onSettle = (api: EmblaCarouselType) => {
+      const shift = api.selectedScrollSnap() - CENTER_SLIDE;
+      if (shift !== 0) {
+        onShiftDate(shift);
       }
     };
-    embla.on('select', onSelect);
+    embla.on('settle', onSettle);
     return () => {
-      embla.off('select', onSelect);
+      embla.off('settle', onSettle);
     };
   }, [embla, onShiftDate]);
 
@@ -308,7 +309,7 @@ export function SummaryCard({
     if (!embla) {
       return;
     }
-    const recenter = () => embla.scrollTo(1, true);
+    const recenter = () => embla.scrollTo(CENTER_SLIDE, true);
     recenter();
     embla.on('init', recenter);
     embla.on('reInit', recenter);
@@ -318,16 +319,18 @@ export function SummaryCard({
     };
   }, [embla]);
 
-  // после смены даты — плавный откат на центральный слайд:
-  // крайний, до которого доскроллили, уже показывает тот же период
-  const lastDate = useRef(date);
-  useEffect(() => {
-    if (!embla || lastDate.current === date) {
+  // после смены даты или периода мгновенно возвращаемся на центральный слайд —
+  // useLayoutEffect: подмена данных и прыжок коммитятся до кадра и не видны.
+  // Слайд, до которого доскроллили, уже показывает новый выбранный период
+  const lastKey = useRef(`${period}|${date}`);
+  useLayoutEffect(() => {
+    const key = `${period}|${date}`;
+    if (!embla || lastKey.current === key) {
       return;
     }
-    lastDate.current = date;
-    embla.scrollTo(1);
-  }, [embla, date]);
+    lastKey.current = key;
+    embla.scrollTo(CENTER_SLIDE, true);
+  }, [embla, date, period]);
 
   // embla перемеряет размеры слайдов после анимации раскрытия блока
   useEffect(() => {
@@ -444,11 +447,10 @@ export function SummaryCard({
                           <Text fz={28} fw={700} lh={1.1}>
                             {formatMoney(total)}
                           </Text>
-                          {prevTotal != null && prevTotal > 0 && (
-                            <Badge variant="light" color="gray" radius="md" size="lg">
-                              {total > prevTotal ? '↑' : '↓'} {formatMoney(prevTotal)}
-                            </Badge>
-                          )}
+                          {/* выбранный диапазон, который показывает кольцо */}
+                          <Text size="sm" c="dimmed" lh={1.1}>
+                            {formatPeriodCaption(period, date)}
+                          </Text>
                         </Group>
                         <Text size="sm" c="dimmed">
                           {selected === 'expense' ? 'Траты' : 'Доходы'}
@@ -477,13 +479,13 @@ export function SummaryCard({
                         slideGap="sm"
                         withControls={false}
                         withIndicators={false}
-                        initialSlide={1}
+                        initialSlide={CENTER_SLIDE}
                         getEmblaApi={setEmbla}
                         // reinit при изменении контейнера: карусель монтируется внутри
                         // анимируемого Collapse, иначе слайды меряются в неверный момент
                         emblaOptions={{ align: 'center', watchResize: true }}
                       >
-                        {[slides?.prev, slices, slides?.next]
+                        {(slides ?? [])
                           // у пустого периода серое кольцо, чтобы слайд был виден
                           .map((s) => (s?.length ? s : EMPTY_CHART))
                           .map((s, i) => (
