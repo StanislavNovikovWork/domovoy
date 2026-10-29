@@ -101,7 +101,7 @@ export function getPeriodRange(period: Period, date: string): { from: string; to
   return { from: formatDate(start), to: formatDate(end) };
 }
 
-export function shiftDate(period: Period, date: string, dir: 1 | -1): string {
+export function shiftDate(period: Period, date: string, dir: number): string {
   const d = parseDate(date);
   switch (period) {
     case 'day':
