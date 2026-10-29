@@ -61,6 +61,8 @@ const CAP_AFTER = 14;
 // свайпер: 7 слайдов, центральный — выбранный период; запас в обе стороны,
 // чтобы серии свайпов не упирались в край и не было паузы на пере-якорь
 const CENTER_SLIDE = 3;
+// «+» в деталях — фиксированно по центру низа экрана
+const FAB_BOTTOM = 16;
 
 // дуга по медианному радиусу кольца между двумя углами (развёртка рендера: углы растут против часовой)
 function arcPath(fromDeg: number, toDeg: number): string {
@@ -246,8 +248,6 @@ type Props = {
   onAdd: () => void; // «+» в углу карточки
   // фильтры (период и навигация) внутри карточки
   filters?: ReactNode;
-  // мобильные: при прокрутке списка сводка сворачивается до одной строки с суммами
-  collapsed?: boolean;
 };
 
 export function SummaryCard({
@@ -264,14 +264,13 @@ export function SummaryCard({
   shareTotals,
   onAdd,
   filters,
-  collapsed = false,
 }: Props) {
 
 
   // чарт живёт, пока блок деталей открыт, и ещё всю анимацию закрытия —
   // уезжает вместе с ней, а не пропадает мгновенно. В закрытом Collapse
   // (display:none) recharts мерял бы контейнер 0×0 и писал варнинг в консоль
-  const chartOpen = !!selected && !collapsed;
+  const chartOpen = !!selected;
   const [chartMounted, setChartMounted] = useState(false);
   useEffect(() => {
     if (chartOpen) {
@@ -283,6 +282,35 @@ export function SummaryCard({
   }, [chartOpen]);
 
   const [embla, setEmbla] = useState<EmblaCarouselType | null>(null);
+
+  // «+»: в обзоре фиксирована по центру низа экрана, в деталях едет transform-смещением
+  // к нижнему правому углу блока с чартом — одна кнопка, плавный переезд между позициями
+  const cardRef = useRef<HTMLDivElement>(null);
+  const fabRef = useRef<HTMLButtonElement>(null);
+  const [fabOffset, setFabOffset] = useState<{ x: number; y: number } | null>(null);
+  useLayoutEffect(() => {
+    if (!periodic || !selected || !cardRef.current || !fabRef.current) {
+      setFabOffset(null);
+      return;
+    }
+    const measure = () => {
+      if (!cardRef.current || !fabRef.current) {
+        return;
+      }
+      const card = cardRef.current.getBoundingClientRect();
+      const btn = fabRef.current;
+      const baseX = window.innerWidth / 2 - btn.offsetWidth / 2;
+      const baseY = window.innerHeight - FAB_BOTTOM - btn.offsetHeight;
+      setFabOffset({
+        x: card.right - 16 - btn.offsetWidth - baseX,
+        y: card.bottom - 16 - btn.offsetHeight - baseY,
+      });
+    };
+    // меряем только после анимации раскрытия: ранний замер дал бы промежуточный
+    // низ карточки, и кнопка ехала бы сначала к нему, потом к финальному
+    const t = setTimeout(measure, COLLAPSE_MS);
+    return () => clearTimeout(t);
+  }, [periodic, selected]);
 
   // свайп по крайним слайдам листает дату: влево — прошлый период, вправо — следующий.
   // Сдвигаем только после докатки (settle): чарт доезжает в центр по направлению свайпа,
@@ -343,73 +371,49 @@ export function SummaryCard({
 
   // на мобильных: без рамки и боковых отступов, блок сливается со страницей
   return (
-    <Paper radius="lg" p={{ base: 0, sm: 'lg' }} pos="relative" bd={{ base: 'none', sm: BORDER }}>
-      {/* «+» в углу карточки: у периодического бюджета справа снизу, у разового справа сверху;
-          в свёрнутом состоянии прячется вместе с остальной сводкой */}
+    <Paper
+      ref={cardRef}
+      radius="lg"
+      p={{ base: 0, sm: 'lg' }}
+      pos="relative"
+      bd={{ base: 'none', sm: BORDER }}
+    >
+      {/* «+»: у периодического бюджета фиксирована по центру низа экрана,
+          а в обзоре уезжает к углу карточки; у разового — справа сверху карточки */}
       <ActionIcon
-        pos="absolute"
-        right={{ base: 0, sm: 16 }}
-        {...(periodic ? { bottom: { base: 0, sm: 16 } } : { top: { base: 0, sm: 16 } })}
+        ref={fabRef}
         size="lg"
         radius="xl"
         aria-label="Добавить операцию"
         onClick={onAdd}
-        tabIndex={collapsed ? -1 : undefined}
-        style={{
-          zIndex: 2,
-          opacity: collapsed ? 0 : 1,
-          pointerEvents: collapsed ? 'none' : undefined,
-          transition: `opacity ${COLLAPSE_TRANSITION}`,
-        }}
+        {...(periodic
+          ? {
+              pos: 'fixed',
+              left: '50%',
+              bottom: FAB_BOTTOM,
+              style: {
+                zIndex: 40,
+                transform: `translateX(-50%)${fabOffset ? ` translate(${fabOffset.x}px, ${fabOffset.y}px)` : ''}`,
+                transition: `transform ${COLLAPSE_TRANSITION}`,
+              },
+            }
+          : {
+              pos: 'absolute',
+              right: { base: 0, sm: 16 },
+              top: { base: 0, sm: 16 },
+              style: { zIndex: 2 },
+            })}
       >
         <IconPlus size={20} />
       </ActionIcon>
 
-      <Stack gap={collapsed ? 0 : 'lg'} style={{ transition: `gap ${COLLAPSE_TRANSITION}` }}>
+      <Stack gap="lg">
         {periodic ? (
           <>
-            {/* свёрнутая сводка при прокрутке списка: только итоги */}
-            <Collapse
-              expanded={collapsed}
-              transitionDuration={COLLAPSE_MS}
-              transitionTimingFunction={COLLAPSE_EASING}
-            >
-              {selected ? (
-                <Stack gap={2}>
-                  <Text size="sm" c="dimmed">
-                    {selected === 'expense' ? 'Потрачено' : 'Получено'}{' '}
-                    {formatPeriodCaption(period, date)}
-                  </Text>
-                  <Text fz={24} fw={700} lh={1.1}>
-                    {formatMoney(total)}
-                  </Text>
-                </Stack>
-              ) : (
-                <Group gap="xl">
-                  <Stack gap={2}>
-                    <Text size="xs" c="dimmed">
-                      Траты
-                    </Text>
-                    <Text fz={20} fw={700} lh={1.1}>
-                      {formatMoney(expense?.total ?? 0)}
-                    </Text>
-                  </Stack>
-                  <Stack gap={2}>
-                    <Text size="xs" c="dimmed">
-                      Доходы
-                    </Text>
-                    <Text fz={20} fw={700} lh={1.1}>
-                      {formatMoney(income?.total ?? 0)}
-                    </Text>
-                  </Stack>
-                </Group>
-              )}
-            </Collapse>
-
             {/* обзор ⇄ детали: блоки раскрываются и сворачиваются навстречу друг другу,
                 фильтры периода едут вместе с диаграммой */}
             <Collapse
-              expanded={!collapsed}
+              expanded
               transitionDuration={COLLAPSE_MS}
               transitionTimingFunction={COLLAPSE_EASING}
             >

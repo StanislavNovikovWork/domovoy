@@ -183,14 +183,6 @@ export function BudgetView({
   const [addOpened, addModal] = useDisclosure(false);
   // активный таб блока операций периодического бюджета (общий для мобильной и десктопной раскладки)
   const [tab, setTab] = useState('recent');
-  // мобильные, периодический бюджет: сводка сворачивается при прокрутке списка.
-  // Гистерезис: сворачиваем после 48px, разворачиваем только у самого верха — иначе
-  // изменение высоты сводки при сворачивании дёргало бы состояние туда-обратно
-  const [summaryCollapsed, setSummaryCollapsed] = useState(false);
-  const onListScroll = ({ y }: { y: number }) => {
-    if (y > 48 && !summaryCollapsed) setSummaryCollapsed(true);
-    else if (y <= 4 && summaryCollapsed) setSummaryCollapsed(false);
-  };
   // операция, открытая на редактирование (окно «Все операции» разового бюджета)
   const [editing, setEditing] = useState<TransactionItem | null>(null);
   const [catsOpened, catsModal] = useDisclosure(false);
@@ -433,19 +425,13 @@ export function BudgetView({
             shareTotals={shareTotals}
             onAdd={addModal.open}
             filters={filters}
-            collapsed={periodic && summaryCollapsed}
           />
 
           {periodic ? (
-            // периодический бюджет: табы и план прокручиваются вместе, сводка над ними сворачивается.
-            // Запас снизу больше высоты свёрнутой части сводки, чтобы короткий список
-            // всё равно можно было прокрутить и свернуть сводку
-            <ScrollArea
-              type="never"
-              style={{ flex: 1, minHeight: 0 }}
-              onScrollPositionChange={onListScroll}
-            >
-              <Box pb={`calc(${BOTTOM_INSET} + 160px)`}>{periodicTabs(true)}</Box>
+            // периодический бюджет: табы и план прокручиваются вместе под сводкой —
+            // она не сворачивается, плитки всегда наверху
+            <ScrollArea type="never" style={{ flex: 1, minHeight: 0 }}>
+              <Box pb={BOTTOM_INSET}>{periodicTabs(true)}</Box>
             </ScrollArea>
           ) : (
             // разовый бюджет: без табов; прокручивается только эта область без видимой полосы,
