@@ -1,7 +1,7 @@
 import '@mantine/core/styles.css';
+import '@mantine/charts/styles.css';
 import '@mantine/dates/styles.css';
 import '@mantine/notifications/styles.css';
-import './global.css';
 
 import 'dayjs/locale/ru';
 import { mantineHtmlProps, MantineProvider } from '@mantine/core';
@@ -9,6 +9,7 @@ import { DatesProvider } from '@mantine/dates';
 // import { Notifications } from '@mantine/notifications';
 import { ColorSchemeScriptOnce } from '@/shared/ui/ColorSchemeScriptOnce';
 import { theme } from '../theme';
+import './global.css';
 
 export const metadata = {
   title: { default: 'Nest', template: '%s · Nest' },
@@ -39,9 +40,7 @@ export default function RootLayout({ children }: { children: any }) {
       <body>
         <MantineProvider theme={theme}>
           {/* <Notifications /> */}
-          <DatesProvider settings={{ locale: 'ru', firstDayOfWeek: 1 }}>
-            {children}
-          </DatesProvider>
+          <DatesProvider settings={{ locale: 'ru', firstDayOfWeek: 1 }}>{children}</DatesProvider>
         </MantineProvider>
       </body>
     </html>

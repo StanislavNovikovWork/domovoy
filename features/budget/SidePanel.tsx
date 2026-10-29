@@ -20,21 +20,36 @@ export const signedMoney = (t: Pick<TransactionItem, 'amount' | 'categoryType'>)
 
 const divider = { borderTop: '1px solid var(--mantine-color-default-border)' } as const;
 
-type Day = { date: string; total: number; items: TransactionItem[] };
+type Day = { date: string; expense: number; income: number; items: TransactionItem[] };
 
 // операции приходят отсортированными по дате (новые сверху): группируем подряд идущие по дню
 function groupByDay(items: TransactionItem[]): Day[] {
   const days: Day[] = [];
   for (const t of items) {
     const last = days[days.length - 1];
-    if (last && last.date === t.occurredOn) {
-      last.items.push(t);
-      last.total += t.amount;
+    if (!last || last.date !== t.occurredOn) {
+      days.push({ date: t.occurredOn, expense: 0, income: 0, items: [t] });
     } else {
-      days.push({ date: t.occurredOn, total: t.amount, items: [t] });
+      last.items.push(t);
     }
+    days[days.length - 1][t.categoryType === 'income' ? 'income' : 'expense'] += t.amount;
   }
   return days;
+}
+
+// итог дня в заголовке: один тип — его сумма со знаком, оба типа — сальдо (доходы − расходы)
+function dayTotal(day: Day): { text: string; positive: boolean } {
+  if (day.expense > 0 && day.income > 0) {
+    const net = day.income - day.expense;
+    return net === 0
+      ? { text: formatMoney(0), positive: false }
+      : { text: `${net > 0 ? '+' : '−'}${formatMoney(Math.abs(net))}`, positive: net > 0 };
+  }
+  const incomeOnly = day.income > 0;
+  return {
+    text: `${incomeOnly ? '+' : ''}${formatMoney(incomeOnly ? day.income : day.expense)}`,
+    positive: incomeOnly,
+  };
 }
 
 export function PendingPaymentsCard({
@@ -102,31 +117,38 @@ export function RecentCard({
 }) {
   const content = (
     <Stack gap="xs">
-        {!bare && (
-          <Group justify="space-between">
-            <Text fw={600}>Последние операции</Text>
-            {onShowAll && (
-              <Anchor component="button" type="button" size="sm" onClick={onShowAll}>
-                Все операции
-              </Anchor>
-            )}
-          </Group>
-        )}
+      {!bare && (
+        <Group justify="space-between">
+          <Text fw={600}>Последние операции</Text>
+          {onShowAll && (
+            <Anchor component="button" type="button" size="sm" onClick={onShowAll}>
+              Все операции
+            </Anchor>
+          )}
+        </Group>
+      )}
 
-        {items.length === 0 ? (
-          <Text c="dimmed" size="sm">
-            Пока нет операций
-          </Text>
-        ) : (
-          <Stack gap={0}>
-            {groupByDay(items).map((day, index) => (
+      {items.length === 0 ? (
+        <Text c="dimmed" size="sm">
+          Пока нет операций
+        </Text>
+      ) : (
+        <Stack gap={0}>
+          {groupByDay(items).map((day, index) => {
+            const d = dayTotal(day);
+            return (
               <Stack key={day.date} gap={4} py="sm" style={index > 0 ? divider : undefined}>
                 <Group justify="space-between" wrap="nowrap">
                   <Text size="xs" fw={600} c="dimmed">
                     {formatShortDate(day.date)}
                   </Text>
-                  <Text size="xs" fw={600} c="dimmed" style={{ whiteSpace: 'nowrap' }}>
-                    {signedMoney({ amount: day.total, categoryType: day.items[0].categoryType })}
+                  <Text
+                    size="xs"
+                    fw={600}
+                    c={d.positive ? 'teal' : 'dimmed'}
+                    style={{ whiteSpace: 'nowrap' }}
+                  >
+                    {d.text}
                   </Text>
                 </Group>
                 {day.items.map((t) => (
@@ -146,12 +168,19 @@ export function RecentCard({
                   </Group>
                 ))}
               </Stack>
-            ))}
-          </Stack>
-        )}
+            );
+          })}
+        </Stack>
+      )}
     </Stack>
   );
-  return bare ? content : <Paper withBorder radius="lg" p="lg">{content}</Paper>;
+  return bare ? (
+    content
+  ) : (
+    <Paper withBorder radius="lg" p="lg">
+      {content}
+    </Paper>
+  );
 }
 
 // операции того же вида, что «Последние операции», но сгруппированные по категориям (от большей суммы к меньшей)

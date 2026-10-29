@@ -6,7 +6,6 @@ import {
   ActionIcon,
   Box,
   Button,
-  Collapse,
   Divider,
   Grid,
   Group,
@@ -26,7 +25,7 @@ import {
 import {
   buildPlanRows,
   filterTransactions,
-  summarizePlan,
+  groupTransactions,
   type PlanItem,
   type TransactionItem,
   type TxType,
@@ -38,6 +37,7 @@ import {
   getPeriodRange,
   monthStart,
   prevMonth,
+  shiftDate,
   type Period,
 } from '@/shared/lib/period';
 import { useRegisterSettingsItems, type SettingsItem } from '@/shared/ui/SettingsItems';
@@ -48,7 +48,7 @@ import {
   type ShareParticipant,
 } from './AddTransactionModal';
 import { AllTransactionsModal } from './AllTransactionsModal';
-import { BudgetFilters, PeriodFilters } from './BudgetToolbar';
+import { BudgetFilters } from './BudgetToolbar';
 import { MonthPlan } from './MonthPlan';
 import { OneTimeAllOperationsModal } from './OneTimeAllOperationsModal';
 import { OneTimeOperations } from './OneTimeOperations';
@@ -175,7 +175,9 @@ export function BudgetView({
     () => (periodic ? allCategories : allCategories.filter((c) => c.type === 'expense')),
     [allCategories, periodic]
   );
-  const [type, setType] = useState<TxType>('expense');
+  // выбранный тип в сводке периодического бюджета: null — обзор двух плиток,
+  // 'expense'/'income' — детали типа с кольцевой диаграммой (клик по плитке)
+  const [selected, setSelected] = useState<TxType | null>(null);
   const [period, setPeriod] = useState<Period>('month');
   const [date, setDate] = useState(initialDate);
   const [addOpened, addModal] = useDisclosure(false);
@@ -207,15 +209,48 @@ export function BudgetView({
     amount: number;
   } | null>(null);
 
+  const range = useMemo(
+    () => (periodic ? getPeriodRange(period, date) : ALL_TIME_RANGE),
+    [periodic, period, date]
+  );
+
+  // операции списка: обзор — все типы периода, детали — только выбранный;
+  // разовый бюджет — только расходы за всё время
   const items = useMemo(
     () =>
-      filterTransactions(
-        transactions,
-        type,
-        periodic ? getPeriodRange(period, date) : ALL_TIME_RANGE
-      ),
-    [transactions, type, period, date, periodic]
+      periodic && !selected
+        ? transactions.filter((t) => t.occurredOn >= range.from && t.occurredOn < range.to)
+        : filterTransactions(transactions, selected ?? 'expense', range),
+    [transactions, selected, range, periodic]
   );
+
+  // плитки обзора и сектора диаграммы в деталях: итог и доли категорий по каждому типу
+  const tile = useMemo(
+    () => (t: TxType) => {
+      const list = filterTransactions(transactions, t, range);
+      return {
+        total: list.reduce((acc, x) => acc + x.amount, 0),
+        slices: groupTransactions(list).map((g) => ({
+          name: g.name,
+          value: g.total,
+          color: `${g.color}.6`,
+          icon: g.icon,
+        })),
+      };
+    },
+    [transactions, range]
+  );
+  const expenseTile = useMemo(() => tile('expense'), [tile]);
+  const incomeTile = useMemo(() => tile('income'), [tile]);
+
+  // сумма выбранного типа за предыдущий такой же период: бейдж сравнения в деталях
+  const prevTotal = useMemo(() => {
+    if (!periodic || !selected) {
+      return undefined;
+    }
+    const prev = getPeriodRange(period, shiftDate(period, date, -1));
+    return filterTransactions(transactions, selected, prev).reduce((acc, t) => acc + t.amount, 0);
+  }, [periodic, selected, period, date, transactions]);
 
   // «Все расходы / Мои расходы / Итог» в списке операций разового бюджета
   const [scope, setScope] = useState<'all' | 'mine' | 'total'>('all');
@@ -241,17 +276,6 @@ export function BudgetView({
   }, [plans, categories, planMonth, periodic]);
 
   const total = useMemo(() => visibleItems.reduce((acc, t) => acc + t.amount, 0), [visibleItems]);
-  // блоки плана есть только у расходов периодического бюджета
-  const planSummary = useMemo(
-    () =>
-      periodic && type === 'expense' && planRows.length > 0 ? summarizePlan(planRows) : null,
-    [periodic, type, planRows]
-  );
-
-  const typeTransactions = useMemo(
-    () => transactions.filter((t) => t.categoryType === type),
-    [transactions, type]
-  );
 
   const pay = (categoryId: string, name: string, remaining: number) => {
     setPrefill({ categoryId, note: name, amount: remaining / 100 });
@@ -270,30 +294,16 @@ export function BudgetView({
   ];
   useRegisterSettingsItems(settingsItems);
 
-  // мобильные, периодический бюджет: табы периода и навигация по нему
-  // прячутся за иконкой фильтра и выезжают панелью под сводкой
-  const [periodFiltersOpened, setPeriodFiltersOpened] = useState(false);
-
   // фильтры периодического бюджета показываются внутри карточки сводки
   const filters = periodic ? (
-    <BudgetFilters
-      expenseOnly={false}
-      type={type}
-      period={period}
-      date={date}
-      onTypeChange={setType}
-      onPeriodChange={setPeriod}
-      onDateChange={setDate}
-      periodFiltersOpened={periodFiltersOpened}
-      onTogglePeriodFilters={() => setPeriodFiltersOpened((v) => !v)}
-    />
+    <BudgetFilters period={period} date={date} onPeriodChange={setPeriod} onDateChange={setDate} />
   ) : undefined;
 
   // периодический бюджет: «Последние операции» и «По категориям» кнопками-табами, как
   // «Все расходы / Мои расходы» в разовом бюджете; общий для мобильной и десктопной раскладки.
   // На мобильных без рамки и отступов, как блоки разового бюджета.
   // withPlan: третий таб «План» (мобильные; на десктопе план стоит отдельной колонкой справа)
-  const hasPlan = periodic && type === 'expense';
+  const hasPlan = periodic && selected !== 'income';
   // если вкладка «План» скрылась (переключились на доходы), показываем операции
   const activeTab = hasPlan ? tab : tab === 'plan' ? 'recent' : tab;
   const periodicTabs = (withPlan: boolean) => {
@@ -303,41 +313,41 @@ export function BudgetView({
       ...(withPlan && hasPlan ? [{ value: 'plan' as const, label: 'План' }] : []),
     ];
     return (
-    <Paper radius="lg" p={{ base: 0, sm: 'lg' }} bd={{ base: 'none', sm: CARD_BORDER }}>
-      <Group justify="space-between" wrap="nowrap">
-        <Group gap="xs" wrap="nowrap">
-          {tabsList.map((t) => (
-            <Button
-              key={t.value}
-              size="compact-xs"
-              radius="xl"
-              variant={activeTab === t.value ? 'filled' : 'light'}
-              color={activeTab === t.value ? undefined : 'gray'}
-              onClick={() => setTab(t.value)}
-            >
-              {t.label}
-            </Button>
-          ))}
+      <Paper radius="lg" p={{ base: 0, sm: 'lg' }} bd={{ base: 'none', sm: CARD_BORDER }}>
+        <Group justify="space-between" wrap="nowrap">
+          <Group gap="xs" wrap="nowrap">
+            {tabsList.map((t) => (
+              <Button
+                key={t.value}
+                size="compact-xs"
+                radius="xl"
+                variant={activeTab === t.value ? 'filled' : 'light'}
+                color={activeTab === t.value ? undefined : 'gray'}
+                onClick={() => setTab(t.value)}
+              >
+                {t.label}
+              </Button>
+            ))}
+          </Group>
+          {/* карандаш открывает «Все операции» с редактированием */}
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            aria-label="Редактировать операции"
+            onClick={allModal.open}
+          >
+            <IconPencil size={18} />
+          </ActionIcon>
         </Group>
-        {/* карандаш открывает «Все операции» с редактированием */}
-        <ActionIcon
-          variant="subtle"
-          color="gray"
-          aria-label="Редактировать операции"
-          onClick={allModal.open}
-        >
-          <IconPencil size={18} />
-        </ActionIcon>
-      </Group>
-      <Divider mt={2} />
-      <Box>
-        {/* операции выбранного типа за выбранный период (день, неделя, месяц, год) */}
-        {activeTab === 'recent' && <RecentCard bare items={items} />}
-        {/* те же операции за период, сгруппированные по категориям */}
-        {activeTab === 'categories' && <OperationsByCategory items={items} />}
-        {activeTab === 'plan' && withPlan && hasPlan && <Box pt={12}>{monthPlan(true)}</Box>}
-      </Box>
-    </Paper>
+        <Divider mt={2} />
+        <Box>
+          {/* операции выбранного типа за выбранный период (день, неделя, месяц, год) */}
+          {activeTab === 'recent' && <RecentCard bare items={items} />}
+          {/* те же операции за период, сгруппированные по категориям */}
+          {activeTab === 'categories' && <OperationsByCategory items={items} />}
+          {activeTab === 'plan' && withPlan && hasPlan && <Box pt={12}>{monthPlan(true)}</Box>}
+        </Box>
+      </Paper>
     );
   };
 
@@ -400,12 +410,15 @@ export function BudgetView({
           {mobileTop && <Box hiddenFrom="sm">{mobileTop}</Box>}
 
           <SummaryCard
-            type={type}
             periodic={periodic}
             period={period}
             date={date}
+            selected={selected}
+            onSelectType={setSelected}
+            expense={expenseTile}
+            income={incomeTile}
+            prevTotal={prevTotal}
             total={total}
-            plan={planSummary}
             shareTotals={shareTotals}
             onAdd={addModal.open}
             filters={filters}
@@ -421,21 +434,6 @@ export function BudgetView({
               style={{ flex: 1, minHeight: 0 }}
               onScrollPositionChange={onListScroll}
             >
-              {/* мобильные: панель периода выезжает под сводкой по кнопке фильтра.
-                  Внутри прокрутки, не элемент стека с gap — иначе закрытая панель
-                  (высота 0) добавляла бы двойной отступ */}
-              <Box hiddenFrom="sm">
-                <Collapse expanded={periodFiltersOpened}>
-                  <Box pb="lg">
-                    <PeriodFilters
-                      period={period}
-                      date={date}
-                      onPeriodChange={setPeriod}
-                      onDateChange={setDate}
-                    />
-                  </Box>
-                </Collapse>
-              </Box>
               <Box pb={`calc(${BOTTOM_INSET} + 160px)`}>{periodicTabs(true)}</Box>
             </ScrollArea>
           ) : (
@@ -460,12 +458,15 @@ export function BudgetView({
             {/* периодический бюджет: левая часть шириной 720px, план затрат встаёт рядом с ней */}
             <Stack gap="lg" style={periodic ? { width: 720, maxWidth: '100%' } : undefined}>
               <SummaryCard
-                type={type}
                 periodic={periodic}
                 period={period}
                 date={date}
+                selected={selected}
+                onSelectType={setSelected}
+                expense={expenseTile}
+                income={incomeTile}
+                prevTotal={prevTotal}
                 total={total}
-                plan={planSummary}
                 shareTotals={shareTotals}
                 onAdd={addModal.open}
                 filters={filters}
@@ -512,7 +513,7 @@ export function BudgetView({
         guestNames={guestNames}
         currentUserId={currentUserId}
         expenseOnly={!periodic}
-        defaultType={type}
+        defaultType={selected ?? 'expense'}
         prefill={prefill}
       />
 
@@ -520,7 +521,7 @@ export function BudgetView({
         <AllTransactionsModal
           opened={allOpened}
           onClose={allModal.close}
-          type={type}
+          type={selected ?? undefined}
           periodLabel={formatPeriodLabel(period, date)}
           items={items}
           onEdit={setEditing}
@@ -530,7 +531,7 @@ export function BudgetView({
         <OneTimeAllOperationsModal
           opened={allOpened}
           onClose={allModal.close}
-          items={typeTransactions}
+          items={transactions}
           onEdit={setEditing}
           onDelete={removeTransaction}
           currentUserId={currentUserId}

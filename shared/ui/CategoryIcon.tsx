@@ -27,7 +27,9 @@ const ICONS: Record<CategoryIconKey, typeof IconTag> = {
   wifi: IconWifi,
 };
 
-export function CategoryIcon({ name, size = 18 }: { name: string; size?: number }) {
+type Props = { name: string } & Omit<React.ComponentProps<typeof IconTag>, 'name'>;
+
+export function CategoryIcon({ name, size = 18, ...rest }: Props) {
   const Icon = ICONS[name as CategoryIconKey] ?? IconTag;
-  return <Icon size={size} />;
+  return <Icon size={size} {...rest} />;
 }
