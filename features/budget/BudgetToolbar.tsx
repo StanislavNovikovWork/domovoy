@@ -25,6 +25,10 @@ export function BudgetFilters({ period, onPeriodChange }: Props) {
       p={0}
       w="fit-content"
       withItemsBorders={false}
+      // бордер в цвет фона трекбара: отделяет переключатель от страницы, не контрастируя
+      style={{
+        border: '1px solid light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-8))',
+      }}
       // каждый таб на 10px шире: +5px бокового паддинга с двух сторон
       styles={{ label: { paddingInline: 'calc(var(--mantine-spacing-md) + 5px)' } }}
       value={period}

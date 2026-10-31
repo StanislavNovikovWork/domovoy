@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { IconCrown, IconSettings2, IconUsers } from '@tabler/icons-react';
+import { IconCrown, IconSettings2 } from '@tabler/icons-react';
 import { Box, NavLink, Text } from '@mantine/core';
 
 type Props = { householdId: string };
@@ -12,7 +12,6 @@ export function SettingsNav({ householdId }: Props) {
   const pathname = usePathname();
   const base = `/budgets/${householdId}/settings`;
   const items = [
-    { label: 'Участники', icon: <IconUsers size={18} />, href: `${base}/members` },
     { label: 'Управление пространством', icon: <IconSettings2 size={18} />, href: `${base}/space` },
     { label: 'Управление подпиской', icon: <IconCrown size={18} />, href: `${base}/subscription` },
   ];

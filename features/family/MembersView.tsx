@@ -37,7 +37,7 @@ import type {
   InviteItem,
 } from '@/server/households/queries';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
-import { SpaceControls } from './SpaceControls';
+import { SpaceControls, SpaceNameField } from './SpaceControls';
 
 type Props = {
   householdId: string;
@@ -148,6 +148,10 @@ export function MembersView({
     />
 
     <Stack maw={480} pb="md" style={{ flex: 1 }}>
+        {showSpaceControls && (
+          <SpaceNameField householdId={householdId} name={name} role={role} />
+        )}
+        <Text fw={600}>Участники</Text>
         <Stack gap="xs">
           {members.map((m) => (
             <Group key={m.userId} justify="space-between" wrap="nowrap">

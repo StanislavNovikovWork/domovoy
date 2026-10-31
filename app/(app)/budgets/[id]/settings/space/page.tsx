@@ -1,8 +1,13 @@
 import { notFound } from 'next/navigation';
 import { z } from 'zod';
 import { BOTTOM_INSET, PageTopBar } from '@/features/app-shell';
-import { SpaceControls } from '@/features/family/SpaceControls';
-import { getUserHousehold } from '@/server/households/queries';
+import { MembersView } from '@/features/family';
+import {
+  getUserHousehold,
+  listActiveInvites,
+  listGuests,
+  listMembers,
+} from '@/server/households/queries';
 import { requirePageSession } from '@/server/session';
 import { Stack } from '@mantine/core';
 
@@ -20,6 +25,13 @@ export default async function SettingsSpacePage({ params }: Props) {
   const budget = await getUserHousehold(user.id, id);
   if (!budget) notFound();
 
+  const [members, guests, invites] = await Promise.all([
+    listMembers(budget.id),
+    listGuests(budget.id),
+    // приглашения видит только владелец
+    budget.role === 'owner' ? listActiveInvites(budget.id) : Promise.resolve([]),
+  ]);
+
   return (
     <Stack gap="lg" mih="calc(100dvh - var(--mantine-spacing-md))" pb={BOTTOM_INSET}>
       <PageTopBar
@@ -28,9 +40,15 @@ export default async function SettingsSpacePage({ params }: Props) {
         title="Управление пространством"
         titleAlign="left"
       />
-      <Stack maw={480} pb="md" style={{ flex: 1 }}>
-        <SpaceControls householdId={budget.id} name={budget.name} role={budget.role} />
-      </Stack>
+      <MembersView
+        householdId={budget.id}
+        name={budget.name}
+        currentUserId={user.id}
+        role={budget.role}
+        members={members}
+        guests={guests}
+        invites={invites}
+      />
     </Stack>
   );
 }

@@ -16,12 +16,56 @@ type Props = {
   role: 'owner' | 'member';
 };
 
-// управление пространством: переименование, удаление (владелец) или выход (участник)
+// название пространства над списком участников: у владельца с редактированием, у участника на чтение
+export function SpaceNameField({ householdId, name, role }: Props) {
+  const router = useRouter();
+  const [newName, setNewName] = useState(name);
+  useEffect(() => setNewName(name), [name]);
+  const [pendingKey, setPendingKey] = useState<string | null>(null);
+
+  const rename = () => {
+    setPendingKey('rename');
+    renameHousehold({ householdId, name: newName })
+      .then((result) => {
+        if (result.ok) {
+          notifications.show({ message: 'Название изменено', color: 'teal' });
+          router.refresh();
+        } else {
+          notifications.show({ message: result.error, color: 'red' });
+        }
+      })
+      .finally(() => setPendingKey(null));
+  };
+
+  if (role !== 'owner') {
+    return <TextInput label="Название пространства" value={name} readOnly variant="filled" />;
+  }
+
+  return (
+    <Group align="flex-end" wrap="nowrap">
+      <TextInput
+        label="Название пространства"
+        maxLength={40}
+        value={newName}
+        onChange={(e) => setNewName(e.currentTarget.value)}
+        style={{ flex: 1 }}
+      />
+      <Button
+        variant="default"
+        onClick={rename}
+        loading={pendingKey === 'rename'}
+        disabled={!newName.trim() || newName.trim() === name}
+      >
+        Сохранить
+      </Button>
+    </Group>
+  );
+}
+
+// управление пространством: удаление (владелец) или выход (участник)
 export function SpaceControls({ householdId, name, role }: Props) {
   const router = useRouter();
   const isOwner = role === 'owner';
-  const [newName, setNewName] = useState(name);
-  useEffect(() => setNewName(name), [name]);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const track = async (key: string, fn: () => Promise<void>) => {
@@ -31,18 +75,6 @@ export function SpaceControls({ householdId, name, role }: Props) {
     } finally {
       setPendingKey(null);
     }
-  };
-
-  const rename = () => {
-    track('rename', async () => {
-      const result = await renameHousehold({ householdId, name: newName });
-      if (result.ok) {
-        notifications.show({ message: 'Название изменено', color: 'teal' });
-        router.refresh();
-      } else {
-        notifications.show({ message: result.error, color: 'red' });
-      }
-    });
   };
 
   const remove = () => {
@@ -98,34 +130,15 @@ export function SpaceControls({ householdId, name, role }: Props) {
       </Modal>
 
       {isOwner ? (
-        <>
-          <Group align="flex-end" wrap="nowrap">
-            <TextInput
-              label="Название пространства"
-              maxLength={40}
-              value={newName}
-              onChange={(e) => setNewName(e.currentTarget.value)}
-              style={{ flex: 1 }}
-            />
-            <Button
-              variant="default"
-              onClick={rename}
-              loading={pendingKey === 'rename'}
-              disabled={!newName.trim() || newName.trim() === name}
-            >
-              Сохранить
-            </Button>
-          </Group>
-          <Button
-            mt="auto"
-            variant="light"
-            color="red"
-            onClick={() => setConfirmDelete(true)}
-            loading={pendingKey === 'delete'}
-          >
-            Удалить пространство
-          </Button>
-        </>
+        <Button
+          mt="auto"
+          variant="light"
+          color="red"
+          onClick={() => setConfirmDelete(true)}
+          loading={pendingKey === 'delete'}
+        >
+          Удалить пространство
+        </Button>
       ) : (
         <Button mt="auto" variant="light" color="red" onClick={leave} loading={pendingKey === 'leave'}>
           Выйти из бюджета
