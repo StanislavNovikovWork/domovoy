@@ -4,4 +4,5 @@ export * from './category';
 export * from './transaction';
 export * from './plan';
 export * from './changelog';
+export * from './calendar';
 export * from './place';

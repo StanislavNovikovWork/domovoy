@@ -55,7 +55,7 @@ export function SpaceShell({ householdId, hasNewChangelog, children }: Props) {
     { label: 'Карта', icon: <IconMap size={18} /> },
     { label: 'Контакты', icon: <IconAddressBook size={18} /> },
     { label: 'Дни рождения', icon: <IconCake size={18} /> },
-    { label: 'Календарь', icon: <IconCalendar size={18} /> },
+    { label: 'Календарь', icon: <IconCalendar size={18} />, href: `${base}/calendar` },
   ];
   const serviceItems: Item[] = [
     { label: 'Премиум', icon: <IconCrown size={18} /> },

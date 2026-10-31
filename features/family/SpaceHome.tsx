@@ -65,7 +65,13 @@ export function SpaceHome({ householdId, name, hasNewChangelog }: Props) {
     { key: 'map', label: 'Карта', icon: <IconMap size={30} />, color: 'cyan' },
     { key: 'contacts', label: 'Контакты', icon: <IconAddressBook size={30} />, color: 'grape' },
     { key: 'birthdays', label: 'Дни рождения', icon: <IconCake size={30} />, color: 'orange' },
-    { key: 'calendar', label: 'Календарь', icon: <IconCalendar size={30} />, color: 'teal' },
+    {
+      key: 'calendar',
+      label: 'Календарь',
+      icon: <IconCalendar size={30} />,
+      color: 'teal',
+      href: `/budgets/${householdId}/calendar`,
+    },
   ];
 
   return (
