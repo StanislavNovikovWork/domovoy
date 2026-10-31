@@ -18,17 +18,22 @@ import {
 } from '@tabler/icons-react';
 import { Box, Card, Container, Group, SimpleGrid, Stack, Text } from '@mantine/core';
 import { BOTTOM_INSET, HomeProfileBar } from '@/features/app-shell';
+import type { CalendarEventItem } from '@/server/calendar/queries';
+import { BudgetSummaryWidget, type BudgetWidgetData } from './BudgetSummaryWidget';
+import { CalendarWidget } from './CalendarWidget';
 
 type Props = {
   householdId: string;
   name: string;
   hasNewChangelog: boolean;
+  /** данные для виджетов «Рабочего стола» на десктопе */
+  desktop: { budget: BudgetWidgetData; events: CalendarEventItem[] };
 };
 
 type Tile = { key: string; label: string; icon: ReactNode; color: string; href?: string };
 
 // пространство (хозяйство): «Главная» и «Профиль» в углах, ниже плитки разделов
-export function SpaceHome({ householdId, name, hasNewChangelog }: Props) {
+export function SpaceHome({ householdId, name, hasNewChangelog, desktop }: Props) {
   const tiles: Tile[] = [
     {
       key: 'budget',
@@ -80,11 +85,18 @@ export function SpaceHome({ householdId, name, hasNewChangelog }: Props) {
       <Box hiddenFrom="md">
         <HomeProfileBar hasNewChangelog={hasNewChangelog} title={name} />
       </Box>
-      {/* на десктопе вместо плиток — боковое меню и пустой «Рабочий стол» под виджеты */}
+      {/* на десктопе вместо плиток — боковое меню и «Рабочий стол» с виджетами */}
       <Box visibleFrom="md">
-        <Text size="xl" fw={700}>
-          Рабочий стол
-        </Text>
+        <Stack gap="lg">
+          <Group align="stretch" wrap="nowrap" gap="lg">
+            <Box style={{ flex: 1, minWidth: 0 }} maw={720}>
+              <BudgetSummaryWidget householdId={householdId} data={desktop.budget} />
+            </Box>
+            <Box w={300} style={{ flexShrink: 0 }}>
+              <CalendarWidget householdId={householdId} events={desktop.events} />
+            </Box>
+          </Group>
+        </Stack>
       </Box>
       <Container size="md" p={0} mx={0} w="100%" hiddenFrom="md">
         <Stack gap="lg">

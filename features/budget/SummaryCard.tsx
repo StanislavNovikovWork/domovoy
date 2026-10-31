@@ -389,34 +389,57 @@ export function SummaryCard({
       pos="relative"
       bd={{ base: 'none', sm: BORDER }}
     >
-      {/* «+»: у периодического бюджета фиксирована по центру низа экрана,
-          а в обзоре уезжает к углу карточки; у разового — справа сверху карточки */}
-      <ActionIcon
-        ref={fabRef}
-        size="lg"
-        radius="xl"
-        aria-label="Добавить операцию"
-        onClick={onAdd}
-        {...(periodic
-          ? {
-              pos: 'fixed',
-              left: '50%',
-              bottom: FAB_BOTTOM,
-              style: {
-                zIndex: 40,
-                transform: `translateX(-50%)${fabOffset ? ` translate(${fabOffset.x}px, ${fabOffset.y}px)` : ''}`,
-                transition: `transform ${COLLAPSE_TRANSITION}`,
-              },
-            }
-          : {
-              pos: 'absolute',
-              right: { base: 0, sm: 16 },
-              top: { base: 0, sm: 16 },
-              style: { zIndex: 2 },
-            })}
-      >
-        <IconPlus size={20} />
-      </ActionIcon>
+      {/* «+»: у периодического бюджета на мобильном фиксирована по центру низа экрана,
+          а в деталях уезжает к углу карточки; на десктопе и у разового —
+          справа сверху внутри карточки */}
+      {periodic ? (
+        <>
+          <ActionIcon
+            ref={fabRef}
+            hiddenFrom="sm"
+            size="lg"
+            radius="xl"
+            aria-label="Добавить операцию"
+            onClick={onAdd}
+            pos="fixed"
+            left="50%"
+            bottom={FAB_BOTTOM}
+            style={{
+              zIndex: 40,
+              transform: `translateX(-50%)${fabOffset ? ` translate(${fabOffset.x}px, ${fabOffset.y}px)` : ''}`,
+              transition: `transform ${COLLAPSE_TRANSITION}`,
+            }}
+          >
+            <IconPlus size={20} />
+          </ActionIcon>
+          <ActionIcon
+            visibleFrom="sm"
+            size="lg"
+            radius="xl"
+            aria-label="Добавить операцию"
+            onClick={onAdd}
+            pos="absolute"
+            right={16}
+            top={16}
+            style={{ zIndex: 2 }}
+          >
+            <IconPlus size={20} />
+          </ActionIcon>
+        </>
+      ) : (
+        <ActionIcon
+          size="lg"
+          radius="xl"
+          aria-label="Добавить операцию"
+          onClick={onAdd}
+          pos="absolute"
+          right={{ base: 0, sm: 16 }}
+          top={{ base: 0, sm: 16 }}
+          style={{ zIndex: 2 }}
+        >
+          <IconPlus size={20} />
+        </ActionIcon>
+      )}
 
       <Stack gap="lg">
         {periodic ? (
