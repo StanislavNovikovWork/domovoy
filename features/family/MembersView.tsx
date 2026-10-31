@@ -18,7 +18,6 @@ import {
   Button,
   CopyButton,
   Group,
-  Modal,
   Stack,
   Text,
   TextInput,
@@ -28,11 +27,8 @@ import { notifications } from '@mantine/notifications';
 import {
   addGuest,
   createInvite,
-  deleteHousehold,
-  leaveHousehold,
   removeGuest,
   removeMember,
-  renameHousehold,
   revokeInvite,
 } from '@/server/households/actions';
 import type {
@@ -41,6 +37,7 @@ import type {
   InviteItem,
 } from '@/server/households/queries';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
+import { SpaceControls } from './SpaceControls';
 
 type Props = {
   householdId: string;
@@ -50,6 +47,8 @@ type Props = {
   members: HouseholdMemberItem[];
   guests: HouseholdGuestItem[];
   invites: InviteItem[];
+  /** false: без переименования и удаления/выхода (в настройках они в «Управление пространством») */
+  showSpaceControls?: boolean;
 };
 
 export function MembersView({
@@ -60,6 +59,7 @@ export function MembersView({
   members,
   guests,
   invites,
+  showSpaceControls = true,
 }: Props) {
   const router = useRouter();
   // ключ выполняемого действия: загрузка показывается только на нажатой кнопке
@@ -78,43 +78,12 @@ export function MembersView({
   useEffect(() => setOrigin(window.location.origin), []);
   const inviteUrl = (token: string) => `${origin}/invite/${token}`;
   const isOwner = role === 'owner';
-  const [newName, setNewName] = useState(name);
-  useEffect(() => setNewName(name), [name]);
-
-  const rename = () => {
-    track('rename', async () => {
-      const result = await renameHousehold({ householdId, name: newName });
-      if (result.ok) {
-        notifications.show({ message: 'Название изменено', color: 'teal' });
-        router.refresh();
-      } else {
-        notifications.show({ message: result.error, color: 'red' });
-      }
-    });
-  };
-
-  const [confirmDelete, setConfirmDelete] = useState(false);
   // участник, которого подтверждают на удаление (аккаунт или гость)
   const [confirmMember, setConfirmMember] = useState<{
     guest: boolean;
     id: string;
     name: string;
   } | null>(null);
-
-  // вызывается после подтверждения в окне Mantine
-  const remove = () => {
-    setConfirmDelete(false);
-    track('delete', async () => {
-      const result = await deleteHousehold({ householdId });
-      if (result.ok) {
-        notifications.show({ message: 'Бюджет удалён', color: 'teal' });
-        router.push('/');
-        router.refresh();
-      } else {
-        notifications.show({ message: result.error, color: 'red' });
-      }
-    });
-  };
 
   const run = (
     key: string,
@@ -144,19 +113,6 @@ export function MembersView({
     });
   };
 
-  const leave = () => {
-    track('leave', async () => {
-      const result = await leaveHousehold({ householdId });
-      if (result.ok) {
-        notifications.show({ message: 'Вы вышли из бюджета', color: 'teal' });
-        router.push('/');
-        router.refresh();
-      } else {
-        notifications.show({ message: result.error, color: 'red' });
-      }
-    });
-  };
-
   const [guestName, setGuestName] = useState('');
   // участник без аккаунта: сохраняется гостем бюджета и появляется в форме расхода
   const addGuestByName = () => {
@@ -175,29 +131,6 @@ export function MembersView({
 
   return (
     <>
-    <Modal
-      opened={confirmDelete}
-      onClose={() => setConfirmDelete(false)}
-      title="Удалить бюджет?"
-      size="sm"
-      centered
-      zIndex={350}
-    >
-      <Stack>
-        <Text size="sm">
-          Бюджет «{name}» будет удалён вместе со всеми операциями. Это нельзя отменить.
-        </Text>
-        <Group justify="flex-end">
-          <Button variant="default" onClick={() => setConfirmDelete(false)}>
-            Отмена
-          </Button>
-          <Button color="red" onClick={remove}>
-            Удалить
-          </Button>
-        </Group>
-      </Stack>
-    </Modal>
-
     <ConfirmModal
       opened={!!confirmMember}
       onClose={() => setConfirmMember(null)}
@@ -406,41 +339,8 @@ export function MembersView({
           </>
         )}
 
-        {isOwner && (
-          <>
-            <Group align="flex-end" wrap="nowrap">
-              <TextInput
-                label="Название бюджета"
-                maxLength={40}
-                value={newName}
-                onChange={(e) => setNewName(e.currentTarget.value)}
-                style={{ flex: 1 }}
-              />
-              <Button
-                variant="default"
-                onClick={rename}
-                loading={pendingKey === 'rename'}
-                disabled={!newName.trim() || newName.trim() === name}
-              >
-                Сохранить
-              </Button>
-            </Group>
-            <Button
-              mt="auto"
-              variant="light"
-              color="red"
-              onClick={() => setConfirmDelete(true)}
-              loading={pendingKey === 'delete'}
-            >
-              Удалить бюджет
-            </Button>
-          </>
-        )}
-
-        {!isOwner && (
-          <Button mt="auto" variant="light" color="red" onClick={leave} loading={pendingKey === 'leave'}>
-            Выйти из бюджета
-          </Button>
+        {showSpaceControls && (
+          <SpaceControls householdId={householdId} name={name} role={role} />
         )}
     </Stack>
     </>

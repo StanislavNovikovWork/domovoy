@@ -144,20 +144,22 @@ export function MonthPlan({
 
   const content = (
       <Stack gap="sm">
-        <Group justify="space-between" gap="sm" wrap="nowrap" align="flex-start">
-          <Box style={{ minWidth: 0 }}>
-            {/* внутри таба заголовок не нужен — им служит сам таб */}
-            {!bare && (
+        <Group justify="space-between" gap="sm" wrap="nowrap">
+          {/* внутри таба заголовок не нужен — им служит сам таб */}
+          {!bare && (
+            <Box style={{ minWidth: 0 }}>
               <Text fw={600} size="lg">
                 План затрат
               </Text>
-            )}
-            <Text size={bare ? 'sm' : 'xs'} c="dimmed" lh={bare ? '30px' : undefined}>
-              {periodic && formatPeriodLabel('month', month)}
-            </Text>
-          </Box>
+            </Box>
+          )}
           {canEdit && (
-            <Group gap={6} wrap="nowrap" justify="space-between" style={{ flex: 1 }}>
+            <Group
+              gap={6}
+              wrap="nowrap"
+              justify={onEditCategories ? 'center' : 'flex-end'}
+              style={{ flex: 1 }}
+            >
               {onEditCategories && (
                 <Button
                   variant="default"
@@ -174,11 +176,22 @@ export function MonthPlan({
                 leftSection={onEditCategories ? <IconPlus size={14} /> : <IconAdjustments size={14} />}
                 onClick={onEdit}
               >
-                {onEditCategories ? 'Создать план' : 'Настроить'}
+                {onEditCategories
+                  ? rows.length > 0
+                    ? 'Редактировать план'
+                    : 'Создать план'
+                  : 'Настроить'}
               </Button>
             </Group>
           )}
         </Group>
+
+        {/* месяц отдельной строкой под кнопками */}
+        {periodic && (
+          <Text size={bare ? 'sm' : 'xs'} c="dimmed">
+            {formatPeriodLabel('month', month)}
+          </Text>
+        )}
 
         {rows.length === 0 ? (
           <Stack gap="xs" align="flex-start">

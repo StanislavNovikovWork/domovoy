@@ -3,8 +3,14 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import {
+  IconAddressBook,
+  IconCake,
+  IconCalendar,
+  IconChefHat,
+  IconFileText,
+  IconMap,
+  IconList,
   IconMapPin,
-  IconNotes,
   IconPhoto,
   IconTargetArrow,
   IconUsers,
@@ -53,7 +59,13 @@ export function SpaceHome({ householdId, name, hasNewChangelog }: Props) {
       color: 'orange',
       href: `/budgets/${householdId}/plan`,
     },
-    { key: 'notes', label: 'Заметки', icon: <IconNotes size={30} />, color: 'pink' },
+    { key: 'lists', label: 'Списки', icon: <IconList size={30} />, color: 'pink' },
+    { key: 'docs', label: 'Документы', icon: <IconFileText size={30} />, color: 'indigo' },
+    { key: 'menu', label: 'Меню', icon: <IconChefHat size={30} />, color: 'red' },
+    { key: 'map', label: 'Карта', icon: <IconMap size={30} />, color: 'cyan' },
+    { key: 'contacts', label: 'Контакты', icon: <IconAddressBook size={30} />, color: 'grape' },
+    { key: 'birthdays', label: 'Дни рождения', icon: <IconCake size={30} />, color: 'orange' },
+    { key: 'calendar', label: 'Календарь', icon: <IconCalendar size={30} />, color: 'teal' },
   ];
 
   return (

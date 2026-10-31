@@ -253,7 +253,7 @@ function RowEditor({
         </ActionIcon>
       </Group>
 
-      <Stack gap="xs" pl={44}>
+      <Stack gap="xs" pl={{ base: 0, sm: 44 }}>
         {row.items.map((i) => (
           <Group key={i.name} gap="sm" wrap="nowrap">
             <Text size="sm" c="dimmed" truncate style={{ flex: 1, minWidth: 0 }}>
