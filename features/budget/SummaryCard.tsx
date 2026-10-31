@@ -41,11 +41,14 @@ const EMPTY_CHART: ChartSlice[] = [
 ];
 const EMPTY_TILE: TypeTile = { total: 0, slices: [] };
 
-// размер иконки категории внутри сектора кольца и порог: на крошечных секторах иконку не рисуем
+// размер иконки категории внутри сектора кольца
 const SLICE_ICON = 14;
-const SLICE_ICON_MIN = 0.06;
 const CHART_SIZE = 140;
 const CHART_THICKNESS = 22;
+// минимальный угол бара: любой сектор вмещает иконку категории (+ запас по дуге)
+const MIN_SLICE_DEG = Math.ceil(
+  ((SLICE_ICON + 16) / (CHART_SIZE / 2 - CHART_THICKNESS / 2)) * (180 / Math.PI)
+);
 // визуально обход идёт от верхней точки по часовой (90 → -270).
 // Рисуем сектора в обратном порядке против часовой (-270 → 90): тогда в каждом стыке
 // верхним оказывается конец предыдущего по обходу бара — они наезжают каскадом в одну сторону
@@ -75,15 +78,22 @@ function arcPath(fromDeg: number, toDeg: number): string {
   return `M ${pt(fromDeg)} A ${radius} ${radius} 0 0 0 ${pt(toDeg)}`;
 }
 
-// стартовые углы секторов в развёртке рендера: recharts делит реальный размах
-// (360 − N·pad), и каждый следующий сектор стартует на pad раньше конца предыдущего
+// стартовые углы секторов в развёртке рендера, повторяя математику recharts:
+// каждый сектор = minAngle + доля от (360 − N·minAngle − N·pad), следующий
+// стартует на pad раньше конца предыдущего. minAngle считается, только если
+// есть сектор меньше него — иначе recharts его не применяет
 function sectorStarts(renderSlices: ChartSlice[]): number[] {
   const total = renderSlices.reduce((acc, s) => acc + s.value, 0);
-  const realTotal = Math.abs(CHART_END - CHART_START) - renderSlices.length * CHART_PAD;
+  const sweep = Math.abs(CHART_END - CHART_START);
+  const effMin =
+    renderSlices.some((s) => (s.value / total) * sweep < MIN_SLICE_DEG) && total > 0
+      ? MIN_SLICE_DEG
+      : 0;
+  const realTotal = sweep - renderSlices.length * effMin - renderSlices.length * CHART_PAD;
   let start = CHART_END;
   return renderSlices.map((s) => {
     const a = start;
-    start += (s.value / total) * realTotal + CHART_PAD;
+    start += effMin + (s.value / total) * realTotal + CHART_PAD;
     return a;
   });
 }
@@ -101,7 +111,7 @@ function sliceIcons(renderSlices: ChartSlice[]) {
   const inset = -3;
   const starts = sectorStarts(renderSlices);
   return renderSlices.flatMap((s, i) => {
-    if (!s.icon || s.value / total < SLICE_ICON_MIN) {
+    if (!s.icon) {
       return [];
     }
     const rad = (-(starts[i] + inset) * Math.PI) / 180;
@@ -123,8 +133,9 @@ function ChartRing({ slices }: { slices: ChartSlice[] }) {
         paddingAngle={CHART_PAD}
         startAngle={CHART_END}
         endAngle={CHART_START}
-        // закруглённые концы баров: радиус = половина толщины кольца
-        pieProps={{ cornerRadius: CHART_THICKNESS / 2 }}
+        // закруглённые концы баров: радиус = половина толщины кольца;
+        // минимальный угол — чтобы на любом баре влезла иконка категории
+        pieProps={{ cornerRadius: CHART_THICKNESS / 2, minAngle: MIN_SLICE_DEG }}
         // без обводки у секторов
         strokeWidth={0}
         // метки внутри секторов свои (иконки), withLabels бы добавил +40px высоты под внешние
