@@ -35,8 +35,8 @@ export default async function SettingsSpacePage({ params }: Props) {
   return (
     <Stack gap="lg" mih="calc(100dvh - var(--mantine-spacing-md))" pb={BOTTOM_INSET}>
       <PageTopBar
-        backHref={`/budgets/${budget.id}`}
-        backLabel="К пространству"
+        backHref={`/budgets/${budget.id}/settings`}
+        backLabel="К настройкам"
         title="Управление пространством"
         titleAlign="left"
       />

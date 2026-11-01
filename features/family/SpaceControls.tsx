@@ -95,7 +95,7 @@ export function SpaceControls({ householdId, name, role }: Props) {
     track('leave', async () => {
       const result = await leaveHousehold({ householdId });
       if (result.ok) {
-        notifications.show({ message: 'Вы вышли из бюджета', color: 'teal' });
+        notifications.show({ message: 'Вы вышли из пространства', color: 'teal' });
         router.push('/');
         router.refresh();
       } else {
@@ -141,7 +141,7 @@ export function SpaceControls({ householdId, name, role }: Props) {
         </Button>
       ) : (
         <Button mt="auto" variant="light" color="red" onClick={leave} loading={pendingKey === 'leave'}>
-          Выйти из бюджета
+          Выйти из пространства
         </Button>
       )}
     </>

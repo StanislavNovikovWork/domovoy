@@ -1,8 +1,8 @@
-import { redirect } from 'next/navigation';
+import { SettingsIndex } from '@/features/family/SettingsNav';
 
 type Props = { params: Promise<{ id: string }> };
 
 export default async function SettingsPage({ params }: Props) {
   const { id } = await params;
-  redirect(`/budgets/${id}/settings/space`);
+  return <SettingsIndex householdId={id} />;
 }

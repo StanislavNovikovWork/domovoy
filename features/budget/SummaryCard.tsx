@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { IconPlus, IconX } from '@tabler/icons-react';
+import { IconChevronLeft, IconChevronRight, IconPlus, IconX } from '@tabler/icons-react';
 import { Carousel } from '@mantine/carousel';
 import { DonutChart } from '@mantine/charts';
 import type { EmblaCarouselType } from 'embla-carousel';
@@ -212,22 +212,30 @@ function TypeTileButton({
       <Text size="sm" c="dimmed" mb="sm">
         {label}
       </Text>
-      <Group gap={2} wrap="nowrap" h={10} align="stretch">
+      <Group gap={0} wrap="nowrap" h={10} align="stretch">
         {sum === 0 ? (
           <Box
             flex={1}
             style={{ borderRadius: 999, background: 'var(--mantine-color-default-border)' }}
           />
         ) : (
-          tile.slices.map((s) => (
+          tile.slices.map((s, i) => (
             <Box
               key={s.name}
               h="100%"
               style={{
                 // доля категории в общей сумме: пропорциональная ширина сегмента
                 flex: `${s.value} 1 0`,
-                minWidth: 4,
-                borderRadius: 999,
+                minWidth: 8,
+                // скругление только у краёв всего бара: стыки сегментов квадратные
+                borderRadius:
+                  tile.slices.length === 1
+                    ? 999
+                    : i === 0
+                      ? '999px 0 0 999px'
+                      : i === tile.slices.length - 1
+                        ? '0 999px 999px 0'
+                        : 0,
                 background: cssColor(s.color),
               }}
             />
@@ -323,6 +331,23 @@ export function SummaryCard({
     return () => clearTimeout(t);
   }, [periodic, selected]);
 
+  // десктопный «+»: в обзоре — правый верхний угол карточки над плиткой «Доходы»,
+  // в деталях — тот же правый угол, но снизу; одна кнопка, переезд translateY
+  const deskFabRef = useRef<HTMLButtonElement>(null);
+  const [deskFabOffset, setDeskFabOffset] = useState(0);
+  useLayoutEffect(() => {
+    if (!selected || !cardRef.current || !deskFabRef.current) {
+      setDeskFabOffset(0);
+      return;
+    }
+    // меряем после анимации раскрытия, чтобы низ карточки был финальным
+    const t = setTimeout(() => {
+      if (!cardRef.current || !deskFabRef.current) return;
+      setDeskFabOffset(cardRef.current.offsetHeight - 16 - deskFabRef.current.offsetHeight - 16);
+    }, COLLAPSE_MS);
+    return () => clearTimeout(t);
+  }, [selected]);
+
   // свайп по крайним слайдам листает дату: влево — прошлый период, вправо — следующий.
   // Сдвигаем только после докатки (settle): чарт доезжает в центр по направлению свайпа,
   // а не прыгает и не меняет содержимое под пальцем в середине анимации
@@ -412,7 +437,10 @@ export function SummaryCard({
           >
             <IconPlus size={20} />
           </ActionIcon>
+          {/* десктопный «+»: в обзоре справа сверху над плиткой «Доходы»,
+              в деталях уезжает transform-смещением в правый нижний угол карточки */}
           <ActionIcon
+            ref={deskFabRef}
             visibleFrom="sm"
             size="lg"
             radius="xl"
@@ -421,7 +449,11 @@ export function SummaryCard({
             pos="absolute"
             right={16}
             top={16}
-            style={{ zIndex: 2 }}
+            style={{
+              zIndex: 2,
+              transform: `translateY(${deskFabOffset}px)`,
+              transition: `transform ${COLLAPSE_TRANSITION}`,
+            }}
           >
             <IconPlus size={20} />
           </ActionIcon>
@@ -457,18 +489,49 @@ export function SummaryCard({
                 transitionDuration={COLLAPSE_MS}
                 transitionTimingFunction={COLLAPSE_EASING}
               >
-                <SimpleGrid cols={2} spacing="sm" pr={{ base: 0, sm: 48 }}>
-                  <TypeTileButton
-                    label="Траты"
-                    tile={expense ?? EMPTY_TILE}
-                    onClick={() => onSelectType?.('expense')}
-                  />
-                  <TypeTileButton
-                    label="Доходы"
-                    tile={income ?? EMPTY_TILE}
-                    onClick={() => onSelectType?.('income')}
-                  />
-                </SimpleGrid>
+                <Stack gap="sm">
+                  {/* на десктопе в обзоре: табы периода, затем период со стрелками листания */}
+                  <Group justify="space-between" align="center" wrap="nowrap" visibleFrom="sm">
+                    <Group gap="sm" align="center" wrap="nowrap">
+                      {filters}
+                      <Group gap={2} wrap="nowrap">
+                        <ActionIcon
+                          variant="subtle"
+                          color="gray"
+                          size="sm"
+                          aria-label="Прошлый период"
+                          onClick={() => onShiftDate?.(-1)}
+                        >
+                          <IconChevronLeft size={14} />
+                        </ActionIcon>
+                        <Text size="md" c="dimmed" style={{ minWidth: 110, textAlign: 'center' }}>
+                          {formatPeriodCaption(period, date).replace(/^за /, '')}
+                        </Text>
+                        <ActionIcon
+                          variant="subtle"
+                          color="gray"
+                          size="sm"
+                          aria-label="Следующий период"
+                          onClick={() => onShiftDate?.(1)}
+                        >
+                          <IconChevronRight size={14} />
+                        </ActionIcon>
+                      </Group>
+                    </Group>
+                  </Group>
+                  <SimpleGrid cols={2} spacing="sm">
+                    <TypeTileButton
+                      label="Траты"
+                      tile={expense ?? EMPTY_TILE}
+                      onClick={() => onSelectType?.('expense')}
+                    />
+                    <TypeTileButton
+                      label="Доходы"
+                      tile={income ?? EMPTY_TILE}
+                      onClick={() => onSelectType?.('income')}
+                    />
+                  </SimpleGrid>
+                </Stack>
               </Collapse>
 
               {/* детали типа: сумма, сравнение с прошлым периодом и кольцо долей категорий */}
@@ -478,7 +541,7 @@ export function SummaryCard({
                 transitionTimingFunction={COLLAPSE_EASING}
               >
                 <Stack gap="lg">
-                  <Stack gap="sm" pr={{ base: 0, sm: 48 }}>
+                  <Stack gap="sm">
                     <Group justify="space-between" align="flex-start" wrap="nowrap">
                       <Stack gap={2}>
                         <Group gap="sm" align="center" wrap="nowrap">

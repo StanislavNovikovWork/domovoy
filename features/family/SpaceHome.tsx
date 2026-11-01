@@ -12,8 +12,8 @@ import {
   IconList,
   IconMapPin,
   IconPhoto,
+  IconSettings,
   IconTargetArrow,
-  IconUsers,
   IconWallet,
 } from '@tabler/icons-react';
 import { Box, Card, Container, Group, SimpleGrid, Stack, Text } from '@mantine/core';
@@ -43,11 +43,11 @@ export function SpaceHome({ householdId, name, hasNewChangelog, desktop }: Props
       href: `/budgets/${householdId}/budget`,
     },
     {
-      key: 'members',
-      label: 'Участники',
-      icon: <IconUsers size={30} />,
-      color: 'blue',
-      href: `/budgets/${householdId}/members`,
+      key: 'settings',
+      label: 'Настройки',
+      icon: <IconSettings size={30} />,
+      color: 'gray',
+      href: `/budgets/${householdId}/settings`,
     },
     {
       key: 'places',
