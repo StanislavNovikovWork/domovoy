@@ -30,6 +30,7 @@ import {
   removeGuest,
   removeMember,
   revokeInvite,
+  setMemberObserver,
 } from '@/server/households/actions';
 import type {
   HouseholdGuestItem,
@@ -176,6 +177,30 @@ export function MembersView({
                     aria-label="Владелец"
                     style={{ color: 'var(--mantine-color-yellow-6)' }}
                   />
+                )}
+                {/* наблюдатель не участвует в долях: владелец включает любому участнику,
+                    участник — себе; залитая кнопка — роль активна */}
+                {(isOwner || m.userId === currentUserId) && m.role !== 'owner' && (
+                  <Button
+                    variant={m.observer ? 'light' : 'subtle'}
+                    color={m.observer ? 'blue' : 'gray'}
+                    size="compact-xs"
+                    disabled={pendingKey === `observer:${m.userId}`}
+                    onClick={() =>
+                      run(
+                        `observer:${m.userId}`,
+                        () =>
+                          setMemberObserver({
+                            householdId,
+                            userId: m.userId,
+                            observer: !m.observer,
+                          }),
+                        m.observer ? 'Наблюдатель снят' : 'Участник — наблюдатель'
+                      )
+                    }
+                  >
+                    Наблюдатель
+                  </Button>
                 )}
                 {isOwner && m.role !== 'owner' && (
                   <Tooltip label="Удалить из бюджета">

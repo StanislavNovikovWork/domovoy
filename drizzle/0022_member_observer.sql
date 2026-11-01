@@ -1,0 +1,1 @@
+ALTER TABLE "household_member" ADD COLUMN "observer" boolean DEFAULT false NOT NULL;

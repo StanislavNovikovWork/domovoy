@@ -27,6 +27,12 @@ export const removeMemberSchema = z.object({
   userId: z.string().min(1),
 });
 
+export const setObserverSchema = z.object({
+  householdId: z.uuid(),
+  userId: z.string().min(1),
+  observer: z.boolean(),
+});
+
 export const addGuestSchema = z.object({
   householdId: z.uuid(),
   name: z.string().trim().min(1).max(40),

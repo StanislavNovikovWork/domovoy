@@ -27,7 +27,7 @@ export function FamilyBudget({ members, guests, currentUserId, role, name, ...bu
   return (
     <BudgetView
       {...budget}
-      members={members.map((m) => ({ userId: m.userId, name: m.name }))}
+      members={members.map((m) => ({ userId: m.userId, name: m.name, observer: m.observer }))}
       guestNames={guests.map((g) => g.name)}
       currentUserId={currentUserId}
       role={role}

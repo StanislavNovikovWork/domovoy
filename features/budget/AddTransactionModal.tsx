@@ -36,7 +36,8 @@ type Type = 'expense' | 'income';
 
 const TYPES: Type[] = ['expense', 'income'];
 
-export type ShareParticipant = { userId: string; name: string };
+// наблюдатель не попадает в доли расхода
+export type ShareParticipant = { userId: string; name: string; observer?: boolean };
 
 export type SaveTransactionRequest = {
   // id редактируемой операции; без него создаётся новая
@@ -202,6 +203,8 @@ function TransactionForm({
     ...(members ?? []),
     ...guestList.map((name) => ({ userId: null, name })),
   ];
+  // наблюдатели не участвуют в долях расхода
+  const sharePeople = people.filter((p) => !('observer' in p && p.observer));
   const shareKey = (s: { userId: string | null; name: string }) => s.userId ?? `~${s.name}`;
   // плательщиком может быть любой участник: член бюджета или гость
   const payers = people;
@@ -230,6 +233,22 @@ function TransactionForm({
     form.values.shares.forEach((_, i) => {
       form.setFieldValue(`shares.${i}.amount`, (base + (i < extra ? 1 : 0)) / 100);
     });
+  };
+
+  // включает в долю всех участников и гостей сразу и делит сумму между ними поровну
+  const splitEvenlyForAll = () => {
+    const total = form.values.amount;
+    if (typeof total !== 'number' || total <= 0) {
+      notifications.show({ message: 'Сначала введите сумму', color: 'red' });
+      return;
+    }
+    const kopecks = Math.round(total * 100);
+    const base = Math.floor(kopecks / sharePeople.length);
+    const extra = kopecks - base * sharePeople.length;
+    form.setFieldValue(
+      'shares',
+      sharePeople.map((p, i) => ({ ...p, amount: (base + (i < extra ? 1 : 0)) / 100 }))
+    );
   };
 
   const handleSubmit = form.onSubmit((values) => {
@@ -337,14 +356,25 @@ function TransactionForm({
               <Text size="sm" fw={500}>
                 Участники расхода
               </Text>
-              {form.values.shares.length >= 2 && (
+              {/* пока участников меньше двух — «Поровну на всех» выбирает всех и делит;
+                  как только выбраны двое и больше, на её месте появляется «Поровну» */}
+              {form.values.shares.length >= 2 ? (
                 <Button type="button" variant="light" size="compact-xs" onClick={splitEvenly}>
                   Поровну
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="light"
+                  size="compact-xs"
+                  onClick={splitEvenlyForAll}
+                >
+                  Поровну на всех
                 </Button>
               )}
             </Group>
             <Stack gap={0} mb="xs">
-              {people.map((p) => {
+              {sharePeople.map((p) => {
                 const i = form.values.shares.findIndex((s) => shareKey(s) === shareKey(p));
                 const share = i >= 0 ? form.values.shares[i] : null;
                 return (

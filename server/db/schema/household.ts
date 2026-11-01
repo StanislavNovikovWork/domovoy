@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 // server/db/schema/household.ts
 import {
+  boolean,
   pgEnum,
   pgTable,
   uuid,
@@ -39,6 +40,8 @@ export const householdMember = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
     role: householdRole('role').notNull(),
+    // наблюдатель: не участвует в долях расходов; включает владелец или сам участник
+    observer: boolean('observer').notNull().default(false),
     joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

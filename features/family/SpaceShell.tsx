@@ -28,6 +28,8 @@ type Props = {
   householdId: string;
   /** красная точка на пункте «Профиль»: есть непрочитанный список изменений */
   hasNewChangelog: boolean;
+  /** периодический бюджет показывает разделы-заглушки и календарь */
+  periodic: boolean;
   children: ReactNode;
 };
 
@@ -40,27 +42,43 @@ type Item = {
 };
 
 // боковое меню пространства на десктопе; на мобильном вместо него плитки на «Рабочем столе»
-export function SpaceShell({ householdId, hasNewChangelog, children }: Props) {
+export function SpaceShell({ householdId, hasNewChangelog, periodic, children }: Props) {
   const pathname = usePathname();
   const base = `/budgets/${householdId}`;
   const items: Item[] = [
     { label: 'Рабочий стол', icon: <IconLayoutDashboard size={18} />, href: base },
     { label: 'Бюджет', icon: <IconWallet size={18} />, href: `${base}/budget` },
     { label: 'Куда сходить', icon: <IconMapPin size={18} />, href: `${base}/places` },
-    { label: 'Галерея', icon: <IconPhoto size={18} /> },
-    { label: 'План затрат', icon: <IconTargetArrow size={18} />, href: `${base}/plan` },
-    { label: 'Списки', icon: <IconList size={18} /> },
-    { label: 'Документы', icon: <IconFileText size={18} /> },
-    { label: 'Меню', icon: <IconChefHat size={18} /> },
-    { label: 'Карта', icon: <IconMap size={18} /> },
-    { label: 'Контакты', icon: <IconAddressBook size={18} /> },
-    { label: 'Дни рождения', icon: <IconCake size={18} /> },
-    { label: 'Календарь', icon: <IconCalendar size={18} />, href: `${base}/calendar` },
+    // разделы-заглушки и календарь пока только у периодических пространств
+    ...(periodic
+      ? [
+          { label: 'Галерея', icon: <IconPhoto size={18} /> },
+          { label: 'План затрат', icon: <IconTargetArrow size={18} />, href: `${base}/plan` },
+          { label: 'Списки', icon: <IconList size={18} /> },
+          { label: 'Документы', icon: <IconFileText size={18} /> },
+          { label: 'Меню', icon: <IconChefHat size={18} /> },
+          { label: 'Карта', icon: <IconMap size={18} /> },
+          { label: 'Контакты', icon: <IconAddressBook size={18} /> },
+          { label: 'Дни рождения', icon: <IconCake size={18} /> },
+          { label: 'Календарь', icon: <IconCalendar size={18} />, href: `${base}/calendar` },
+        ]
+      : [{ label: 'План затрат', icon: <IconTargetArrow size={18} />, href: `${base}/plan` }]),
   ];
   const serviceItems: Item[] = [
-    { label: 'Премиум', icon: <IconCrown size={18} /> },
-    { label: 'Настройки', icon: <IconSettings size={18} />, href: `${base}/settings`, prefix: true },
-    { label: 'Помощь', icon: <IconHelp size={18} /> },
+    ...(periodic
+      ? [
+          { label: 'Премиум', icon: <IconCrown size={18} /> },
+          { label: 'Настройки', icon: <IconSettings size={18} />, href: `${base}/settings`, prefix: true },
+          { label: 'Помощь', icon: <IconHelp size={18} /> },
+        ]
+      : [
+          {
+            label: 'Настройки',
+            icon: <IconSettings size={18} />,
+            href: `${base}/settings`,
+            prefix: true,
+          },
+        ]),
   ];
 
   const renderItem = (item: Item) =>

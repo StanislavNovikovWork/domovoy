@@ -25,6 +25,7 @@ import {
   householdIdSchema,
   removeGuestSchema,
   removeMemberSchema,
+  setObserverSchema,
   renameHouseholdSchema,
   revokeInviteSchema,
 } from '@/shared/schemas/household';
@@ -207,6 +208,38 @@ export async function removeMember(input: unknown): Promise<Result> {
   } catch (error) {
     console.error('removeMember failed', error);
     return { ok: false, error: 'Не удалось удалить участника' };
+  }
+}
+
+// наблюдатель не участвует в долях расходов: включает владелец любому участнику
+// или участник сам себе; владельцу роль наблюдателя не положена
+export async function setMemberObserver(input: unknown): Promise<Result> {
+  const parsed = setObserverSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: 'Некорректный запрос' };
+  const data = parsed.data;
+
+  try {
+    const { session, member } = await requireHouseholdAccess(data.householdId);
+    const self = data.userId === session.user.id;
+    if (member.role !== 'owner' && !self) {
+      return { ok: false, error: 'Менять наблюдателя может владелец или сам участник' };
+    }
+    if (self && member.role === 'owner') {
+      return { ok: false, error: 'Владелец не может быть наблюдателем' };
+    }
+
+    await db
+      .update(householdMember)
+      .set({ observer: data.observer })
+      .where(
+        and(eq(householdMember.householdId, data.householdId), eq(householdMember.userId, data.userId))
+      );
+
+    revalidatePath('/', 'layout');
+    return { ok: true };
+  } catch (error) {
+    console.error('setMemberObserver failed', error);
+    return { ok: false, error: 'Не удалось изменить роль наблюдателя' };
   }
 }
 

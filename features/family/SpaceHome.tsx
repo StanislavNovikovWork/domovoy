@@ -56,7 +56,6 @@ export function SpaceHome({ householdId, name, hasNewChangelog, desktop }: Props
       color: 'cyan',
       href: `/budgets/${householdId}/places`,
     },
-    { key: 'gallery', label: 'Галерея', icon: <IconPhoto size={30} />, color: 'grape' },
     {
       key: 'plan',
       label: 'План затрат',
@@ -64,19 +63,30 @@ export function SpaceHome({ householdId, name, hasNewChangelog, desktop }: Props
       color: 'orange',
       href: `/budgets/${householdId}/plan`,
     },
-    { key: 'lists', label: 'Списки', icon: <IconList size={30} />, color: 'pink' },
-    { key: 'docs', label: 'Документы', icon: <IconFileText size={30} />, color: 'indigo' },
-    { key: 'menu', label: 'Меню', icon: <IconChefHat size={30} />, color: 'red' },
-    { key: 'map', label: 'Карта', icon: <IconMap size={30} />, color: 'cyan' },
-    { key: 'contacts', label: 'Контакты', icon: <IconAddressBook size={30} />, color: 'grape' },
-    { key: 'birthdays', label: 'Дни рождения', icon: <IconCake size={30} />, color: 'orange' },
-    {
-      key: 'calendar',
-      label: 'Календарь',
-      icon: <IconCalendar size={30} />,
-      color: 'teal',
-      href: `/budgets/${householdId}/calendar`,
-    },
+    // разделы-заглушки и календарь пока только у периодических пространств
+    ...(desktop.budget.periodic
+      ? [
+          { key: 'gallery', label: 'Галерея', icon: <IconPhoto size={30} />, color: 'grape' },
+          { key: 'lists', label: 'Списки', icon: <IconList size={30} />, color: 'pink' },
+          { key: 'docs', label: 'Документы', icon: <IconFileText size={30} />, color: 'indigo' },
+          { key: 'menu', label: 'Меню', icon: <IconChefHat size={30} />, color: 'red' },
+          { key: 'map', label: 'Карта', icon: <IconMap size={30} />, color: 'cyan' },
+          {
+            key: 'contacts',
+            label: 'Контакты',
+            icon: <IconAddressBook size={30} />,
+            color: 'grape',
+          },
+          { key: 'birthdays', label: 'Дни рождения', icon: <IconCake size={30} />, color: 'orange' },
+          {
+            key: 'calendar',
+            label: 'Календарь',
+            icon: <IconCalendar size={30} />,
+            color: 'teal',
+            href: `/budgets/${householdId}/calendar`,
+          },
+        ]
+      : []),
   ];
 
   return (
