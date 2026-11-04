@@ -5,4 +5,5 @@ export * from './transaction';
 export * from './plan';
 export * from './changelog';
 export * from './calendar';
+export * from './checklist';
 export * from './place';

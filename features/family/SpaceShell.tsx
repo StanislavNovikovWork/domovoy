@@ -54,7 +54,7 @@ export function SpaceShell({ householdId, hasNewChangelog, periodic, children }:
       ? [
           { label: 'Галерея', icon: <IconPhoto size={18} /> },
           { label: 'План затрат', icon: <IconTargetArrow size={18} />, href: `${base}/plan` },
-          { label: 'Списки', icon: <IconList size={18} /> },
+          { label: 'Списки', icon: <IconList size={18} />, href: `${base}/lists` },
           { label: 'Документы', icon: <IconFileText size={18} /> },
           { label: 'Меню', icon: <IconChefHat size={18} /> },
           { label: 'Карта', icon: <IconMap size={18} /> },

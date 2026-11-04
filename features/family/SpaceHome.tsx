@@ -67,7 +67,13 @@ export function SpaceHome({ householdId, name, hasNewChangelog, desktop }: Props
     ...(desktop.budget.periodic
       ? [
           { key: 'gallery', label: 'Галерея', icon: <IconPhoto size={30} />, color: 'grape' },
-          { key: 'lists', label: 'Списки', icon: <IconList size={30} />, color: 'pink' },
+          {
+            key: 'lists',
+            label: 'Списки',
+            icon: <IconList size={30} />,
+            color: 'pink',
+            href: `/budgets/${householdId}/lists`,
+          },
           { key: 'docs', label: 'Документы', icon: <IconFileText size={30} />, color: 'indigo' },
           { key: 'menu', label: 'Меню', icon: <IconChefHat size={30} />, color: 'red' },
           { key: 'map', label: 'Карта', icon: <IconMap size={30} />, color: 'cyan' },
