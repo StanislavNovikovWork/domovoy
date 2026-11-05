@@ -8,6 +8,7 @@ import {
   Button,
   Group,
   Modal,
+  SegmentedControl,
   SimpleGrid,
   Stack,
   Text,
@@ -47,6 +48,8 @@ export function CalendarView({ householdId, currentUserId, events }: Props) {
   const [selected, setSelected] = useState<string>(dayjs().format('YYYY-MM-DD'));
   // показанный месяц десктопной сетки (YYYY-MM-01)
   const [month, setMonth] = useState<string>(dayjs().startOf('month').format('YYYY-MM-DD'));
+  const [level, setLevel] = useState<'month' | 'year' | 'decade'>('month');
+  const [pickerDate, setPickerDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
   const [addOpened, setAddOpened] = useState(false);
   const [editing, setEditing] = useState<CalendarEventItem | null>(null);
   const [title, setTitle] = useState('');
@@ -136,9 +139,25 @@ export function CalendarView({ householdId, currentUserId, events }: Props) {
 
       {/* мобильный вид: компактный календарь с точками */}
       <Box hiddenFrom="md">
+        <SegmentedControl
+          fullWidth
+          mb="sm"
+          value={level === 'month' ? 'month' : 'year'}
+          onChange={(v) => setLevel(v as 'month' | 'year')}
+          data={[
+            { value: 'month', label: 'Месяц' },
+            { value: 'year', label: 'Год' },
+          ]}
+        />
         <DatePicker
+          fullWidth
+          size="md"
           firstDayOfWeek={1}
           locale="ru"
+          level={level}
+          onLevelChange={setLevel}
+          date={pickerDate}
+          onDateChange={setPickerDate}
           value={selected}
           onChange={(d) => d && setSelected(d)}
           renderDay={(date) => (

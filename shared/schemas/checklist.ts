@@ -36,3 +36,15 @@ export const itemIdSchema = z.object({
 export const toggleItemSchema = itemIdSchema.extend({
   done: z.boolean(),
 });
+
+export const addPresetSchema = z.object({
+  id: z.uuid().optional(),
+  householdId: z.uuid(),
+  title: z.string().trim().min(1).max(200),
+  quantity: z.string().trim().max(40).optional(),
+});
+
+export const presetIdSchema = z.object({
+  householdId: z.uuid(),
+  presetId: z.uuid(),
+});

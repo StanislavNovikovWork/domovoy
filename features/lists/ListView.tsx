@@ -1,5 +1,7 @@
 'use client';
 
+import dayjs from 'dayjs';
+import 'dayjs/locale/ru';
 import { useOptimistic, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { IconPencil, IconPlus, IconTrash } from '@tabler/icons-react';
@@ -11,21 +13,24 @@ import {
   Group,
   Modal,
   Stack,
+  Tabs,
   Text,
   TextInput,
+  UnstyledButton,
 } from '@mantine/core';
-import dayjs from 'dayjs';
-import 'dayjs/locale/ru';
+import { useMediaQuery } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { PageTopBar } from '@/features/app-shell';
 import {
   addItem,
+  addPreset,
   deleteItem,
+  deletePreset,
   deleteList,
   renameList,
   toggleItem,
 } from '@/server/checklists/actions';
-import type { ChecklistItemRow } from '@/server/checklists/queries';
+import type { ChecklistItemRow, ShoppingPresetRow } from '@/server/checklists/queries';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { useMobileModal } from '@/shared/ui/useMobileModal';
 
@@ -35,6 +40,7 @@ type Props = {
   householdId: string;
   list: { id: string; title: string; kind: string };
   items: ChecklistItemRow[];
+  presets: ShoppingPresetRow[];
 };
 
 type Action =
@@ -43,11 +49,13 @@ type Action =
   | { type: 'remove'; id: string };
 
 // страница списка: пункты с чекбоксами, у покупок количество, у задач дата
-export function ListView({ householdId, list, items }: Props) {
+export function ListView({ householdId, list, items, presets }: Props) {
   const router = useRouter();
   const mobileModal = useMobileModal();
   const [, startTransition] = useTransition();
   const isShopping = list.kind === 'shopping';
+  const isDesktop = useMediaQuery('(min-width: 62em)');
+  const [tab, setTab] = useState<string | null>('list');
 
   const [title, setTitle] = useState('');
   const [quantity, setQuantity] = useState('');
@@ -99,6 +107,28 @@ export function ListView({ householdId, list, items }: Props) {
     });
   };
 
+  const addFromPreset = (preset: ShoppingPresetRow) => {
+    const item: ChecklistItemRow = {
+      id: crypto.randomUUID(),
+      title: preset.title,
+      done: false,
+      quantity: preset.quantity,
+      dueDate: null,
+      createdBy: null,
+    };
+    startTransition(async () => {
+      apply({ type: 'add', item });
+      const result = await addItem({
+        id: item.id,
+        householdId,
+        listId: list.id,
+        title: item.title,
+        quantity: item.quantity ?? undefined,
+      });
+      if (!result.ok) notifications.show({ message: result.error, color: 'red' });
+    });
+  };
+
   const toggle = (row: ChecklistItemRow) =>
     startTransition(async () => {
       apply({ type: 'toggle', id: row.id, done: !row.done });
@@ -130,41 +160,8 @@ export function ListView({ householdId, list, items }: Props) {
     router.refresh();
   };
 
-  return (
-    <Stack gap="lg" maw={560}>
-      <PageTopBar
-        backHref={`/budgets/${householdId}/lists`}
-        backLabel="К спискам"
-        title={list.title}
-        right={
-          <Group gap={4} wrap="nowrap">
-            <ActionIcon
-              size="lg"
-              radius="xl"
-              variant="subtle"
-              color="gray"
-              aria-label="Переименовать список"
-              onClick={() => {
-                setNewTitle(list.title);
-                setRenameOpened(true);
-              }}
-            >
-              <IconPencil size={18} />
-            </ActionIcon>
-            <ActionIcon
-              size="lg"
-              radius="xl"
-              variant="subtle"
-              color="red"
-              aria-label="Удалить список"
-              onClick={() => setConfirmDelete(true)}
-            >
-              <IconTrash size={18} />
-            </ActionIcon>
-          </Group>
-        }
-      />
-
+  const listBlock = (
+    <>
       {/* добавление пункта: название + количество (покупки) или дата (задачи) */}
       <Box component="form" onSubmit={add}>
         <Group gap="sm" wrap="nowrap">
@@ -182,7 +179,12 @@ export function ListView({ householdId, list, items }: Props) {
               onChange={(e) => setQuantity(e.currentTarget.value)}
             />
           ) : (
-            <TextInput type="date" w={150} value={dueDate} onChange={(e) => setDueDate(e.currentTarget.value)} />
+            <TextInput
+              type="date"
+              w={150}
+              value={dueDate}
+              onChange={(e) => setDueDate(e.currentTarget.value)}
+            />
           )}
           <ActionIcon
             type="submit"
@@ -242,6 +244,79 @@ export function ListView({ householdId, list, items }: Props) {
           </Group>
         ))}
       </Stack>
+    </>
+  );
+
+  const topBar = (
+      <PageTopBar
+        backHref={`/budgets/${householdId}/lists`}
+        backLabel="К спискам"
+        title={list.title}
+        right={
+          <Group gap={4} wrap="nowrap">
+            <ActionIcon
+              size="lg"
+              radius="xl"
+              variant="subtle"
+              color="gray"
+              aria-label="Переименовать список"
+              onClick={() => {
+                setNewTitle(list.title);
+                setRenameOpened(true);
+              }}
+            >
+              <IconPencil size={18} />
+            </ActionIcon>
+            <ActionIcon
+              size="lg"
+              radius="xl"
+              variant="subtle"
+              color="red"
+              aria-label="Удалить список"
+              onClick={() => setConfirmDelete(true)}
+            >
+              <IconTrash size={18} />
+            </ActionIcon>
+          </Group>
+        }
+      />
+  );
+
+  return (
+    <Stack gap="lg" maw={isShopping && isDesktop ? 960 : 560}>
+      {!(isShopping && isDesktop) && topBar}
+
+      {isShopping && !isDesktop && (
+        <Tabs value={tab} onChange={setTab}>
+          <Tabs.List grow>
+            <Tabs.Tab value="list">Список</Tabs.Tab>
+            <Tabs.Tab value="presets">Заготовки</Tabs.Tab>
+          </Tabs.List>
+        </Tabs>
+      )}
+
+      {isShopping && isDesktop ? (
+        <Group align="flex-start" gap="xl" wrap="nowrap">
+          <Stack gap="lg" style={{ flex: 1, minWidth: 0 }}>
+            {topBar}
+            {listBlock}
+          </Stack>
+          <Box w={320} style={{ flexShrink: 0 }}>
+            <PresetsPanel showTitle householdId={householdId} presets={presets} onPick={addFromPreset} />
+          </Box>
+        </Group>
+      ) : isShopping && tab === 'presets' ? (
+        <PresetsPanel
+          householdId={householdId}
+          presets={presets}
+          onPick={(p) => {
+            addFromPreset(p);
+            setTab('list');
+          }}
+        />
+      ) : (
+        listBlock
+      )}
 
       <Modal
         opened={renameOpened}
@@ -271,6 +346,120 @@ export function ListView({ householdId, list, items }: Props) {
         text={`Список «${list.title}» и все его пункты будут удалены.`}
         onConfirm={removeList}
       />
+    </Stack>
+  );
+}
+
+// заготовки покупок: клик по позиции добавляет её в список
+function PresetsPanel({
+  householdId,
+  presets,
+  onPick,
+  showTitle = false,
+}: {
+  showTitle?: boolean;
+  householdId: string;
+  presets: ShoppingPresetRow[];
+  onPick: (preset: ShoppingPresetRow) => void;
+}) {
+  const router = useRouter();
+  const [, startTransition] = useTransition();
+  const [title, setTitle] = useState('');
+  const [quantity, setQuantity] = useState('');
+
+  const add = (ev: React.FormEvent) => {
+    ev.preventDefault();
+    const trimmed = title.trim();
+    if (!trimmed) return;
+    setTitle('');
+    setQuantity('');
+    startTransition(async () => {
+      const result = await addPreset({
+        householdId,
+        title: trimmed,
+        quantity: quantity.trim() || undefined,
+      });
+      if (!result.ok) notifications.show({ message: result.error, color: 'red' });
+      router.refresh();
+    });
+  };
+
+  const remove = (id: string) =>
+    startTransition(async () => {
+      await deletePreset({ householdId, presetId: id });
+      router.refresh();
+    });
+
+  return (
+    <Stack gap="lg">
+      {showTitle && (
+        <Group h={34} align="center">
+          <Text fw={600}>Заготовки</Text>
+        </Group>
+      )}
+      <Box component="form" onSubmit={add}>
+        <Group gap="sm" wrap="nowrap">
+          <TextInput
+            placeholder="Новая заготовка"
+            value={title}
+            onChange={(e) => setTitle(e.currentTarget.value)}
+            style={{ flex: 1 }}
+          />
+          <TextInput
+            placeholder="Кол-во"
+            w={80}
+            value={quantity}
+            onChange={(e) => setQuantity(e.currentTarget.value)}
+          />
+          <ActionIcon
+            type="submit"
+            size="lg"
+            radius="xl"
+            disabled={!title.trim()}
+            aria-label="Добавить заготовку"
+          >
+            <IconPlus size={18} />
+          </ActionIcon>
+        </Group>
+      </Box>
+      {presets.length === 0 && (
+        <Text size="sm" c="dimmed">
+          Добавьте позиции, которые часто покупаете
+        </Text>
+      )}
+      <Stack gap={0}>
+        {presets.map((p) => (
+          <Group
+            key={p.id}
+            gap="sm"
+            wrap="nowrap"
+            py={6}
+            style={{ borderBottom: '1px solid var(--mantine-color-default-border)' }}
+          >
+            <UnstyledButton
+              onClick={() => onPick(p)}
+              style={{ flex: 1, minWidth: 0 }}
+              aria-label={`Добавить в список: ${p.title}`}
+            >
+              <Text size="sm">{p.title}</Text>
+              {p.quantity && (
+                <Text size="xs" c="dimmed">
+                  {p.quantity}
+                </Text>
+              )}
+            </UnstyledButton>
+            <ActionIcon
+              variant="subtle"
+              color="gray"
+              size="sm"
+              aria-label="Удалить заготовку"
+              onClick={() => remove(p.id)}
+            >
+              <IconTrash size={15} />
+            </ActionIcon>
+          </Group>
+        ))}
+      </Stack>
     </Stack>
   );
 }

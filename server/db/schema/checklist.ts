@@ -35,3 +35,19 @@ export const checklistItem = pgTable(
   },
   (t) => [index('checklist_item_list_idx').on(t.listId)]
 );
+
+// заготовки покупок пространства: по клику добавляются в список покупок
+export const shoppingPreset = pgTable(
+  'shopping_preset',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    householdId: uuid('household_id')
+      .notNull()
+      .references(() => household.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    quantity: text('quantity'),
+    createdBy: text('created_by').references(() => user.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('shopping_preset_household_idx').on(t.householdId)]
+);

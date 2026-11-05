@@ -169,6 +169,13 @@
       "when": 1793639087773,
       "tag": "0023_checklists",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1793904341883,
+      "tag": "0024_shopping_presets",
+      "breakpoints": true
     }
   ]
 }

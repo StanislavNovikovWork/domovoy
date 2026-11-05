@@ -3,13 +3,15 @@
 import { and, eq } from 'drizzle-orm';
 import 'server-only';
 import { db } from '@/server/db';
-import { checklist, checklistItem } from '@/server/db/schema';
+import { checklist, checklistItem, shoppingPreset } from '@/server/db/schema';
 import { requireHouseholdAccess, revalidateBudgetPages } from '@/server/households/access';
 import {
   addItemSchema,
+  addPresetSchema,
   createListSchema,
   itemIdSchema,
   listIdSchema,
+  presetIdSchema,
   renameListSchema,
   toggleItemSchema,
 } from '@/shared/schemas/checklist';
@@ -139,5 +141,49 @@ export async function deleteItem(input: unknown): Promise<Result> {
   } catch (error) {
     console.error('deleteItem failed', error);
     return { ok: false, error: 'Не удалось удалить пункт' };
+  }
+}
+
+export async function addPreset(input: unknown): Promise<Result> {
+  const parsed = addPresetSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: 'Введите название позиции' };
+  const data = parsed.data;
+
+  try {
+    const { session } = await requireHouseholdAccess(data.householdId);
+    await db.insert(shoppingPreset).values({
+      id: data.id,
+      householdId: data.householdId,
+      title: data.title,
+      quantity: data.quantity || null,
+      createdBy: session.user.id,
+    });
+
+    revalidateBudgetPages();
+    return { ok: true };
+  } catch (error) {
+    console.error('addPreset failed', error);
+    return { ok: false, error: 'Не удалось добавить позицию' };
+  }
+}
+
+export async function deletePreset(input: unknown): Promise<Result> {
+  const parsed = presetIdSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: 'Некорректный запрос' };
+  const data = parsed.data;
+
+  try {
+    await requireHouseholdAccess(data.householdId);
+    await db
+      .delete(shoppingPreset)
+      .where(
+        and(eq(shoppingPreset.id, data.presetId), eq(shoppingPreset.householdId, data.householdId))
+      );
+
+    revalidateBudgetPages();
+    return { ok: true };
+  } catch (error) {
+    console.error('deletePreset failed', error);
+    return { ok: false, error: 'Не удалось удалить позицию' };
   }
 }

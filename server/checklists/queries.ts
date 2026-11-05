@@ -1,7 +1,7 @@
 import { and, asc, eq } from 'drizzle-orm';
 import 'server-only';
 import { db } from '@/server/db';
-import { checklist, checklistItem } from '@/server/db/schema';
+import { checklist, checklistItem, shoppingPreset } from '@/server/db/schema';
 
 export type ChecklistItem = Awaited<ReturnType<typeof listChecklists>>[number];
 export type ChecklistItemRow = Awaited<ReturnType<typeof listItems>>[number];
@@ -48,4 +48,19 @@ export async function listItems(listId: string) {
     .from(checklistItem)
     .where(eq(checklistItem.listId, listId))
     .orderBy(asc(checklistItem.done), asc(checklistItem.createdAt));
+}
+
+export type ShoppingPresetRow = Awaited<ReturnType<typeof listPresets>>[number];
+
+// заготовки покупок пространства
+export async function listPresets(householdId: string) {
+  return db
+    .select({
+      id: shoppingPreset.id,
+      title: shoppingPreset.title,
+      quantity: shoppingPreset.quantity,
+    })
+    .from(shoppingPreset)
+    .where(eq(shoppingPreset.householdId, householdId))
+    .orderBy(asc(shoppingPreset.createdAt));
 }
