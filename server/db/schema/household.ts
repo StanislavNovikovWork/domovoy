@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 // server/db/schema/household.ts
 import {
   boolean,
+  jsonb,
   pgEnum,
   pgTable,
   uuid,
@@ -42,6 +43,8 @@ export const householdMember = pgTable(
     role: householdRole('role').notNull(),
     // наблюдатель: не участвует в долях расходов; включает владелец или сам участник
     observer: boolean('observer').notNull().default(false),
+    // плитки мобильного рабочего стола, скрытые этим участником (личная настройка)
+    hiddenTiles: jsonb('hidden_tiles').$type<string[]>().notNull().default([]),
     joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

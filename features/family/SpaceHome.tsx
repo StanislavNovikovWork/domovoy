@@ -28,6 +28,8 @@ type Props = {
   householdId: string;
   name: string;
   hasNewChangelog: boolean;
+  /** плитки, скрытые этим участником */
+  hiddenTiles: string[];
   /** данные для виджетов «Рабочего стола» на десктопе */
   desktop: {
     budget: BudgetWidgetData;
@@ -39,8 +41,8 @@ type Props = {
 type Tile = { key: string; label: string; icon: ReactNode; color: string; href?: string };
 
 // пространство (хозяйство): «Главная» и «Профиль» в углах, ниже плитки разделов
-export function SpaceHome({ householdId, name, hasNewChangelog, desktop }: Props) {
-  const tiles: Tile[] = [
+export function SpaceHome({ householdId, name, hasNewChangelog, hiddenTiles, desktop }: Props) {
+  const allTiles: Tile[] = [
     {
       key: 'budget',
       label: 'Бюджет',
@@ -119,6 +121,8 @@ export function SpaceHome({ householdId, name, hasNewChangelog, desktop }: Props
         ]
       : []),
   ];
+  // «Настройки» скрыть нельзя; остальное прячет сам участник
+  const tiles = allTiles.filter((t) => t.key === 'settings' || !hiddenTiles.includes(t.key));
 
   return (
     <Stack gap="lg" pb={BOTTOM_INSET}>

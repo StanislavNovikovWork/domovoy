@@ -1,0 +1,1 @@
+ALTER TABLE "household_member" ADD COLUMN "hidden_tiles" jsonb DEFAULT '[]'::jsonb NOT NULL;

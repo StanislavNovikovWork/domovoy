@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { IconCrown, IconSettings2 } from '@tabler/icons-react';
+import { IconCrown, IconLayoutGrid, IconSettings2 } from '@tabler/icons-react';
 import { Box, NavLink, Stack, Text } from '@mantine/core';
 import { PageTopBar } from '@/features/app-shell';
 import type { ReactNode } from 'react';
@@ -15,6 +15,7 @@ type Item = { label: string; icon: ReactNode; href: string };
 function navItems(base: string): Item[] {
   return [
     { label: 'Управление пространством', icon: <IconSettings2 size={18} />, href: `${base}/space` },
+    { label: 'Настроить рабочий стол', icon: <IconLayoutGrid size={18} />, href: `${base}/desktop` },
     { label: 'Управление подпиской', icon: <IconCrown size={18} />, href: `${base}/subscription` },
   ];
 }

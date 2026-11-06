@@ -15,6 +15,7 @@ const householdColumns = {
   name: household.name,
   kind: household.kind,
   role: householdMember.role,
+  hiddenTiles: householdMember.hiddenTiles,
 };
 
 // бюджет, если пользователь в нём состоит
