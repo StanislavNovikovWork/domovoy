@@ -4,7 +4,7 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
 import { useOptimistic, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { IconPencil, IconPlus, IconTrash } from '@tabler/icons-react';
+import { IconPencil, IconArrowUp, IconTrash } from '@tabler/icons-react';
 import {
   ActionIcon,
   Box,
@@ -58,7 +58,6 @@ export function ListView({ householdId, list, items, presets }: Props) {
   const [tab, setTab] = useState<string | null>('list');
 
   const [title, setTitle] = useState('');
-  const [quantity, setQuantity] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [renameOpened, setRenameOpened] = useState(false);
   const [newTitle, setNewTitle] = useState(list.title);
@@ -86,12 +85,11 @@ export function ListView({ householdId, list, items, presets }: Props) {
       id: crypto.randomUUID(),
       title: trimmed,
       done: false,
-      quantity: isShopping && quantity.trim() ? quantity.trim() : null,
+      quantity: null,
       dueDate: !isShopping && dueDate ? dueDate : null,
       createdBy: null,
     };
     setTitle('');
-    setQuantity('');
     setDueDate('');
     startTransition(async () => {
       apply({ type: 'add', item });
@@ -118,6 +116,7 @@ export function ListView({ householdId, list, items, presets }: Props) {
     };
     startTransition(async () => {
       apply({ type: 'add', item });
+      notifications.show({ message: `«${preset.title}» добавлено в список`, color: 'teal' });
       const result = await addItem({
         id: item.id,
         householdId,
@@ -166,19 +165,14 @@ export function ListView({ householdId, list, items, presets }: Props) {
       <Box component="form" onSubmit={add}>
         <Group gap="sm" wrap="nowrap">
           <TextInput
-            placeholder={isShopping ? 'Что купить?' : 'Новая задача'}
+            variant="unstyled"
+            placeholder={isShopping ? '+ Добавить пункт' : '+ Новая задача'}
+            styles={{ input: { '::placeholder': { fontSize: '1.1em' } } }}
             value={title}
             onChange={(e) => setTitle(e.currentTarget.value)}
             style={{ flex: 1 }}
           />
-          {isShopping ? (
-            <TextInput
-              placeholder="Кол-во"
-              w={100}
-              value={quantity}
-              onChange={(e) => setQuantity(e.currentTarget.value)}
-            />
-          ) : (
+          {!isShopping && (
             <TextInput
               type="date"
               w={150}
@@ -194,7 +188,7 @@ export function ListView({ householdId, list, items, presets }: Props) {
             disabled={!title.trim()}
             aria-label="Добавить пункт"
           >
-            <IconPlus size={18} />
+            <IconArrowUp size={18} />
           </ActionIcon>
         </Group>
       </Box>
@@ -283,7 +277,7 @@ export function ListView({ householdId, list, items, presets }: Props) {
   );
 
   return (
-    <Stack gap="lg" maw={isShopping && isDesktop ? 960 : 560}>
+    <Stack gap="xs" maw={isShopping && isDesktop ? 960 : 560}>
       {!(isShopping && isDesktop) && topBar}
 
       {isShopping && !isDesktop && (
@@ -297,7 +291,7 @@ export function ListView({ householdId, list, items, presets }: Props) {
 
       {isShopping && isDesktop ? (
         <Group align="flex-start" gap="xl" wrap="nowrap">
-          <Stack gap="lg" style={{ flex: 1, minWidth: 0 }}>
+          <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
             {topBar}
             {listBlock}
           </Stack>
@@ -309,10 +303,7 @@ export function ListView({ householdId, list, items, presets }: Props) {
         <PresetsPanel
           householdId={householdId}
           presets={presets}
-          onPick={(p) => {
-            addFromPreset(p);
-            setTab('list');
-          }}
+          onPick={addFromPreset}
         />
       ) : (
         listBlock
@@ -365,20 +356,14 @@ function PresetsPanel({
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [title, setTitle] = useState('');
-  const [quantity, setQuantity] = useState('');
 
   const add = (ev: React.FormEvent) => {
     ev.preventDefault();
     const trimmed = title.trim();
     if (!trimmed) return;
     setTitle('');
-    setQuantity('');
     startTransition(async () => {
-      const result = await addPreset({
-        householdId,
-        title: trimmed,
-        quantity: quantity.trim() || undefined,
-      });
+      const result = await addPreset({ householdId, title: trimmed });
       if (!result.ok) notifications.show({ message: result.error, color: 'red' });
       router.refresh();
     });
@@ -391,7 +376,7 @@ function PresetsPanel({
     });
 
   return (
-    <Stack gap="lg">
+    <Stack gap="xs">
       {showTitle && (
         <Group h={34} align="center">
           <Text fw={600}>Заготовки</Text>
@@ -400,16 +385,12 @@ function PresetsPanel({
       <Box component="form" onSubmit={add}>
         <Group gap="sm" wrap="nowrap">
           <TextInput
-            placeholder="Новая заготовка"
+            variant="unstyled"
+            placeholder="+ Добавить заготовку"
+            styles={{ input: { '::placeholder': { fontSize: '1.1em' } } }}
             value={title}
             onChange={(e) => setTitle(e.currentTarget.value)}
             style={{ flex: 1 }}
-          />
-          <TextInput
-            placeholder="Кол-во"
-            w={80}
-            value={quantity}
-            onChange={(e) => setQuantity(e.currentTarget.value)}
           />
           <ActionIcon
             type="submit"
@@ -418,7 +399,7 @@ function PresetsPanel({
             disabled={!title.trim()}
             aria-label="Добавить заготовку"
           >
-            <IconPlus size={18} />
+            <IconArrowUp size={18} />
           </ActionIcon>
         </Group>
       </Box>

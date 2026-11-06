@@ -157,7 +157,7 @@ export function MembersView({
           {members.map((m) => (
             <Group key={m.userId} justify="space-between" wrap="nowrap">
               <Group gap="sm" wrap="nowrap">
-                <Avatar radius="xl" color="blue" name={m.name} />
+                <Avatar radius="xl" color="blue" name={m.name} src={m.image} />
                 <div>
                   <Text size="sm" fw={500}>
                     {m.name}

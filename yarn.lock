@@ -3175,6 +3175,33 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@iconify/icons-fluent-emoji@npm:^1.2.11":
+  version: 1.2.11
+  resolution: "@iconify/icons-fluent-emoji@npm:1.2.11"
+  dependencies:
+    "@iconify/types": "npm:*"
+  checksum: 10c0/a1714f02b9ebccccd475593538a4e7abbeda25f059b723763912a1d4268cb8563f6a908f9bdd347e0ae1f32e05b7d5629f1d3ed95365dd69a0800ee9d82f4010
+  languageName: node
+  linkType: hard
+
+"@iconify/react@npm:^6.0.4":
+  version: 6.0.4
+  resolution: "@iconify/react@npm:6.0.4"
+  dependencies:
+    "@iconify/types": "npm:^2.0.0"
+  peerDependencies:
+    react: ">=18.0.0"
+  checksum: 10c0/9c1c7389e8a14156c0a76ca6d696e7223ce2dc6a11d02a46dce805914c32d475a887f09e309f8b30e39a62b05871be96eeec2b5aa5961076af88cc7bfcc4b181
+  languageName: node
+  linkType: hard
+
+"@iconify/types@npm:*, @iconify/types@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "@iconify/types@npm:2.0.0"
+  checksum: 10c0/65a3be43500c7ccacf360e136d00e1717f050b7b91da644e94370256ac66f582d59212bdb30d00788aab4fc078262e91c95b805d1808d654b72f6d2072a7e4b2
+  languageName: node
+  linkType: hard
+
 "@img/colour@npm:^1.1.0":
   version: 1.1.0
   resolution: "@img/colour@npm:1.1.0"
@@ -11271,6 +11298,8 @@ __metadata:
   resolution: "mantine-next-template@workspace:."
   dependencies:
     "@babel/core": "npm:^8.0.0"
+    "@iconify/icons-fluent-emoji": "npm:^1.2.11"
+    "@iconify/react": "npm:^6.0.4"
     "@mantine/carousel": "npm:9.6.3"
     "@mantine/charts": "npm:9.6.3"
     "@mantine/core": "npm:9.6.3"
@@ -11314,6 +11343,7 @@ __metadata:
     react-dom: "npm:19.3.0"
     react-is: "npm:^19"
     recharts: "npm:^3.10.1"
+    sharp: "npm:0.35.4"
     storybook: "npm:^10.0.0"
     stylelint: "npm:^17.0.0"
     stylelint-config-standard-scss: "npm:^17.0.0"
@@ -13856,7 +13886,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"sharp@npm:^0.35.4":
+"sharp@npm:0.35.4, sharp@npm:^0.35.4":
   version: 0.35.4
   resolution: "sharp@npm:0.35.4"
   dependencies:

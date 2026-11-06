@@ -7,3 +7,5 @@ export * from './changelog';
 export * from './calendar';
 export * from './checklist';
 export * from './place';
+export * from './recipe';
+export * from './upload';

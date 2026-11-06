@@ -62,6 +62,7 @@ export async function listMembers(householdId: string) {
       userId: householdMember.userId,
       name: user.name,
       email: user.email,
+      image: user.image,
       role: householdMember.role,
       observer: householdMember.observer,
       joinedAt: householdMember.joinedAt,

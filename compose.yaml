@@ -8,6 +8,10 @@ services:
     ports:
       - "127.0.0.1:3000:3000"
     mem_limit: 600m
+    environment:
+      UPLOADS_DIR: /data/uploads
+    volumes:
+      - uploads-data:/data/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -34,3 +38,4 @@ services:
 
 volumes:
   postgres-data:
+  uploads-data:

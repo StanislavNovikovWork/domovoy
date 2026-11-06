@@ -176,6 +176,20 @@
       "when": 1793904341883,
       "tag": "0024_shopping_presets",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1793906989272,
+      "tag": "0025_recipes",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1793907348749,
+      "tag": "0026_uploads",
+      "breakpoints": true
     }
   ]
 }

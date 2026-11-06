@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { z } from 'zod';
 import { SpaceHome } from '@/features/family';
 import { listEvents } from '@/server/calendar/queries';
+import { getShoppingWidget } from '@/server/checklists/queries';
 import { listActiveCategories } from '@/server/categories/queries';
 import { hasUnseenChangelog } from '@/server/changelog/seen';
 import { getUserHousehold, listGuests, listMembers } from '@/server/households/queries';
@@ -19,12 +20,13 @@ export default async function SpacePage({ params }: Props) {
   const space = await getUserHousehold(user.id, id);
   if (!space) notFound();
 
-  const [transactions, categories, members, guests, events] = await Promise.all([
+  const [transactions, categories, members, guests, events, shopping] = await Promise.all([
     listAllTransactions(space.id),
     listActiveCategories(space.id),
     listMembers(space.id),
     listGuests(space.id),
     listEvents(space.id),
+    getShoppingWidget(space.id),
   ]);
 
   return (
@@ -44,6 +46,7 @@ export default async function SpacePage({ params }: Props) {
           role: space.role,
         },
         events,
+        shopping,
       }}
     />
   );

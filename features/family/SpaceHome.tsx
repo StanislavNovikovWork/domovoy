@@ -19,15 +19,21 @@ import {
 import { Box, Card, Container, Group, SimpleGrid, Stack, Text } from '@mantine/core';
 import { BOTTOM_INSET, HomeProfileBar } from '@/features/app-shell';
 import type { CalendarEventItem } from '@/server/calendar/queries';
+import type { ShoppingWidgetData } from '@/server/checklists/queries';
 import { BudgetSummaryWidget, type BudgetWidgetData } from './BudgetSummaryWidget';
 import { CalendarWidget } from './CalendarWidget';
+import { ShoppingWidget } from './ShoppingWidget';
 
 type Props = {
   householdId: string;
   name: string;
   hasNewChangelog: boolean;
   /** данные для виджетов «Рабочего стола» на десктопе */
-  desktop: { budget: BudgetWidgetData; events: CalendarEventItem[] };
+  desktop: {
+    budget: BudgetWidgetData;
+    events: CalendarEventItem[];
+    shopping: ShoppingWidgetData;
+  };
 };
 
 type Tile = { key: string; label: string; icon: ReactNode; color: string; href?: string };
@@ -42,13 +48,26 @@ export function SpaceHome({ householdId, name, hasNewChangelog, desktop }: Props
       color: 'teal',
       href: `/budgets/${householdId}/budget`,
     },
-    {
-      key: 'settings',
-      label: 'Настройки',
-      icon: <IconSettings size={30} />,
-      color: 'gray',
-      href: `/budgets/${householdId}/settings`,
-    },
+    // у периодических пространств вместо «Настроек» на втором месте «Списки»
+    ...(desktop.budget.periodic
+      ? [
+          {
+            key: 'lists',
+            label: 'Списки',
+            icon: <IconList size={30} />,
+            color: 'pink',
+            href: `/budgets/${householdId}/lists`,
+          },
+        ]
+      : [
+          {
+            key: 'settings',
+            label: 'Настройки',
+            icon: <IconSettings size={30} />,
+            color: 'gray',
+            href: `/budgets/${householdId}/settings`,
+          },
+        ]),
     {
       key: 'places',
       label: 'Куда сходить',
@@ -66,16 +85,28 @@ export function SpaceHome({ householdId, name, hasNewChangelog, desktop }: Props
     // разделы-заглушки и календарь пока только у периодических пространств
     ...(desktop.budget.periodic
       ? [
-          { key: 'gallery', label: 'Галерея', icon: <IconPhoto size={30} />, color: 'grape' },
           {
-            key: 'lists',
-            label: 'Списки',
-            icon: <IconList size={30} />,
-            color: 'pink',
-            href: `/budgets/${householdId}/lists`,
+            key: 'calendar',
+            label: 'Календарь',
+            icon: <IconCalendar size={30} />,
+            color: 'teal',
+            href: `/budgets/${householdId}/calendar`,
+          },
+          {
+            key: 'settings',
+            label: 'Настройки',
+            icon: <IconSettings size={30} />,
+            color: 'gray',
+            href: `/budgets/${householdId}/settings`,
           },
           { key: 'docs', label: 'Документы', icon: <IconFileText size={30} />, color: 'indigo' },
-          { key: 'menu', label: 'Меню', icon: <IconChefHat size={30} />, color: 'red' },
+          {
+            key: 'menu',
+            label: 'Меню',
+            icon: <IconChefHat size={30} />,
+            color: 'red',
+            href: `/budgets/${householdId}/menu`,
+          },
           { key: 'map', label: 'Карта', icon: <IconMap size={30} />, color: 'cyan' },
           {
             key: 'contacts',
@@ -84,13 +115,7 @@ export function SpaceHome({ householdId, name, hasNewChangelog, desktop }: Props
             color: 'grape',
           },
           { key: 'birthdays', label: 'Дни рождения', icon: <IconCake size={30} />, color: 'orange' },
-          {
-            key: 'calendar',
-            label: 'Календарь',
-            icon: <IconCalendar size={30} />,
-            color: 'teal',
-            href: `/budgets/${householdId}/calendar`,
-          },
+          { key: 'gallery', label: 'Галерея', icon: <IconPhoto size={30} />, color: 'grape' },
         ]
       : []),
   ];
@@ -108,9 +133,10 @@ export function SpaceHome({ householdId, name, hasNewChangelog, desktop }: Props
             <Box style={{ flex: 1, minWidth: 0 }} maw={720}>
               <BudgetSummaryWidget householdId={householdId} data={desktop.budget} />
             </Box>
-            <Box w={300} style={{ flexShrink: 0 }}>
+            <Stack w={300} gap="lg" style={{ flexShrink: 0 }}>
               <CalendarWidget householdId={householdId} events={desktop.events} />
-            </Box>
+              <ShoppingWidget householdId={householdId} data={desktop.shopping} />
+            </Stack>
           </Group>
         </Stack>
       </Box>

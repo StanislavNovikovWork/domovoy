@@ -8,6 +8,7 @@ import {
   Avatar,
   Box,
   Button,
+  FileButton,
   Group,
   Paper,
   Stack,
@@ -16,6 +17,7 @@ import {
   useComputedColorScheme,
   useMantineColorScheme,
 } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
 import { markChangelogSeen } from '@/server/changelog/actions';
 import type { ChangelogEntry } from '@/server/changelog/queries';
 import { BOTTOM_INSET, PageTopBar } from '@/features/app-shell';
@@ -24,7 +26,7 @@ import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { ChangelogModal } from './ChangelogModal';
 
 type Props = {
-  user: { name: string; email: string };
+  user: { name: string; email: string; image: string | null };
   changelog: ChangelogEntry[];
   hasNewChangelog: boolean;
 };
@@ -63,6 +65,23 @@ export function ProfileView({ user, changelog, hasNewChangelog }: Props) {
 
   const initials = (user.name || user.email).slice(0, 2).toUpperCase();
   const [confirmSignOut, setConfirmSignOut] = useState(false);
+  const [avatarLoading, setAvatarLoading] = useState(false);
+
+  const uploadAvatar = async (file: File | null) => {
+    if (!file) return;
+    setAvatarLoading(true);
+    const body = new FormData();
+    body.set('file', file);
+    body.set('kind', 'avatar');
+    const res = await fetch('/api/uploads', { method: 'POST', body });
+    setAvatarLoading(false);
+    if (!res.ok) {
+      const { error } = await res.json().catch(() => ({ error: 'Не удалось загрузить фото' }));
+      notifications.show({ message: error, color: 'red' });
+      return;
+    }
+    router.refresh();
+  };
 
   return (
     <>
@@ -89,9 +108,24 @@ export function ProfileView({ user, changelog, hasNewChangelog }: Props) {
         bd={{ base: 'none', sm: '1px solid var(--mantine-color-default-border)' }}
       >
         <Stack align="center" gap="xs">
-          <Avatar size={72} radius="xl" color="blue">
-            {initials}
-          </Avatar>
+          <FileButton onChange={uploadAvatar} accept="image/*">
+            {(props) => (
+              <Avatar
+                {...props}
+                size={72}
+                radius="xl"
+                color="blue"
+                src={user.image}
+                style={{ cursor: 'pointer', opacity: avatarLoading ? 0.5 : 1 }}
+                aria-label="Сменить аватарку"
+              >
+                {initials}
+              </Avatar>
+            )}
+          </FileButton>
+          <Text size="xs" c="dimmed">
+            Нажмите на аватарку, чтобы сменить
+          </Text>
           <Text fw={600} size="lg">
             {user.name}
           </Text>

@@ -12,7 +12,7 @@ export default async function ProfilePage() {
   const changelog = await listChangelog();
   return (
     <ProfileView
-      user={{ name: user.name, email: user.email }}
+      user={{ name: user.name, email: user.email, image: user.image ?? null }}
       changelog={changelog}
       hasNewChangelog={hasUnseenChangelog(user)}
     />

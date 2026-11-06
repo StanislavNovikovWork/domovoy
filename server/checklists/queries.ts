@@ -1,4 +1,4 @@
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, eq, sql } from 'drizzle-orm';
 import 'server-only';
 import { db } from '@/server/db';
 import { checklist, checklistItem, shoppingPreset } from '@/server/db/schema';
@@ -8,16 +8,19 @@ export type ChecklistItemRow = Awaited<ReturnType<typeof listItems>>[number];
 
 // списки пространства в порядке создания
 export async function listChecklists(householdId: string) {
-  return db
+  const rows = await db
     .select({
       id: checklist.id,
       title: checklist.title,
       kind: checklist.kind,
       createdBy: checklist.createdBy,
+      // невыполненные пункты (для плашек на мобильном)
+      pendingCount: sql<number>`(select count(*)::int from checklist_item where checklist_item.list_id = checklist.id and checklist_item.done = false)`,
     })
     .from(checklist)
     .where(eq(checklist.householdId, householdId))
     .orderBy(asc(checklist.createdAt));
+  return rows;
 }
 
 // список с проверкой принадлежности пространству
@@ -63,4 +66,25 @@ export async function listPresets(householdId: string) {
     .from(shoppingPreset)
     .where(eq(shoppingPreset.householdId, householdId))
     .orderBy(asc(shoppingPreset.createdAt));
+}
+
+export type ShoppingWidgetData = Awaited<ReturnType<typeof getShoppingWidget>>;
+
+// виджет «Рабочего стола»: первый список покупок и до 5 невыполненных пунктов
+export async function getShoppingWidget(householdId: string) {
+  const [list] = await db
+    .select({ id: checklist.id, title: checklist.title })
+    .from(checklist)
+    .where(and(eq(checklist.householdId, householdId), eq(checklist.kind, 'shopping')))
+    .orderBy(asc(checklist.createdAt))
+    .limit(1);
+  if (!list) return null;
+
+  const items = await db
+    .select({ id: checklistItem.id, title: checklistItem.title, quantity: checklistItem.quantity })
+    .from(checklistItem)
+    .where(and(eq(checklistItem.listId, list.id), eq(checklistItem.done, false)))
+    .orderBy(asc(checklistItem.createdAt))
+    .limit(5);
+  return { list, items };
 }
