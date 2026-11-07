@@ -6,6 +6,7 @@ import {
   IconAddressBook,
   IconCake,
   IconCalendar,
+  IconFolder,
   IconChefHat,
   IconFileText,
   IconMap,
@@ -18,6 +19,7 @@ import {
 } from '@tabler/icons-react';
 import { Box, Card, Container, Group, SimpleGrid, Stack, Text } from '@mantine/core';
 import { BOTTOM_INSET, HomeProfileBar } from '@/features/app-shell';
+import { DESKTOP_TILE_KEYS, orderDesktopTiles } from '@/shared/config/desktop-tiles';
 import type { CalendarEventItem } from '@/server/calendar/queries';
 import type { ShoppingWidgetData } from '@/server/checklists/queries';
 import { BudgetSummaryWidget, type BudgetWidgetData } from './BudgetSummaryWidget';
@@ -30,6 +32,8 @@ type Props = {
   hasNewChangelog: boolean;
   /** плитки, скрытые этим участником */
   hiddenTiles: string[];
+  /** порядок плиток этого участника */
+  tileOrder: string[];
   /** данные для виджетов «Рабочего стола» на десктопе */
   desktop: {
     budget: BudgetWidgetData;
@@ -41,7 +45,14 @@ type Props = {
 type Tile = { key: string; label: string; icon: ReactNode; color: string; href?: string };
 
 // пространство (хозяйство): «Главная» и «Профиль» в углах, ниже плитки разделов
-export function SpaceHome({ householdId, name, hasNewChangelog, hiddenTiles, desktop }: Props) {
+export function SpaceHome({
+  householdId,
+  name,
+  hasNewChangelog,
+  hiddenTiles,
+  tileOrder,
+  desktop,
+}: Props) {
   const allTiles: Tile[] = [
     {
       key: 'budget',
@@ -118,11 +129,27 @@ export function SpaceHome({ householdId, name, hasNewChangelog, hiddenTiles, des
           },
           { key: 'birthdays', label: 'Дни рождения', icon: <IconCake size={30} />, color: 'orange' },
           { key: 'gallery', label: 'Галерея', icon: <IconPhoto size={30} />, color: 'grape' },
+          {
+            key: 'projects',
+            label: 'Поездки',
+            icon: <IconFolder size={30} />,
+            color: 'blue',
+            href: `/budgets/${householdId}/projects`,
+          },
         ]
       : []),
   ];
-  // «Настройки» скрыть нельзя; остальное прячет сам участник
-  const tiles = allTiles.filter((t) => t.key === 'settings' || !hiddenTiles.includes(t.key));
+  // «Настройки» не настраиваются и остаются на своём месте; остальные плитки сортируем по tileOrder
+  const configurable = new Set(DESKTOP_TILE_KEYS);
+  const orderedConfigurable = orderDesktopTiles(
+    allTiles.filter((t) => configurable.has(t.key)),
+    tileOrder
+  );
+  const queue = [...orderedConfigurable];
+  const orderedAll = allTiles
+    .map((t) => (configurable.has(t.key) ? queue.shift() : t))
+    .filter((t): t is Tile => Boolean(t));
+  const tiles = orderedAll.filter((t) => t.key === 'settings' || !hiddenTiles.includes(t.key));
 
   return (
     <Stack gap="lg" pb={BOTTOM_INSET}>

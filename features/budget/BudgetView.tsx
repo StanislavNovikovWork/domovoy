@@ -280,14 +280,21 @@ export function BudgetView({
   // пункты настроек бюджета: шестерёнка в шапке (десктоп) и шторка «Настройки» в нижнем меню (мобильные)
   const settingsItems: SettingsItem[] = [
     ...(extraSettings ?? []),
-    {
-      key: 'categories',
-      label: 'Категории',
-      icon: <IconCategory size={18} />,
-      onClick: catsModal.open,
-    },
+    // категории настраиваются только в периодическом пространстве; у поездки их нет в настройках
+    ...(periodic
+      ? [
+          {
+            key: 'categories',
+            label: 'Категории',
+            icon: <IconCategory size={18} />,
+            onClick: catsModal.open,
+          },
+        ]
+      : []),
   ];
   useRegisterSettingsItems(settingsItems);
+  // единственный пункт настроек (например, у поездки) открывается шестерёнкой сразу, без меню
+  const singleSetting = settingsItems.length === 1 ? settingsItems[0] : null;
 
   // фильтры периодического бюджета показываются внутри карточки сводки
   const filters = periodic ? (
@@ -378,20 +385,33 @@ export function BudgetView({
         </Box>
       )}
       <Box visibleFrom="sm" pos="absolute" top={-4} right={-4} style={{ zIndex: 10 }}>
-        <Menu position="bottom-end" shadow="md" width={200}>
-          <Menu.Target>
-            <ActionIcon variant="default" size={28} radius="xl" aria-label="Настройки бюджета">
-              <IconSettings size={16} />
-            </ActionIcon>
-          </Menu.Target>
-          <Menu.Dropdown>
-            {settingsItems.map((item) => (
-              <Menu.Item key={item.key} leftSection={item.icon} onClick={item.onClick}>
-                {item.label}
-              </Menu.Item>
-            ))}
-          </Menu.Dropdown>
-        </Menu>
+        {singleSetting ? (
+          // у поездки один пункт настроек — шестерёнка открывает его сразу, без меню
+          <ActionIcon
+            variant="default"
+            size={28}
+            radius="xl"
+            aria-label="Настройки"
+            onClick={singleSetting.onClick}
+          >
+            <IconSettings size={16} />
+          </ActionIcon>
+        ) : (
+          <Menu position="bottom-end" shadow="md" width={200}>
+            <Menu.Target>
+              <ActionIcon variant="default" size={28} radius="xl" aria-label="Настройки бюджета">
+                <IconSettings size={16} />
+              </ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown>
+              {settingsItems.map((item) => (
+                <Menu.Item key={item.key} leftSection={item.icon} onClick={item.onClick}>
+                  {item.label}
+                </Menu.Item>
+              ))}
+            </Menu.Dropdown>
+          </Menu>
+        )}
       </Box>
 
       <Stack gap="lg">

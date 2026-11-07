@@ -30,7 +30,6 @@ import {
   removeGuest,
   removeMember,
   revokeInvite,
-  setMemberObserver,
 } from '@/server/households/actions';
 import type {
   HouseholdGuestItem,
@@ -115,7 +114,7 @@ export function MembersView({
   };
 
   const [guestName, setGuestName] = useState('');
-  // участник без аккаунта: сохраняется гостем бюджета и появляется в форме расхода
+  // участник без аккаунта: сохраняется гостем пространства и появляется в форме расхода
   const addGuestByName = () => {
     const guest = guestName.trim();
     if (!guest) return;
@@ -136,7 +135,7 @@ export function MembersView({
       opened={!!confirmMember}
       onClose={() => setConfirmMember(null)}
       title="Удалить участника?"
-      text={`${confirmMember?.name} будет удалён из бюджета.`}
+      text={`${confirmMember?.name} будет удалён из пространства.`}
       onConfirm={() => {
         const c = confirmMember;
         setConfirmMember(null);
@@ -178,32 +177,8 @@ export function MembersView({
                     style={{ color: 'var(--mantine-color-yellow-6)' }}
                   />
                 )}
-                {/* наблюдатель не участвует в долях: владелец включает любому участнику,
-                    участник — себе; залитая кнопка — роль активна */}
-                {(isOwner || m.userId === currentUserId) && m.role !== 'owner' && (
-                  <Button
-                    variant={m.observer ? 'light' : 'subtle'}
-                    color={m.observer ? 'blue' : 'gray'}
-                    size="compact-xs"
-                    disabled={pendingKey === `observer:${m.userId}`}
-                    onClick={() =>
-                      run(
-                        `observer:${m.userId}`,
-                        () =>
-                          setMemberObserver({
-                            householdId,
-                            userId: m.userId,
-                            observer: !m.observer,
-                          }),
-                        m.observer ? 'Наблюдатель снят' : 'Участник — наблюдатель'
-                      )
-                    }
-                  >
-                    Наблюдатель
-                  </Button>
-                )}
                 {isOwner && m.role !== 'owner' && (
-                  <Tooltip label="Удалить из бюджета">
+                  <Tooltip label="Удалить из пространства">
                     <ActionIcon
                       variant="subtle"
                       color="red"

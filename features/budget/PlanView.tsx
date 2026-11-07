@@ -7,11 +7,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { PageTopBar } from '@/features/app-shell';
 import { CategoriesModal } from '@/features/categories';
 import { createTransaction, updateTransaction } from '@/server/transactions/actions';
-import {
-  buildPlanRows,
-  type PlanItem,
-  type TransactionItem,
-} from '@/shared/lib/budget';
+import { buildPlanRows, type PlanItem, type TransactionItem } from '@/shared/lib/budget';
 import {
   ALL_TIME_RANGE,
   ONE_TIME_MONTH,

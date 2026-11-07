@@ -8,7 +8,6 @@ import {
   Button,
   Box,
   Card,
-  Checkbox,
   Container,
   Group,
   Modal,
@@ -32,7 +31,7 @@ export function BudgetsList({ budgets }: { budgets: HouseholdListItem[] }) {
   const mobileModal = useMobileModal();
 
   const form = useForm({
-    initialValues: { name: '', oneTime: false },
+    initialValues: { name: '' },
     validate: { name: (v) => (v.trim() ? null : 'Введите название') },
   });
 
@@ -45,7 +44,7 @@ export function BudgetsList({ budgets }: { budgets: HouseholdListItem[] }) {
     startTransition(async () => {
       const result = await createHousehold(values);
       if (result.ok) {
-        notifications.show({ message: 'Бюджет создан', color: 'teal' });
+        notifications.show({ message: 'Пространство создано', color: 'teal' });
         router.push(`/budgets/${result.id}`);
       } else if (result.field) {
         // ошибки конкретного поля (дубль названия) показываем как валидация инпута
@@ -59,20 +58,15 @@ export function BudgetsList({ budgets }: { budgets: HouseholdListItem[] }) {
   return (
     <Container size="md" p={0} mx={0} pb={BOTTOM_INSET}>
       <Stack gap="lg">
-        <Modal opened={opened} onClose={close} title="Новый бюджет" {...mobileModal}>
+        <Modal opened={opened} onClose={close} title="Новое пространство" {...mobileModal}>
           <form onSubmit={handleSubmit}>
             <Stack>
               <TextInput
                 label="Название"
-                placeholder="Например, Отпуск или Ремонт"
+                placeholder="Например, Семья или Друзья"
                 maxLength={40}
                 data-autofocus
                 {...form.getInputProps('name')}
-              />
-              <Checkbox
-                label="Разовый бюджет"
-                description="Без разбивки по дням, неделям и месяцам: только план и фактические траты"
-                {...form.getInputProps('oneTime', { type: 'checkbox' })}
               />
               <Button type="submit" loading={pending}>
                 Создать
@@ -83,12 +77,12 @@ export function BudgetsList({ budgets }: { budgets: HouseholdListItem[] }) {
 
         {budgets.length === 0 && (
           <Text c="dimmed">
-            Здесь пока пусто. Создайте бюджет под любую цель или проект и пригласите в него других
-            людей. Если вас уже пригласили, откройте ссылку из приглашения.
+            Здесь пока пусто. Создайте пространство для себя, семьи или компании друзей и пригласите
+            в него других людей. Если вас уже пригласили, откройте ссылку из приглашения.
           </Text>
         )}
 
-        {/* два бюджета в ряд на любом экране */}
+        {/* два пространства в ряд на любом экране */}
         <SimpleGrid cols={2}>
           {budgets.map((b) => (
             <Card
@@ -131,12 +125,12 @@ export function BudgetsList({ budgets }: { budgets: HouseholdListItem[] }) {
             type="button"
             mih={140}
             onClick={modal.open}
-            aria-label="Создать бюджет"
+            aria-label="Создать пространство"
             style={{ borderStyle: 'dashed', cursor: 'pointer', background: 'transparent' }}
           >
             <Stack gap={4} align="center" justify="center" h="100%" c="dimmed">
               <IconPlus size={28} />
-              <Text size="sm">Новый бюджет</Text>
+              <Text size="sm">Новое пространство</Text>
             </Stack>
           </Card>
         </SimpleGrid>

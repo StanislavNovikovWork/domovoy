@@ -19,6 +19,7 @@ export async function listPlans(householdId: string): Promise<PlanItem[]> {
       .where(eq(budgetPlan.householdId, householdId)),
     db
       .select({
+        id: budgetPlanItem.id,
         planId: budgetPlanItem.planId,
         name: budgetPlanItem.name,
         amount: budgetPlanItem.amount,
@@ -29,9 +30,12 @@ export async function listPlans(householdId: string): Promise<PlanItem[]> {
       .orderBy(asc(budgetPlanItem.createdAt)),
   ]);
 
-  const byPlan = new Map<string, { name: string; amount: number }[]>();
+  const byPlan = new Map<string, { id: string; name: string; amount: number }[]>();
   for (const i of items) {
-    byPlan.set(i.planId, [...(byPlan.get(i.planId) ?? []), { name: i.name, amount: i.amount }]);
+    byPlan.set(i.planId, [
+      ...(byPlan.get(i.planId) ?? []),
+      { id: i.id, name: i.name, amount: i.amount },
+    ]);
   }
 
   return plans.map((p) => ({

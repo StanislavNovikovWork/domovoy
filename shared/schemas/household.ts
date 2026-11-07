@@ -5,7 +5,8 @@ export const inviteTokenSchema = z.string().regex(/^[A-Za-z0-9_-]{43}$/);
 
 export const createHouseholdSchema = z.object({
   name: z.string().trim().min(1).max(40),
-  oneTime: z.boolean().optional(),
+  // проект: id родительского пространства; без него создаётся корневое (периодическое) пространство
+  parentId: z.uuid().optional(),
 });
 
 export const renameHouseholdSchema = z.object({
@@ -27,10 +28,14 @@ export const removeMemberSchema = z.object({
   userId: z.string().min(1),
 });
 
-export const setObserverSchema = z.object({
+export const addTripParticipantSchema = z.object({
   householdId: z.uuid(),
   userId: z.string().min(1),
-  observer: z.boolean(),
+});
+
+export const addTripGuestSchema = z.object({
+  householdId: z.uuid(),
+  name: z.string().trim().min(1).max(40),
 });
 
 export const addGuestSchema = z.object({

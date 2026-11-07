@@ -18,13 +18,18 @@ export default async function BudgetPage({ params }: Props) {
   const budget = await getUserHousehold(user.id, id);
   if (!budget) notFound();
 
-  const [transactions, categories, plans, members, guests] = await Promise.all([
-    listAllTransactions(budget.id),
-    listActiveCategories(budget.id),
-    listPlans(budget.id),
-    listMembers(budget.id),
-    listGuests(budget.id),
-  ]);
+  const parentId = budget.parentId ?? null;
+  const [transactions, categories, plans, members, guests, spaceMembers, spaceGuests] =
+    await Promise.all([
+      listAllTransactions(budget.id),
+      listActiveCategories(budget.id),
+      listPlans(budget.id),
+      listMembers(budget.id),
+      listGuests(budget.id),
+      // у поездки участники добавляются из списка участников родительского пространства
+      parentId ? listMembers(parentId) : Promise.resolve([]),
+      parentId ? listGuests(parentId) : Promise.resolve([]),
+    ]);
 
   return (
     <FamilyBudget
@@ -39,6 +44,9 @@ export default async function BudgetPage({ params }: Props) {
       plans={plans}
       members={members}
       guests={guests}
+      parentId={parentId}
+      spaceMembers={spaceMembers}
+      spaceGuests={spaceGuests}
     />
   );
 }

@@ -115,6 +115,7 @@ export function settleDebts(rows: SettlementRow[]): Transfer[] {
 }
 
 export type PlanSubItem = {
+  id: string;
   name: string;
   amount: number; // копейки
 };
@@ -128,6 +129,7 @@ export type PlanItem = {
 };
 
 export type PlanRowItem = {
+  id: string;
   name: string;
   planned: number;
   spent: number;
@@ -182,6 +184,7 @@ export function buildPlanRows(
         (t) => normalizeNote(t.note) === normalizeNote(i.name)
       );
       return {
+        id: i.id,
         name: i.name,
         planned: i.amount,
         spent: matched.reduce((acc, t) => acc + t.amount, 0),

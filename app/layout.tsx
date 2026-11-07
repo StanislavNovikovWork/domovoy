@@ -40,7 +40,7 @@ export default function RootLayout({ children }: { children: any }) {
       </head>
       <body>
         <MantineProvider theme={theme}>
-          <Notifications position="top-center" />
+          <Notifications position="top-center" autoClose={2000} />
           <DatesProvider settings={{ locale: 'ru', firstDayOfWeek: 1 }}>{children}</DatesProvider>
         </MantineProvider>
       </body>

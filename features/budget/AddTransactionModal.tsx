@@ -36,8 +36,7 @@ type Type = 'expense' | 'income';
 
 const TYPES: Type[] = ['expense', 'income'];
 
-// наблюдатель не попадает в доли расхода
-export type ShareParticipant = { userId: string; name: string; observer?: boolean };
+export type ShareParticipant = { userId: string; name: string };
 
 export type SaveTransactionRequest = {
   // id редактируемой операции; без него создаётся новая
@@ -203,8 +202,8 @@ function TransactionForm({
     ...(members ?? []),
     ...guestList.map((name) => ({ userId: null, name })),
   ];
-  // наблюдатели не участвуют в долях расхода
-  const sharePeople = people.filter((p) => !('observer' in p && p.observer));
+  // все участники и гости участвуют в долях расхода
+  const sharePeople = people;
   const shareKey = (s: { userId: string | null; name: string }) => s.userId ?? `~${s.name}`;
   // плательщиком может быть любой участник: член бюджета или гость
   const payers = people;

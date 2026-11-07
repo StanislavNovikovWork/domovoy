@@ -12,6 +12,8 @@ export function MobileSettings() {
   const pathname = usePathname();
   const [settingsOpened, settings] = useDisclosure(false);
   const items = useSettingsItems();
+  // единственный пункт (например, настройки поездки) выполняем сразу, без экрана-списка
+  const singleItem = items.length === 1 ? items[0] : null;
 
   // окно настроек живёт в общем лейауте: закрываем при смене страницы (например, после удаления бюджета)
   // и когда у страницы не осталось пунктов настроек
@@ -29,7 +31,7 @@ export function MobileSettings() {
           size="lg"
           radius="xl"
           aria-label="Настройки бюджета"
-          onClick={settings.open}
+          onClick={singleItem ? singleItem.onClick : settings.open}
           style={{
             position: 'fixed',
             top: 'var(--mantine-spacing-md)',

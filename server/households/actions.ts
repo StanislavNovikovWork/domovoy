@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { and, eq, gt, isNull, ne, sql } from 'drizzle-orm';
+import { and, eq, isNull, ne, sql } from 'drizzle-orm';
 import 'server-only';
 import { db } from '@/server/db';
 import {
@@ -16,16 +16,17 @@ import {
   DEFAULT_CATEGORIES,
   DEFAULT_ONE_TIME_CATEGORIES,
 } from '@/server/households/default-categories';
-import { getInviteByToken, isInviteActive } from '@/server/households/queries';
+import { getHouseholdById, getInviteByToken, isInviteActive } from '@/server/households/queries';
 import { requireSession } from '@/server/session';
 import {
   acceptInviteSchema,
   addGuestSchema,
+  addTripGuestSchema,
+  addTripParticipantSchema,
   createHouseholdSchema,
   householdIdSchema,
   removeGuestSchema,
   removeMemberSchema,
-  setObserverSchema,
   renameHouseholdSchema,
   revokeInviteSchema,
 } from '@/shared/schemas/household';
@@ -56,11 +57,68 @@ function generateToken() {
   return Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString('base64url');
 }
 
+// у каждого пользователя должно быть своё периодическое пространство;
+// создаём «Моё пространство», если периодических ещё нет (идемпотентно)
+export async function ensurePersonalSpace(): Promise<{ ok: boolean; id?: string }> {
+  try {
+    const session = await requireSession();
+    // блокируем строку пользователя: параллельные вызовы (двойной рендер, два таба)
+    // не должны создать два личных пространства
+    return await db.transaction(async (tx) => {
+      await tx.execute(sql`select id from "user" where id = ${session.user.id} for update`);
+
+      const [existing] = await tx
+        .select({ id: household.id })
+        .from(householdMember)
+        .innerJoin(household, eq(household.id, householdMember.householdId))
+        .where(
+          and(
+            eq(householdMember.userId, session.user.id),
+            eq(household.kind, 'periodic'),
+            isNull(household.parentId)
+          )
+        )
+        .limit(1);
+      if (existing) return { ok: true as const, id: existing.id };
+
+      const id = crypto.randomUUID();
+      await tx.insert(household).values({
+        id,
+        name: 'Моё пространство',
+        kind: 'periodic',
+        createdBy: session.user.id,
+      });
+      await tx
+        .insert(householdMember)
+        .values({ householdId: id, userId: session.user.id, role: 'owner' });
+      await tx
+        .insert(category)
+        .values(
+          DEFAULT_CATEGORIES.map((c, index) => ({ ...c, householdId: id, sortOrder: index }))
+        );
+      return { ok: true as const, id };
+    });
+  } catch (error) {
+    console.error('ensurePersonalSpace failed', error);
+    return { ok: false };
+  }
+}
+
 // действия с участниками, приглашениями и настройками доступны только владельцу бюджета
 async function requireOwner(householdId: string) {
   const access = await requireHouseholdAccess(householdId);
   if (access.member.role !== 'owner') throw new Error('FORBIDDEN');
   return access;
+}
+
+// id родительского пространства, если бюджет — разовая поездка; иначе null
+async function getTripParentId(householdId: string) {
+  const [trip] = await db
+    .select({ kind: household.kind, parentId: household.parentId })
+    .from(household)
+    .where(eq(household.id, householdId))
+    .limit(1);
+  return trip?.kind === 'one_time' && trip.parentId ? trip.parentId : null;
 }
 
 export async function createHousehold(input: unknown): Promise<Result<{ id: string }>> {
@@ -72,13 +130,23 @@ export async function createHousehold(input: unknown): Promise<Result<{ id: stri
     if (await hasDuplicateName(session.user.id, parsed.data.name)) {
       return { ok: false, error: DUPLICATE_NAME, field: 'name' };
     }
+    // проект: родительское пространство должно существовать и быть доступно
+    if (parsed.data.parentId) {
+      const parent = await getHouseholdById(parsed.data.parentId);
+      if (!parent) return { ok: false, error: 'Пространство не найдено' };
+      await requireHouseholdAccess(parsed.data.parentId);
+    }
     const id = crypto.randomUUID();
+    // вид выводится из места в иерархии: корень — периодическое пространство,
+    // дочерний бюджет — всегда разовый проект
+    const oneTime = Boolean(parsed.data.parentId);
     await db.transaction(async (tx) => {
       await tx.insert(household).values({
         id,
         name: parsed.data.name,
-        kind: parsed.data.oneTime ? 'one_time' : 'periodic',
+        kind: oneTime ? 'one_time' : 'periodic',
         createdBy: session.user.id,
+        parentId: parsed.data.parentId ?? null,
       });
       await tx
         .insert(householdMember)
@@ -86,7 +154,7 @@ export async function createHousehold(input: unknown): Promise<Result<{ id: stri
       await tx
         .insert(category)
         .values(
-          (parsed.data.oneTime ? DEFAULT_ONE_TIME_CATEGORIES : DEFAULT_CATEGORIES).map(
+          (oneTime ? DEFAULT_ONE_TIME_CATEGORIES : DEFAULT_CATEGORIES).map(
             (c, index) => ({ ...c, householdId: id, sortOrder: index })
           )
         );
@@ -96,7 +164,7 @@ export async function createHousehold(input: unknown): Promise<Result<{ id: stri
     return { ok: true, id };
   } catch (error) {
     console.error('createHousehold failed', error);
-    return { ok: false, error: 'Не удалось создать бюджет' };
+    return { ok: false, error: 'Не удалось создать пространство' };
   }
 }
 
@@ -211,38 +279,6 @@ export async function removeMember(input: unknown): Promise<Result> {
   }
 }
 
-// наблюдатель не участвует в долях расходов: включает владелец любому участнику
-// или участник сам себе; владельцу роль наблюдателя не положена
-export async function setMemberObserver(input: unknown): Promise<Result> {
-  const parsed = setObserverSchema.safeParse(input);
-  if (!parsed.success) return { ok: false, error: 'Некорректный запрос' };
-  const data = parsed.data;
-
-  try {
-    const { session, member } = await requireHouseholdAccess(data.householdId);
-    const self = data.userId === session.user.id;
-    if (member.role !== 'owner' && !self) {
-      return { ok: false, error: 'Менять наблюдателя может владелец или сам участник' };
-    }
-    if (self && member.role === 'owner') {
-      return { ok: false, error: 'Владелец не может быть наблюдателем' };
-    }
-
-    await db
-      .update(householdMember)
-      .set({ observer: data.observer })
-      .where(
-        and(eq(householdMember.householdId, data.householdId), eq(householdMember.userId, data.userId))
-      );
-
-    revalidatePath('/', 'layout');
-    return { ok: true };
-  } catch (error) {
-    console.error('setMemberObserver failed', error);
-    return { ok: false, error: 'Не удалось изменить роль наблюдателя' };
-  }
-}
-
 export async function leaveHousehold(input: unknown): Promise<Result> {
   const parsed = householdIdSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: 'Некорректный запрос' };
@@ -289,6 +325,163 @@ export async function renameHousehold(input: unknown): Promise<Result> {
   } catch (error) {
     console.error('renameHousehold failed', error);
     return { ok: false, error: 'Не удалось переименовать бюджет' };
+  }
+}
+
+// настройки поездки: название правит любой участник, участники добавляются из пространства
+export async function renameTrip(input: unknown): Promise<Result> {
+  const parsed = renameHouseholdSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: 'Введите название' };
+
+  try {
+    await requireHouseholdAccess(parsed.data.householdId);
+    if (!(await getTripParentId(parsed.data.householdId))) {
+      return { ok: false, error: 'Настройки есть только у поездки' };
+    }
+    await db
+      .update(household)
+      .set({ name: parsed.data.name })
+      .where(eq(household.id, parsed.data.householdId));
+
+    revalidatePath('/', 'layout');
+    return { ok: true };
+  } catch (error) {
+    console.error('renameTrip failed', error);
+    return { ok: false, error: 'Не удалось переименовать поездку' };
+  }
+}
+
+export async function addTripParticipant(input: unknown): Promise<Result> {
+  const parsed = addTripParticipantSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: 'Некорректный запрос' };
+
+  try {
+    await requireHouseholdAccess(parsed.data.householdId);
+    const parentId = await getTripParentId(parsed.data.householdId);
+    if (!parentId) return { ok: false, error: 'Настройки есть только у поездки' };
+
+    const [inSpace] = await db
+      .select({ userId: householdMember.userId })
+      .from(householdMember)
+      .where(
+        and(
+          eq(householdMember.householdId, parentId),
+          eq(householdMember.userId, parsed.data.userId)
+        )
+      )
+      .limit(1);
+    if (!inSpace) return { ok: false, error: 'Участник не найден в пространстве' };
+
+    await db
+      .insert(householdMember)
+      .values({
+        householdId: parsed.data.householdId,
+        userId: parsed.data.userId,
+        role: 'member',
+      })
+      .onConflictDoNothing();
+
+    revalidatePath('/', 'layout');
+    return { ok: true };
+  } catch (error) {
+    console.error('addTripParticipant failed', error);
+    return { ok: false, error: 'Не удалось добавить участника' };
+  }
+}
+
+export async function removeTripParticipant(input: unknown): Promise<Result> {
+  const parsed = removeMemberSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: 'Некорректный запрос' };
+
+  try {
+    await requireHouseholdAccess(parsed.data.householdId);
+    if (!(await getTripParentId(parsed.data.householdId))) {
+      return { ok: false, error: 'Настройки есть только у поездки' };
+    }
+
+    const [target] = await db
+      .select({ role: householdMember.role })
+      .from(householdMember)
+      .where(
+        and(
+          eq(householdMember.householdId, parsed.data.householdId),
+          eq(householdMember.userId, parsed.data.userId)
+        )
+      )
+      .limit(1);
+    if (target?.role === 'owner') {
+      return { ok: false, error: 'Владельца поездки нельзя удалить' };
+    }
+
+    await db
+      .delete(householdMember)
+      .where(
+        and(
+          eq(householdMember.householdId, parsed.data.householdId),
+          eq(householdMember.userId, parsed.data.userId)
+        )
+      );
+
+    revalidatePath('/', 'layout');
+    return { ok: true };
+  } catch (error) {
+    console.error('removeTripParticipant failed', error);
+    return { ok: false, error: 'Не удалось удалить участника' };
+  }
+}
+
+export async function addTripGuest(input: unknown): Promise<Result> {
+  const parsed = addTripGuestSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: 'Введите имя' };
+
+  try {
+    await requireHouseholdAccess(parsed.data.householdId);
+    const parentId = await getTripParentId(parsed.data.householdId);
+    if (!parentId) return { ok: false, error: 'Настройки есть только у поездки' };
+
+    const guests = await db
+      .select({ name: householdGuest.name })
+      .from(householdGuest)
+      .where(eq(householdGuest.householdId, parentId));
+    const name = parsed.data.name.trim();
+    if (!guests.some((g) => g.name.toLowerCase() === name.toLowerCase())) {
+      return { ok: false, error: 'Участник не найден в пространстве' };
+    }
+
+    await db
+      .insert(householdGuest)
+      .values({ householdId: parsed.data.householdId, name })
+      .onConflictDoNothing();
+
+    revalidatePath('/', 'layout');
+    return { ok: true };
+  } catch (error) {
+    console.error('addTripGuest failed', error);
+    return { ok: false, error: 'Не удалось добавить участника' };
+  }
+}
+
+export async function removeTripGuest(input: unknown): Promise<Result> {
+  const parsed = removeGuestSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: 'Некорректный запрос' };
+
+  try {
+    await requireHouseholdAccess(parsed.data.householdId);
+    if (!(await getTripParentId(parsed.data.householdId))) {
+      return { ok: false, error: 'Настройки есть только у поездки' };
+    }
+
+    await db
+      .delete(householdGuest)
+      .where(
+        and(eq(householdGuest.id, parsed.data.guestId), eq(householdGuest.householdId, parsed.data.householdId))
+      );
+
+    revalidatePath('/', 'layout');
+    return { ok: true };
+  } catch (error) {
+    console.error('removeTripGuest failed', error);
+    return { ok: false, error: 'Не удалось удалить участника' };
   }
 }
 

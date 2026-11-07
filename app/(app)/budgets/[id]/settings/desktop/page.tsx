@@ -23,6 +23,7 @@ export default async function SettingsDesktopPage({ params }: Props) {
       householdId={space.id}
       periodic={space.kind === 'periodic'}
       hidden={space.hiddenTiles}
+      order={space.tileOrder}
     />
   );
 }

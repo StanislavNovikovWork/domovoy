@@ -45,7 +45,8 @@ export function RegisterForm({ next = '/' }: { next?: string }) {
       return;
     }
 
-    router.push(next);
+    // новый пользователь без приглашения проходит онбординг с названием пространства
+    router.push(next === '/' ? '/welcome' : next);
     router.refresh();
   });
 

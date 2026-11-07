@@ -1,0 +1,2 @@
+ALTER TABLE "household" ADD COLUMN "parent_id" uuid;--> statement-breakpoint
+ALTER TABLE "household" ADD CONSTRAINT "household_parent_id_household_id_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."household"("id") ON DELETE cascade ON UPDATE no action;

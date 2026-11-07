@@ -11,6 +11,7 @@ import {
   primaryKey,
   index,
   uniqueIndex,
+  type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { user } from './auth';
 
@@ -27,6 +28,8 @@ export const household = pgTable(
     createdBy: text('created_by')
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
+    // проект: дочерний бюджет внутри другого пространства (удаляется вместе с родителем)
+    parentId: uuid('parent_id').references((): AnyPgColumn => household.id, { onDelete: 'cascade' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   }
 );
@@ -45,6 +48,8 @@ export const householdMember = pgTable(
     observer: boolean('observer').notNull().default(false),
     // плитки мобильного рабочего стола, скрытые этим участником (личная настройка)
     hiddenTiles: jsonb('hidden_tiles').$type<string[]>().notNull().default([]),
+    // порядок плиток мобильного рабочего стола этого участника (личная настройка)
+    tileOrder: jsonb('tile_order').$type<string[]>().notNull().default([]),
     joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

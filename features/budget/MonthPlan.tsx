@@ -103,9 +103,11 @@ function PlanCategory({ row, onPay }: { row: PlanRow; onPay: Props['onPay'] }) {
                     <Box w={5} h={5} bg="gray.4" style={{ borderRadius: '50%' }} />
                   </Box>
                 )}
-                <Text size="sm" truncate style={{ flex: 1, minWidth: 0 }}>
-                  {i.name}
-                </Text>
+                <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
+                  <Text size="sm" truncate>
+                    {i.name}
+                  </Text>
+                </Stack>
                 <Text size="sm" c="dimmed" style={{ whiteSpace: 'nowrap' }}>
                   {formatMoney(i.planned)}
                 </Text>

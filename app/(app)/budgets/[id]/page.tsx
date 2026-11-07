@@ -35,6 +35,7 @@ export default async function SpacePage({ params }: Props) {
       name={space.name}
       hasNewChangelog={hasUnseenChangelog(user)}
       hiddenTiles={space.hiddenTiles}
+      tileOrder={space.tileOrder}
       desktop={{
         budget: {
           periodic: space.kind === 'periodic',

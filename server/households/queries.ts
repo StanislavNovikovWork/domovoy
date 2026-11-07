@@ -16,6 +16,8 @@ const householdColumns = {
   kind: household.kind,
   role: householdMember.role,
   hiddenTiles: householdMember.hiddenTiles,
+  tileOrder: householdMember.tileOrder,
+  parentId: household.parentId,
 };
 
 // бюджет, если пользователь в нём состоит
@@ -32,6 +34,16 @@ export const getUserHousehold = cache(async (userId: string, householdId: string
 export type HouseholdListItem = Awaited<ReturnType<typeof listUserHouseholds>>[number];
 
 // все бюджеты, в которых состоит пользователь
+// пространство по id без проверки участника (для проверки parentId при создании проекта)
+export async function getHouseholdById(householdId: string) {
+  const [row] = await db
+    .select({ id: household.id })
+    .from(household)
+    .where(eq(household.id, householdId))
+    .limit(1);
+  return row ?? null;
+}
+
 export async function listUserHouseholds(userId: string) {
   return db
     .select({
@@ -40,7 +52,22 @@ export async function listUserHouseholds(userId: string) {
     })
     .from(householdMember)
     .innerJoin(household, eq(household.id, householdMember.householdId))
-    .where(eq(householdMember.userId, userId))
+    // проекты живут внутри родительского пространства и в общем списке не показываются
+    .where(and(eq(householdMember.userId, userId), isNull(household.parentId)))
+    .orderBy(asc(household.createdAt));
+}
+
+// проекты (дочерние бюджеты) пространства
+export async function listChildHouseholds(householdId: string) {
+  return db
+    .select({
+      id: household.id,
+      name: household.name,
+      kind: household.kind,
+      createdBy: household.createdBy,
+    })
+    .from(household)
+    .where(eq(household.parentId, householdId))
     .orderBy(asc(household.createdAt));
 }
 
@@ -65,7 +92,6 @@ export async function listMembers(householdId: string) {
       email: user.email,
       image: user.image,
       role: householdMember.role,
-      observer: householdMember.observer,
       joinedAt: householdMember.joinedAt,
     })
     .from(householdMember)
