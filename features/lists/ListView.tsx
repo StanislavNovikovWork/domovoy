@@ -4,13 +4,14 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
 import { useOptimistic, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { IconPencil, IconArrowUp, IconTrash } from '@tabler/icons-react';
+import { IconPencil, IconArrowUp, IconChecks, IconSettings, IconTrash } from '@tabler/icons-react';
 import {
   ActionIcon,
   Box,
   Button,
   Checkbox,
   Group,
+  Menu,
   Modal,
   Stack,
   Tabs,
@@ -27,6 +28,7 @@ import {
   deleteItem,
   deletePreset,
   deleteList,
+  clearDoneItems,
   renameList,
   toggleItem,
 } from '@/server/checklists/actions';
@@ -58,10 +60,10 @@ export function ListView({ householdId, list, items, presets }: Props) {
   const [tab, setTab] = useState<string | null>('list');
 
   const [title, setTitle] = useState('');
-  const [dueDate, setDueDate] = useState('');
   const [renameOpened, setRenameOpened] = useState(false);
   const [newTitle, setNewTitle] = useState(list.title);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmClearDone, setConfirmClearDone] = useState(false);
 
   const [rows, apply] = useOptimistic(items, (state, action: Action): ChecklistItemRow[] => {
     switch (action.type) {
@@ -86,11 +88,10 @@ export function ListView({ householdId, list, items, presets }: Props) {
       title: trimmed,
       done: false,
       quantity: null,
-      dueDate: !isShopping && dueDate ? dueDate : null,
+      dueDate: null,
       createdBy: null,
     };
     setTitle('');
-    setDueDate('');
     startTransition(async () => {
       apply({ type: 'add', item });
       const result = await addItem({
@@ -99,7 +100,6 @@ export function ListView({ householdId, list, items, presets }: Props) {
         listId: list.id,
         title: trimmed,
         quantity: item.quantity ?? undefined,
-        dueDate: item.dueDate ?? undefined,
       });
       if (!result.ok) notifications.show({ message: result.error, color: 'red' });
     });
@@ -159,6 +159,18 @@ export function ListView({ householdId, list, items, presets }: Props) {
     router.refresh();
   };
 
+  const clearDone = () => {
+    setConfirmClearDone(false);
+    const doneIds = rows.filter((r) => r.done).map((r) => r.id);
+    if (doneIds.length === 0) return;
+    startTransition(async () => {
+      for (const id of doneIds) apply({ type: 'remove', id });
+      const result = await clearDoneItems({ householdId, listId: list.id });
+      if (!result.ok) notifications.show({ message: result.error, color: 'red' });
+      router.refresh();
+    });
+  };
+
   const listBlock = (
     <>
       {/* добавление пункта: название + количество (покупки) или дата (задачи) */}
@@ -172,14 +184,6 @@ export function ListView({ householdId, list, items, presets }: Props) {
             onChange={(e) => setTitle(e.currentTarget.value)}
             style={{ flex: 1 }}
           />
-          {!isShopping && (
-            <TextInput
-              type="date"
-              w={150}
-              value={dueDate}
-              onChange={(e) => setDueDate(e.currentTarget.value)}
-            />
-          )}
           <ActionIcon
             type="submit"
             size="lg"
@@ -247,31 +251,44 @@ export function ListView({ householdId, list, items, presets }: Props) {
         backLabel="К спискам"
         title={list.title}
         right={
-          <Group gap={4} wrap="nowrap">
-            <ActionIcon
-              size="lg"
-              radius="xl"
-              variant="subtle"
-              color="gray"
-              aria-label="Переименовать список"
-              onClick={() => {
-                setNewTitle(list.title);
-                setRenameOpened(true);
-              }}
-            >
-              <IconPencil size={18} />
-            </ActionIcon>
-            <ActionIcon
-              size="lg"
-              radius="xl"
-              variant="subtle"
-              color="red"
-              aria-label="Удалить список"
-              onClick={() => setConfirmDelete(true)}
-            >
-              <IconTrash size={18} />
-            </ActionIcon>
-          </Group>
+          <Menu position="bottom-end" shadow="md" width={200}>
+            <Menu.Target>
+              <ActionIcon
+                size="lg"
+                radius="xl"
+                variant="subtle"
+                color="gray"
+                aria-label="Настройки списка"
+              >
+                <IconSettings size={18} />
+              </ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Item
+                leftSection={<IconPencil size={16} />}
+                onClick={() => {
+                  setNewTitle(list.title);
+                  setRenameOpened(true);
+                }}
+              >
+                Переименовать
+              </Menu.Item>
+              <Menu.Item
+                leftSection={<IconChecks size={16} />}
+                disabled={!rows.some((r) => r.done)}
+                onClick={() => setConfirmClearDone(true)}
+              >
+                Удалить выполненные
+              </Menu.Item>
+              <Menu.Item
+                leftSection={<IconTrash size={16} />}
+                color="red"
+                onClick={() => setConfirmDelete(true)}
+              >
+                Удалить список
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
         }
       />
   );
@@ -329,6 +346,14 @@ export function ListView({ householdId, list, items, presets }: Props) {
           </Button>
         </Stack>
       </Modal>
+
+      <ConfirmModal
+        opened={confirmClearDone}
+        onClose={() => setConfirmClearDone(false)}
+        title="Удалить выполненные?"
+        text="Выполненные пункты будут удалены из списка."
+        onConfirm={clearDone}
+      />
 
       <ConfirmModal
         opened={confirmDelete}

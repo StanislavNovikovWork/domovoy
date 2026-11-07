@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -12,7 +12,6 @@ import {
   IconFileText,
   IconFolder,
   IconHelp,
-  IconHome,
   IconLayoutDashboard,
   IconMap,
   IconList,
@@ -24,6 +23,7 @@ import {
   IconWallet,
 } from '@tabler/icons-react';
 import { Box, Divider, Group, NavLink, Stack } from '@mantine/core';
+import { SpaceSwitcher } from './SpaceSwitcher';
 
 type Props = {
   householdId: string;
@@ -31,6 +31,11 @@ type Props = {
   hasNewChangelog: boolean;
   /** периодический бюджет показывает разделы-заглушки и календарь */
   periodic: boolean;
+  /** корневые пространства пользователя для переключателя (только у корневого пространства) */
+  spaces?: { id: string; name: string }[];
+  spaceName?: string;
+  /** запоминать это пространство как последнее открытое (только корневые) */
+  remember?: boolean;
   children: ReactNode;
 };
 
@@ -43,8 +48,26 @@ type Item = {
 };
 
 // боковое меню пространства на десктопе; на мобильном вместо него плитки на «Рабочем столе»
-export function SpaceShell({ householdId, hasNewChangelog, periodic, children }: Props) {
+export function SpaceShell({
+  householdId,
+  hasNewChangelog,
+  periodic,
+  spaces,
+  spaceName,
+  remember,
+  children,
+}: Props) {
   const pathname = usePathname();
+  // корневое пространство запоминаем: при следующем открытии приложения попадём в него
+  useEffect(() => {
+    if (remember) {
+      try {
+        localStorage.setItem('cash:lastSpace', householdId);
+      } catch {
+        // localStorage недоступен — просто не запоминаем
+      }
+    }
+  }, [remember, householdId]);
   const base = `/budgets/${householdId}`;
   const items: Item[] = [
     { label: 'Рабочий стол', icon: <IconLayoutDashboard size={18} />, href: base },
@@ -121,13 +144,9 @@ export function SpaceShell({ householdId, hasNewChangelog, periodic, children }:
         {/* вся высота экрана: профиль уходит в низ меню */}
         <Stack h="calc(100dvh - 2 * var(--mantine-spacing-md))" justify="space-between" gap={4}>
           <Box>
-            <NavLink
-              component={Link}
-              href="/"
-              label="Все пространства"
-              leftSection={<IconHome size={18} />}
-              {...linkProps}
-            />
+            {spaces && spaces.length > 0 && spaceName ? (
+              <SpaceSwitcher spaces={spaces} currentId={householdId} currentName={spaceName} />
+            ) : null}
             {items.map(renderItem)}
             <Divider my="xs" />
             {serviceItems.map(renderItem)}

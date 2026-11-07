@@ -23,6 +23,7 @@ import { DESKTOP_TILE_KEYS, orderDesktopTiles } from '@/shared/config/desktop-ti
 import type { CalendarEventItem } from '@/server/calendar/queries';
 import type { ShoppingWidgetData } from '@/server/checklists/queries';
 import { BudgetSummaryWidget, type BudgetWidgetData } from './BudgetSummaryWidget';
+import { SpaceSwitcher } from './SpaceSwitcher';
 import { CalendarWidget } from './CalendarWidget';
 import { ShoppingWidget } from './ShoppingWidget';
 
@@ -34,6 +35,8 @@ type Props = {
   hiddenTiles: string[];
   /** порядок плиток этого участника */
   tileOrder: string[];
+  /** корневые пространства для переключателя в шапке (только у корневого пространства) */
+  spaces?: { id: string; name: string }[];
   /** данные для виджетов «Рабочего стола» на десктопе */
   desktop: {
     budget: BudgetWidgetData;
@@ -51,6 +54,7 @@ export function SpaceHome({
   hasNewChangelog,
   hiddenTiles,
   tileOrder,
+  spaces,
   desktop,
 }: Props) {
   const allTiles: Tile[] = [
@@ -155,7 +159,15 @@ export function SpaceHome({
     <Stack gap="lg" pb={BOTTOM_INSET}>
       {/* на десктопе верхняя строка не нужна: навигация и профиль в боковом меню */}
       <Box hiddenFrom="md">
-        <HomeProfileBar hasNewChangelog={hasNewChangelog} title={name} />
+        <HomeProfileBar
+          hasNewChangelog={hasNewChangelog}
+          title={name}
+          titleMenu={
+            spaces && spaces.length > 0 ? (
+              <SpaceSwitcher spaces={spaces} currentId={householdId} currentName={name} />
+            ) : undefined
+          }
+        />
       </Box>
       {/* на десктопе вместо плиток — боковое меню и «Рабочий стол» с виджетами */}
       <Box visibleFrom="md">

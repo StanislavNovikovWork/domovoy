@@ -144,6 +144,33 @@ export async function deleteItem(input: unknown): Promise<Result> {
   }
 }
 
+// удаляет выполненные пункты списка (покупки и задачи)
+export async function clearDoneItems(input: unknown): Promise<Result> {
+  const parsed = listIdSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: 'Некорректный запрос' };
+  const data = parsed.data;
+
+  try {
+    await requireHouseholdAccess(data.householdId);
+    const [list] = await db
+      .select({ id: checklist.id })
+      .from(checklist)
+      .where(and(eq(checklist.id, data.listId), eq(checklist.householdId, data.householdId)))
+      .limit(1);
+    if (!list) return { ok: false, error: 'Список не найден' };
+
+    await db
+      .delete(checklistItem)
+      .where(and(eq(checklistItem.listId, data.listId), eq(checklistItem.done, true)));
+
+    revalidateBudgetPages();
+    return { ok: true };
+  } catch (error) {
+    console.error('clearDoneItems failed', error);
+    return { ok: false, error: 'Не удалось удалить выполненные' };
+  }
+}
+
 export async function addPreset(input: unknown): Promise<Result> {
   const parsed = addPresetSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: 'Введите название позиции' };

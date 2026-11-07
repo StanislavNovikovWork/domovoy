@@ -5,7 +5,12 @@ import { listEvents } from '@/server/calendar/queries';
 import { getShoppingWidget } from '@/server/checklists/queries';
 import { listActiveCategories } from '@/server/categories/queries';
 import { hasUnseenChangelog } from '@/server/changelog/seen';
-import { getUserHousehold, listGuests, listMembers } from '@/server/households/queries';
+import {
+  getUserHousehold,
+  listGuests,
+  listMembers,
+  listUserHouseholds,
+} from '@/server/households/queries';
 import { requirePageSession } from '@/server/session';
 import { listAllTransactions } from '@/server/transactions/queries';
 import { formatDate } from '@/shared/lib/period';
@@ -20,14 +25,16 @@ export default async function SpacePage({ params }: Props) {
   const space = await getUserHousehold(user.id, id);
   if (!space) notFound();
 
-  const [transactions, categories, members, guests, events, shopping] = await Promise.all([
-    listAllTransactions(space.id),
-    listActiveCategories(space.id),
-    listMembers(space.id),
-    listGuests(space.id),
-    listEvents(space.id),
-    getShoppingWidget(space.id),
-  ]);
+  const [transactions, categories, members, guests, events, shopping, spacesList] =
+    await Promise.all([
+      listAllTransactions(space.id),
+      listActiveCategories(space.id),
+      listMembers(space.id),
+      listGuests(space.id),
+      listEvents(space.id),
+      getShoppingWidget(space.id),
+      listUserHouseholds(user.id),
+    ]);
 
   return (
     <SpaceHome
@@ -36,6 +43,7 @@ export default async function SpacePage({ params }: Props) {
       hasNewChangelog={hasUnseenChangelog(user)}
       hiddenTiles={space.hiddenTiles}
       tileOrder={space.tileOrder}
+      spaces={space.parentId ? undefined : spacesList}
       desktop={{
         budget: {
           periodic: space.kind === 'periodic',
