@@ -13,6 +13,7 @@ import {
 const householdColumns = {
   id: household.id,
   name: household.name,
+  icon: household.icon,
   kind: household.kind,
   role: householdMember.role,
   hiddenTiles: householdMember.hiddenTiles,

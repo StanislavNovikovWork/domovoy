@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { IconLock, IconMail, IconUser } from '@tabler/icons-react';
 import { Anchor, Button, PasswordInput, Stack, Text, TextInput } from '@mantine/core';
 import { hasLength, isEmail, matchesField, useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
@@ -54,24 +55,25 @@ export function RegisterForm({ next = '/' }: { next?: string }) {
     <form onSubmit={handleSubmit} noValidate>
       <Stack gap="md">
         <TextInput
-          label="Имя"
-          placeholder="Как вас зовут"
+          placeholder="Имя"
+          leftSection={<IconUser size={16} />}
           autoComplete="name"
           required
           key={form.key('name')}
           {...form.getInputProps('name')}
         />
         <TextInput
-          label="Email"
-          placeholder="you@example.com"
+          placeholder="Электронная почта"
           type="email"
+          leftSection={<IconMail size={16} />}
           autoComplete="email"
           required
           key={form.key('email')}
           {...form.getInputProps('email')}
         />
         <PasswordInput
-          label="Пароль"
+          placeholder="Пароль"
+          leftSection={<IconLock size={16} />}
           description="Не короче 8 символов"
           autoComplete="new-password"
           required
@@ -79,7 +81,8 @@ export function RegisterForm({ next = '/' }: { next?: string }) {
           {...form.getInputProps('password')}
         />
         <PasswordInput
-          label="Повторите пароль"
+          placeholder="Повторите пароль"
+          leftSection={<IconLock size={16} />}
           autoComplete="new-password"
           required
           key={form.key('confirmPassword')}
@@ -88,9 +91,8 @@ export function RegisterForm({ next = '/' }: { next?: string }) {
         <Button type="submit" loading={loading} fullWidth>
           Создать аккаунт
         </Button>
-        <Text size="sm" c="dimmed" ta="center">
-          Уже есть аккаунт?{' '}
-          <Anchor component={Link} href={withNext('/login', next)} size="sm">
+        <Text size="md" ta="center">
+          <Anchor component={Link} href={withNext('/login', next)} size="md" fw={600}>
             Войти
           </Anchor>
         </Text>

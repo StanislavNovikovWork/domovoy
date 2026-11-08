@@ -29,6 +29,7 @@ import {
   removeMemberSchema,
   renameHouseholdSchema,
   revokeInviteSchema,
+  setSpaceIconSchema,
 } from '@/shared/schemas/household';
 
 type Result<T = object> = ({ ok: true } & T) | { ok: false; error: string; field?: string };
@@ -325,6 +326,26 @@ export async function renameHousehold(input: unknown): Promise<Result> {
   } catch (error) {
     console.error('renameHousehold failed', error);
     return { ok: false, error: 'Не удалось переименовать бюджет' };
+  }
+}
+
+// иконка пространства: выбирает владелец, null — убрать иконку
+export async function setSpaceIcon(input: unknown): Promise<Result> {
+  const parsed = setSpaceIconSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: 'Некорректный запрос' };
+
+  try {
+    await requireOwner(parsed.data.householdId);
+    await db
+      .update(household)
+      .set({ icon: parsed.data.icon })
+      .where(eq(household.id, parsed.data.householdId));
+
+    revalidatePath('/', 'layout');
+    return { ok: true };
+  } catch (error) {
+    console.error('setSpaceIcon failed', error);
+    return { ok: false, error: 'Не удалось сохранить иконку' };
   }
 }
 

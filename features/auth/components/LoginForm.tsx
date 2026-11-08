@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { IconLock, IconMail } from '@tabler/icons-react';
 import { Anchor, Button, PasswordInput, Stack, Text, TextInput } from '@mantine/core';
 import { hasLength, isEmail, useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
@@ -52,16 +53,17 @@ export function LoginForm({ next = '/' }: { next?: string }) {
     <form onSubmit={handleSubmit} noValidate>
       <Stack gap="md">
         <TextInput
-          label="Email"
-          placeholder="you@example.com"
+          placeholder="Электронная почта"
           type="email"
+          leftSection={<IconMail size={16} />}
           autoComplete="email"
           required
           key={form.key('email')}
           {...form.getInputProps('email')}
         />
         <PasswordInput
-          label="Пароль"
+          placeholder="Пароль"
+          leftSection={<IconLock size={16} />}
           autoComplete="current-password"
           required
           key={form.key('password')}
@@ -70,10 +72,9 @@ export function LoginForm({ next = '/' }: { next?: string }) {
         <Button type="submit" loading={loading} fullWidth>
           Войти
         </Button>
-        <Text size="sm" c="dimmed" ta="center">
-          Нет аккаунта?{' '}
-          <Anchor component={Link} href={withNext('/register', next)} size="sm">
-            Зарегистрироваться
+        <Text size="md" ta="center">
+          <Anchor component={Link} href={withNext('/register', next)} size="md" fw={600}>
+            Создать аккаунт
           </Anchor>
         </Text>
       </Stack>

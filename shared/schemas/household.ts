@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { SPACE_ICONS } from '@/shared/config/space-icons';
 
 // 32 случайных байта в base64url = 43 символа
 export const inviteTokenSchema = z.string().regex(/^[A-Za-z0-9_-]{43}$/);
@@ -16,6 +17,12 @@ export const renameHouseholdSchema = z.object({
 
 export const householdIdSchema = z.object({
   householdId: z.uuid(),
+});
+
+// иконка пространства из фиксированного набора; null — без иконки
+export const setSpaceIconSchema = z.object({
+  householdId: z.uuid(),
+  icon: z.enum(SPACE_ICONS).nullable(),
 });
 
 export const revokeInviteSchema = z.object({

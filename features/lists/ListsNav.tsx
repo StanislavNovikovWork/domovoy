@@ -156,6 +156,50 @@ export function ListsNav({ householdId, items }: { householdId: string; items: C
   );
 }
 
+const TILE_ICON = { shopping: shoppingCart, tasks: spiralNotepad };
+
+// плашка вида списка на мобильном экране «Списков»
+function KindTile({
+  kind,
+  list,
+  busy,
+  onPick,
+}: {
+  kind: 'shopping' | 'tasks';
+  list?: ChecklistItem;
+  busy: boolean;
+  onPick: (kind: 'shopping' | 'tasks', list?: ChecklistItem) => void;
+}) {
+  return (
+    <UnstyledButton onClick={() => onPick(kind, list)}>
+      <Paper withBorder radius="lg" p="md" h={104} pos="relative">
+        <Stack gap={4}>
+          <Text fw={600} size="sm">
+            {KIND_LABEL[kind]}
+          </Text>
+          {list && (
+            <Text size="xs" c="dimmed">
+              {list.pendingCount} {pluralRu(list.pendingCount, ['пункт', 'пункта', 'пунктов'])}
+            </Text>
+          )}
+          {busy ? (
+            <Loader size={14} />
+          ) : (
+            !list && (
+              <Text size="xs" c="dimmed">
+                Создать
+              </Text>
+            )
+          )}
+        </Stack>
+        <Box pos="absolute" right={12} bottom={8} style={{ display: 'flex' }}>
+          <Icon icon={TILE_ICON[kind]} width={48} />
+        </Box>
+      </Paper>
+    </UnstyledButton>
+  );
+}
+
 // мобильный экран «Списков»: только список списков; на десктопе открываем первый
 export function ListsIndex({ householdId, items }: { householdId: string; items: ChecklistItem[] }) {
   const router = useRouter();
@@ -206,37 +250,6 @@ export function ListsIndex({ householdId, items }: { householdId: string; items:
     router.refresh();
   };
 
-  const TILE_ICON = { shopping: shoppingCart, tasks: spiralNotepad };
-
-  const Tile = ({ kind, list }: { kind: 'shopping' | 'tasks'; list?: ChecklistItem }) => (
-    <UnstyledButton onClick={() => openDefault(kind, list)}>
-      <Paper withBorder radius="lg" p="md" h={104} pos="relative">
-        <Stack gap={4}>
-          <Text fw={600} size="sm">
-            {KIND_LABEL[kind]}
-          </Text>
-          {list && (
-            <Text size="xs" c="dimmed">
-              {list.pendingCount} {pluralRu(list.pendingCount, ['пункт', 'пункта', 'пунктов'])}
-            </Text>
-          )}
-          {busy === kind ? (
-            <Loader size={14} />
-          ) : (
-            !list && (
-              <Text size="xs" c="dimmed">
-                Создать
-              </Text>
-            )
-          )}
-        </Stack>
-        <Box pos="absolute" right={12} bottom={10}>
-          <Icon icon={TILE_ICON[kind]} width={36} />
-        </Box>
-      </Paper>
-    </UnstyledButton>
-  );
-
   return (
     <Stack gap="lg" hiddenFrom="md">
       <PageTopBar
@@ -250,8 +263,8 @@ export function ListsIndex({ householdId, items }: { householdId: string; items:
         }
       />
       <SimpleGrid cols={2}>
-        <Tile kind="shopping" list={shopping} />
-        <Tile kind="tasks" list={tasks} />
+        <KindTile kind="shopping" list={shopping} busy={busy === 'shopping'} onPick={openDefault} />
+        <KindTile kind="tasks" list={tasks} busy={busy === 'tasks'} onPick={openDefault} />
       </SimpleGrid>
       <Box component="nav">
         <Links householdId={householdId} items={rest} pathname={pathname} />

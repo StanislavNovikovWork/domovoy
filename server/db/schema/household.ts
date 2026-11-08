@@ -24,6 +24,8 @@ export const household = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     name: text('name').notNull(),
+    // иконка пространства из SPACE_ICONS (shared/config/space-icons); null — без иконки
+    icon: text('icon'),
     kind: householdKind('kind').notNull().default('periodic'),
     createdBy: text('created_by')
       .notNull()

@@ -27,7 +27,12 @@ type Props = {
 export function SpaceSwitcher({ spaces, currentId, currentName }: Props) {
   const btnRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
-  const [top, setTop] = useState(0);
+  const [pos, setPos] = useState<{
+    top: number;
+    left: number;
+    width: number | '100%';
+    desktop: boolean;
+  }>({ top: 0, left: 0, width: '100%', desktop: false });
   const [createOpen, setCreateOpen] = useState(false);
 
   const toggle = () => {
@@ -36,7 +41,14 @@ export function SpaceSwitcher({ spaces, currentId, currentName }: Props) {
       return;
     }
     const rect = btnRef.current?.getBoundingClientRect();
-    setTop((rect?.bottom ?? 0) + 4);
+    // на десктопе список компактный под кнопкой, на мобильных — на всю ширину экрана
+    const desktop = window.matchMedia('(min-width: 62em)').matches;
+    setPos({
+      top: (rect?.bottom ?? 0) + 4,
+      left: desktop ? (rect?.left ?? 0) : 0,
+      width: desktop ? Math.max(rect?.width ?? 240, 240) : '100%',
+      desktop,
+    });
     setOpen(true);
   };
 
@@ -74,10 +86,11 @@ export function SpaceSwitcher({ spaces, currentId, currentName }: Props) {
         {(styles) => (
           <Box
             pos="fixed"
-            top={top}
+            top={pos.top}
             bottom={0}
             left={0}
             right={0}
+            hiddenFrom="md"
             style={{ ...styles, zIndex: 299, background: 'rgba(0, 0, 0, 0.18)' }}
           />
         )}
@@ -92,16 +105,24 @@ export function SpaceSwitcher({ spaces, currentId, currentName }: Props) {
         {(styles) => (
         <Box
           pos="fixed"
-          left={0}
-          right={0}
-          top={top}
+          left={pos.left}
+          w={pos.width}
+          top={pos.top}
           bg="var(--mantine-color-body)"
           style={{
             ...styles,
             zIndex: 300,
-            borderBottom: '1px solid var(--mantine-color-default-border)',
-            borderBottomLeftRadius: 'var(--mantine-radius-lg)',
-            borderBottomRightRadius: 'var(--mantine-radius-lg)',
+            // десктоп — компактная карточка, мобильные — шторка на всю ширину с нижним скруглением
+            ...(pos.desktop
+              ? {
+                  border: '1px solid var(--mantine-color-default-border)',
+                  borderRadius: 'var(--mantine-radius-lg)',
+                }
+              : {
+                  borderBottom: '1px solid var(--mantine-color-default-border)',
+                  borderBottomLeftRadius: 'var(--mantine-radius-lg)',
+                  borderBottomRightRadius: 'var(--mantine-radius-lg)',
+                }),
             overflow: 'hidden',
           }}
         >
