@@ -8,6 +8,7 @@ import {
   Button,
   Group,
   NavLink,
+  Portal,
   Stack,
   Text,
   Transition,
@@ -46,7 +47,7 @@ export function SpaceSwitcher({ spaces, currentId, currentName }: Props) {
     setPos({
       top: (rect?.bottom ?? 0) + 4,
       left: desktop ? (rect?.left ?? 0) : 0,
-      width: desktop ? Math.max(rect?.width ?? 240, 240) : '100%',
+      width: desktop ? Math.max(rect?.width ?? 0, 300) : '100%',
       desktop,
     });
     setOpen(true);
@@ -81,24 +82,27 @@ export function SpaceSwitcher({ spaces, currentId, currentName }: Props) {
         </Group>
       </UnstyledButton>
 
+      {/* оверлей и список рендерим в portal на body: не зависят от контейнеров страницы
+          (sticky-сайдбар создаёт свой stacking context и перекрывал оверлей) */}
+      <Portal>
       {/* затемнение под списком: от его верхнего края до низа экрана (сам список поверх) */}
       <Transition mounted={open} transition="fade" duration={180}>
         {(styles) => (
           <Box
             pos="fixed"
-            top={pos.top}
+            // десктоп: затемняем весь экран вне списка; мобильные: от верха списка до низа
+            top={pos.desktop ? 0 : pos.top}
             bottom={0}
             left={0}
             right={0}
-            hiddenFrom="md"
-            style={{ ...styles, zIndex: 299, background: 'rgba(0, 0, 0, 0.18)' }}
+            style={{ ...styles, zIndex: 390, background: 'rgba(0, 0, 0, 0.18)' }}
           />
         )}
       </Transition>
       {/* клик мимо закрывает список */}
       <Transition mounted={open} transition="fade" duration={180}>
         {(styles) => (
-          <Box pos="fixed" inset={0} onClick={close} style={{ ...styles, zIndex: 299 }} />
+          <Box pos="fixed" inset={0} onClick={close} style={{ ...styles, zIndex: 390 }} />
         )}
       </Transition>
       <Transition mounted={open} transition="fade" duration={180} timingFunction="ease">
@@ -111,7 +115,7 @@ export function SpaceSwitcher({ spaces, currentId, currentName }: Props) {
           bg="var(--mantine-color-body)"
           style={{
             ...styles,
-            zIndex: 300,
+            zIndex: 400,
             // десктоп — компактная карточка, мобильные — шторка на всю ширину с нижним скруглением
             ...(pos.desktop
               ? {
@@ -126,7 +130,7 @@ export function SpaceSwitcher({ spaces, currentId, currentName }: Props) {
             overflow: 'hidden',
           }}
         >
-            <Stack gap={2} px="sm" pb="sm" pt={0}>
+            <Stack gap={2} px="sm" pb="sm" pt={{ base: 0, md: 'xs' }}>
               {spaces
                 .filter((s) => s.id !== currentId)
                 .map((s) => (
@@ -134,7 +138,7 @@ export function SpaceSwitcher({ spaces, currentId, currentName }: Props) {
                   key={s.id}
                   component={Link}
                   href={`/budgets/${s.id}`}
-                  label={<Text size="lg" fw={600}>{s.name}</Text>}
+                  label={<Text size="lg" fw={600} truncate>{s.name}</Text>}
                   active={s.id === currentId}
                   onClick={close}
                   variant="light"
@@ -158,6 +162,7 @@ export function SpaceSwitcher({ spaces, currentId, currentName }: Props) {
           </Box>
         )}
       </Transition>
+      </Portal>
 
       <CreateSpaceModal opened={createOpen} onClose={() => setCreateOpen(false)} />
     </>
